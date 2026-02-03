@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="UTF-8">
+<title></title>
+<th:block th:replace="~{common/configs/default_configs :: BootStrap}"></th:block>
+</head>
+<body class="sb-nav-fixed">
+	<!--/* 헤더 */-->
+	<header th:insert="~{common/fragments/default_header :: DefaultHeader}"></header>
+	
+	<div id="layoutSidenav">
+		<!--/* 사이드바 */-->
+		<div id="layoutSidenav_nav">
+			<aside th:replace="~{common/fragments/default_sidebar :: DefaultSideBar}"></aside>
+		</div>
+	
+		<!--/* 메인 + 푸터 */-->
+		<div id="layoutSidenav_content">
+			<main>
+				<div class="container-fluid px-4" layout:fragment="Content"></div>
+			</main>
+			
+			<!--/* 푸터 */-->
+			<footer class="py-4 bg-light mt-auto" th:insert="~{common/fragments/default_footer :: DefaultFooter}"></footer>
+		</div>
+	</div>
+	
+	<th:block th:replace="~{common/configs/default_configs :: BottomScript}"></th:block>
+</body>
+</html>

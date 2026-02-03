@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title></title>
+</head>
+<body>
+	<th:block th:each="info : ${list}">
+		<p>[[ ${info.lastName} ]]</p>
+	</th:block>
+</body>
+</html>
