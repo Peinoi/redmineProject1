@@ -2,14 +2,41 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.gantt.mapper.GanttMapper">
 	<!-- 전체조회 -->
-	<select id="selectAll" resultType="GanttVO">
-		SELECT project_code
-		       , project_name 
-		       , description
-		       , created_on   
-		       , status       
-		       , user_code    
-		FROM projects
-		ORDER BY project_code
+	<select id="selectGanttList" resultType="map">
+		SELECT issue_code
+			   , project_name
+			   , title
+			   , priority
+			   , status
+			   , progress
+			   , started_at
+			   , resolved_at
+			   , assignee_name
+			   , duration
+			   , project_code
+			   , created_on
+		FROM gantt_view
+		<where>
+		    <!-- 일감 상태 -->
+		    <if test="status != null and status != ''">
+		        AND status = #{status}
+		    </if>
+		
+		    <!-- 담당자 -->
+		    <if test="assigneeName != null and assigneeName != ''">
+		        AND assignee_name = #{assigneeName}
+		    </if>
+		
+		    <!-- 프로젝트 -->
+		    <if test="projectCode != null">
+		        AND project_code = #{projectCode}
+		    </if>
+		
+		    <!-- 프로젝트 등록일 범위 -->
+		    <if test="createdOnFrom != null and createdOnTo != null">
+	            AND created_on BETWEEN #{createdOnFrom} AND #{createdOnTo}
+	        </if>
+		</where>
+		ORDER BY issue_code
 	</select>
 </mapper>

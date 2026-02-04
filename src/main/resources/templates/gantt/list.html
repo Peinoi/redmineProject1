@@ -1,54 +1,349 @@
 <!DOCTYPE html>
-<html xmlns:th="https://www.thymeleaf.org/" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-	layout:decorate="~{common/layouts/default_layout}" layout:fragment="Content">
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
 <head>
-	<meta charset="UTF-8">
-	<title>일정 관리</title>
-	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
-  <script type="text/javascript">
-    google.charts.load('current', {'packages':['gantt']});
-    google.charts.setOnLoadCallback(drawChart);
+<meta charset="UTF-8">
+<title>일정 관리</title>
 
-    function daysToMilliseconds(days) {
-      return days * 24 * 60 * 60 * 1000;
-    }
-
-    function drawChart() {
-
-      var data = new google.visualization.DataTable();
-      data.addColumn('string', 'Task ID');
-      data.addColumn('string', 'Task Name');
-      data.addColumn('date', 'Start Date');
-      data.addColumn('date', 'End Date');
-      data.addColumn('number', 'Duration');
-      data.addColumn('number', 'Percent Complete');
-      data.addColumn('string', 'Dependencies');
-
-      data.addRows([
-        ['Research', 'Find sources',
-         new Date(2015, 0, 1), new Date(2015, 0, 5), null,  100,  null],
-        ['Write', 'Write paper',
-         null, new Date(2015, 0, 9), daysToMilliseconds(3), 25, 'Research,Outline'],
-        ['Cite', 'Create bibliography',
-         null, new Date(2015, 0, 7), daysToMilliseconds(1), 20, 'Research'],
-        ['Complete', 'Hand in paper',
-         null, new Date(2015, 0, 10), daysToMilliseconds(1), 0, 'Cite,Write'],
-        ['Outline', 'Outline paper',
-         null, new Date(2015, 0, 6), daysToMilliseconds(1), 100, 'Research']
-      ]);
-
-      var options = {
-        height: 275
-      };
-
-      var chart = new google.visualization.Gantt(document.getElementById('chart_div'));
-
-      chart.draw(data, options);
-    }
-  </script>
+<link rel="stylesheet"
+	href="https://docs.dhtmlx.com/gantt/codebase/dhtmlxgantt.css">
+<link rel="stylesheet" th:href="@{/css/gantt/style.css}">
 </head>
 
 <body>
-	<div id="chart_div"></div>
+	<div class="gantt-page">
+		<div class="x-page-title">
+			<h3 class="page-title">일정 관리</h3>
+			<div class="page-title-sub">일정 관리 페이지입니다.</div>
+		</div>
+		<div id="e7eGantt" class="gantt-wrapper"></div>
+	</div>
+
+	<script src="https://docs.dhtmlx.com/gantt/codebase/dhtmlxgantt.js"></script>
+	<script>
+  	gantt.init("e7eGantt");
+  	
+  	window.addEventListener("load", () => {
+  	  gantt.init("e7eGantt");
+  	  gantt.setSizes();
+  	});
+
+  	window.addEventListener("resize", () => {
+  	  gantt.setSizes();
+  	});
+
+  	
+    function calculateResourceLoad(tasks, scale) {
+      var step = scale.unit;
+      var timegrid = {};
+
+      for (var i = 0; i < tasks.length; i++) {
+        var task = tasks[i];
+
+        var currDate = gantt.date[step + "_start"](new Date(task.start_date));
+
+        while (currDate < task.end_date) {
+
+          var date = currDate;
+          currDate = gantt.date.add(currDate, 1, step);
+
+          if (!gantt.isWorkTime({
+              date: date,
+              task: task
+            })) {
+            continue;
+          }
+
+          var timestamp = date.valueOf();
+          if (!timegrid[timestamp])
+            timegrid[timestamp] = 0;
+
+          timegrid[timestamp] += 8;
+        }
+      }
+
+      var timetable = [];
+      var start, end;
+      for (var i in timegrid) {
+        start = new Date(i * 1);
+        end = gantt.date.add(start, 1, step);
+        timetable.push({
+          start_date: start,
+          end_date: end,
+          value: timegrid[i]
+        });
+      }
+
+      return timetable;
+    }
+
+
+    var renderResourceLine = function (resource, timeline) {
+      var tasks = gantt.getTaskBy("user", resource.id);
+      var timetable = calculateResourceLoad(tasks, timeline.getScale());
+
+      var row = document.createElement("div");
+
+      for (var i = 0; i < timetable.length; i++) {
+
+        var day = timetable[i];
+
+        var css = "";
+        if (day.value <= 8) {
+          css = "gantt_resource_marker gantt_resource_marker_ok";
+        } else {
+          css = "gantt_resource_marker gantt_resource_marker_overtime";
+        }
+
+        var sizes = timeline.getItemPosition(resource, day.start_date, day.end_date);
+        var el = document.createElement('div');
+        el.className = css;
+
+        el.style.cssText = [
+          'left:' + sizes.left + 'px',
+          'width:' + sizes.width + 'px',
+          'position:absolute',
+          'height:' + (gantt.config.row_height - 1) + 'px',
+          'line-height:' + sizes.height + 'px',
+          'top:' + sizes.top + 'px'
+        ].join(";");
+
+        el.innerHTML = day.value;
+        row.appendChild(el);
+      }
+      return row;
+    };
+
+    var resourceLayers = [
+      renderResourceLine,
+      "taskBg"
+    ];
+
+    // 색깔 에디터 추가
+    let editor;
+    gantt.config.editor_types.color = {
+      show: function (id, column, config, placeholder) {
+        var html = "<div><input type='color' name='" + column.name + "'></div>";
+        placeholder.innerHTML = html;
+
+        editor = $(placeholder).find("input").spectrum({
+          change: () => {
+            gantt.ext.inlineEditors.save();
+          }
+        });
+
+        setTimeout(() => {
+          editor.spectrum("show")
+        })
+      },
+      hide: function () {
+        if (editor) {
+          editor.spectrum("destroy");
+          editor = null;
+        }
+      },
+
+      set_value: function (value, id, column, node) {
+        editor.spectrum("set", value);
+      },
+
+      get_value: function (id, column, node) {
+        return editor.spectrum("get").toHexString();
+      },
+
+      is_changed: function (value, id, column, node) {
+        // console.log("THIS: ", this);
+        var newValue = this.get_value(id, column, node);
+        return newValue !== value;
+      },
+
+      is_valid: function (value, id, column, node) {
+        var newValue = this.get_value(id, column, node);
+        return !!newValue;
+      },
+
+      save: function (id, column, node) {
+        // only for inputs with map_to:auto. complex save behavior goes here
+      },
+      focus: function (node) {
+        editor.spectrum("show");
+      }
+    }
+
+    const colorEditor = {
+      type: "color",
+      map_to: "color"
+    };
+
+    var mainGridConfig = {
+    		  columns: [
+    		    { name: "title", tree: true, width: 200, label: "작업명" },
+
+    		    { name: "priority", label: "우선순위", align: "center", width: 70 },
+
+    		    { name: "status_name", label: "상태", align: "center", width: 70 },
+
+    		    { name: "progress", label: "진척도", align: "center", width: 60,
+    		      template: t => Math.round((t.progress || 0) * 100) + "%"
+    		    },
+
+    		    { name: "started_at", label: "시작일", align: "center", width: 90 },
+
+    		    { name: "resolved_at", label: "종료일", align: "center", width: 90 },
+
+    		    { name: "assignee_name", label: "작업자", align: "center", width: 80,
+    		      template: function (task) {
+    		        var store = gantt.getDatastore("resources");
+    		        var owner = store.getItem(task.user);
+    		        return owner ? owner.label : "";
+    		      }
+    		    },
+    		    { name: "add", width: 44 }
+    		    
+    		  ]
+    		};
+
+    var resourcePanelConfig = {
+      columns: [{
+          name: "name",
+          label: "Name",
+          align: "center",
+          template: function (resource) {
+            //console.log("체킁:", resource);
+            return resource.label;
+          }
+        },
+        {
+          name: "workload",
+          label: "Workload",
+          align: "center",
+          template: function (resource) {
+            var tasks = gantt.getTaskBy("user", resource.id);
+
+            var totalDuration = 0;
+            for (var i = 0; i < tasks.length; i++) {
+              totalDuration += tasks[i].duration;
+            }
+
+            return (totalDuration || 0) * 8 + "";
+          }
+        }
+      ]
+    };
+
+    gantt.config.layout = {
+      css: "gantt_container",
+      rows: [{
+          cols: [{
+              view: "grid",
+              group: "grids",
+              config: mainGridConfig,
+              scrollY: "scrollVer"
+            },
+            {
+              resizer: true,
+              width: 1,
+              group: "vertical"
+            },
+            {
+              view: "timeline",
+              id: "timeline",
+              scrollX: "scrollHor",
+              scrollY: "scrollVer"
+            },
+            {
+              view: "scrollbar",
+              id: "scrollVer",
+              group: "vertical"
+            }
+          ]
+        },
+        {
+          view: "scrollbar",
+          id: "scrollHor"
+        }
+      ]
+    };
+
+    var resourcesStore = gantt.createDatastore({
+      name: "resources",
+      initItem: function (item) {
+        item.id = item.key || gantt.uid();
+        return item;
+      }
+    });
+
+    var tasksStore = gantt.getDatastore("task");
+    //console.log("체킁taskStore:", tasksStore);
+    tasksStore.attachEvent("onStoreUpdated", function (id, item, mode) {
+      resourcesStore.refresh();
+    });
+
+
+    // 기본 설정
+    gantt.i18n.setLocale("kr");
+
+    gantt.config.scales = [{
+        unit: "month",
+        step: 1,
+        format: "%Y, %F"
+      },
+      {
+        unit: "day",
+        step: 1,
+        format: "%j, %D"
+      }
+    ];
+
+    //날짜 형식
+    gantt.config.date_format = "%Y-%m-%d %H:%i"; // 실제 전달되는 데이타의 start_date등의 포맷
+    gantt.config.task_date = "%Y년 %m월 %d일";
+
+    resourcesStore.parse([ // resources
+      {
+        key: '0',
+        label: "없음"
+      },
+      {
+        key: '1',
+        label: "E7E"
+      },
+      {
+        key: '2',
+        label: "메롱"
+      },
+      {
+        key: '3',
+        label: "황당"
+      },
+      {
+        key: '4',
+        label: "당황"
+      },
+      {
+        key: '5',
+        label: "우앙"
+      },
+      {
+        key: '6',
+        label: "오호"
+      },
+      {
+        key: '7',
+        label: "눈물"
+      }
+    ]);
+
+    // 비동기롱 데이터 가져오깅, 괘니 fetch 써보깅
+    const fData = async () => {
+      let response = await fetch("./sampleData.json");
+      let taskData = await response.json();
+      gantt.parse(taskData);
+    }
+    fData();
+  </script>
 </body>
+
 </html>

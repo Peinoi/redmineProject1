@@ -1,0 +1,453 @@
+ {
+    "data": [
+        {
+            "id": 1,
+            "text": "개발 사무실 환경 구성",
+            "type": "project",
+            "order": "10",
+            "progress": 0.4,
+            "open": false,
+            "user": "0",
+            "start_date": "2023-11-02 00:00",
+            "duration": 17,
+            "end_date": "2023-11-19 00:00",
+            "parent": 0
+        },
+        {
+            "id": 2,
+            "text": "오피스 현장 확인",
+            "type": "project",
+            "start_date": "2023-11-02 00:00",
+            "duration": 8,
+            "order": "10",
+            "progress": 0.6,
+            "user": "0",
+            "parent": "1",
+            "open": true,
+            "end_date": "2023-11-10 00:00"
+        },
+        {
+            "id": 5,
+            "text": "I",
+            "start_date": "2023-11-02 00:00",
+            "duration": 7,
+            "order": "3",
+            "parent": "2",
+            "progress": 0.6,
+            "open": true,
+            "user": "1",
+            "end_date": "2023-11-09 00:00"
+        },
+        {
+            "id": 6,
+            "text": "에어컨 체킁",
+            "start_date": "2023-11-03 00:00",
+            "duration": 7,
+            "order": "3",
+            "parent": "2",
+            "progress": 0.6,
+            "open": true,
+            "user": "2",
+            "end_date": "2023-11-10 00:00"
+        },
+        {
+            "id": 3,
+            "text": "가구 배치",
+            "type": "project",
+            "start_date": "2023-11-11 00:00",
+            "duration": 8,
+            "order": "20",
+            "parent": "1",
+            "progress": 0.6,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-19 00:00"
+        },
+        {
+            "id": 7,
+            "text": "작업공간 구성",
+            "start_date": "2023-11-11 00:00",
+            "duration": 8,
+            "order": "3",
+            "parent": "3",
+            "progress": 0.6,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-19 00:00"
+        },
+        {
+            "id": 4,
+            "text": "개발자 자리 배정",
+            "type": "project",
+            "start_date": "2023-11-14 00:00",
+            "duration": 5,
+            "order": "30",
+            "parent": "1",
+            "progress": 0.5,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-19 00:00"
+        },
+        {
+            "id": 8,
+            "text": "작업공간 준비 작업",
+            "start_date": "2023-11-14 00:00",
+            "duration": 5,
+            "order": "3",
+            "parent": "4",
+            "progress": 0.5,
+            "user": "6",
+            "open": true,
+            "end_date": "2023-11-19 00:00"
+        },
+        {
+            "id": 9,
+            "text": "작업공간 작업1",
+            "start_date": "2023-11-14 00:00",
+            "duration": 4,
+            "order": "3",
+            "parent": "4",
+            "progress": 0.5,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-18 00:00"
+        },
+        {
+            "id": 10,
+            "text": "작업공간 작업2",
+            "start_date": "2023-11-14 00:00",
+            "duration": 3,
+            "order": "3",
+            "parent": "4",
+            "progress": 0.5,
+            "user": "3",
+            "open": true,
+            "end_date": "2023-11-17 00:00"
+        },
+        {
+            "id": 11,
+            "text": "작업공간 오픈",
+            "type": "project",
+            "order": "5",
+            "progress": 0.6,
+            "open": true,
+            "user": "0",
+            "start_date": "2023-11-02 00:00",
+            "duration": 13,
+            "end_date": "2023-11-15 00:00",
+            "parent": 0
+        },
+        {
+            "id": 12,
+            "text": "초기 테스트 진행",
+            "start_date": "2023-11-03 00:00",
+            "duration": 5,
+            "order": "3",
+            "parent": "11",
+            "progress": 1,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-08 00:00"
+        },
+        {
+            "id": 13,
+            "text": "개발",
+            "type": "project",
+            "start_date": "2023-11-03 00:00",
+            "duration": 11,
+            "order": "3",
+            "parent": "11",
+            "progress": 0.5,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-14 00:00"
+        },
+        {
+            "id": 17,
+            "text": "시스템 개발",
+            "start_date": "2023-11-03 00:00",
+            "duration": 2,
+            "order": "3",
+            "parent": "13",
+            "progress": 1,
+            "user": "5",
+            "open": true,
+            "end_date": "2023-11-05 00:00"
+        },
+        {
+            "id": 25,
+            "text": "베타 릴리스",
+            "start_date": "2023-11-06 00:00",
+            "order": "3",
+            "type": "milestone",
+            "parent": "13",
+            "progress": 0,
+            "open": true,
+            "user": "0",
+            "end_date": "2023-11-06 00:00",
+            "duration": 0
+        },
+        {
+            "id": 18,
+            "text": "시스템 통합",
+            "start_date": "2023-11-08 00:00",
+            "duration": 2,
+            "order": "3",
+            "parent": "13",
+            "progress": 0.8,
+            "open": true,
+            "user": "4",
+            "end_date": "2023-11-10 00:00"
+        },
+        {
+            "id": 19,
+            "text": "테스트",
+            "start_date": "2023-11-10 00:00",
+            "duration": 4,
+            "order": "3",
+            "parent": "13",
+            "progress": 0.2,
+            "open": true,
+            "user": "0",
+            "end_date": "2023-11-14 00:00"
+        },
+        {
+            "id": 20,
+            "text": "마케팅",
+            "start_date": "2023-11-10 00:00",
+            "duration": 4,
+            "order": "3",
+            "parent": "13",
+            "progress": 0,
+            "user": "6",
+            "open": true,
+            "end_date": "2023-11-14 00:00"
+        },
+        {
+            "id": 14,
+            "text": "분석",
+            "start_date": "2023-11-02 00:00",
+            "duration": 6,
+            "order": "3",
+            "parent": "11",
+            "progress": 0.8,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-08 00:00"
+        },
+        {
+            "id": 15,
+            "text": "디자인",
+            "type": "project",
+            "start_date": "2023-11-03 00:00",
+            "duration": 5,
+            "order": "3",
+            "parent": "11",
+            "progress": 0.2,
+            "user": "0",
+            "open": false,
+            "end_date": "2023-11-08 00:00"
+        },
+        {
+            "id": 21,
+            "text": "데이터베이스 디자인",
+            "start_date": "2023-11-03 00:00",
+            "duration": 4,
+            "order": "3",
+            "parent": "15",
+            "progress": 0.5,
+            "user": "0",
+            "open": true,
+            "end_date": "2023-11-07 00:00"
+        },
+        {
+            "id": 22,
+            "text": "소프트웨어 디자인",
+            "start_date": "2023-11-03 00:00",
+            "duration": 4,
+            "order": "3",
+            "parent": "15",
+            "progress": 0.1,
+            "user": "4",
+            "open": true,
+            "end_date": "2023-11-07 00:00"
+        },
+        {
+            "id": 23,
+            "text": "인터페이스 Set-Up",
+            "start_date": "2023-11-03 00:00",
+            "duration": 5,
+            "order": "3",
+            "parent": "15",
+            "progress": 0,
+            "user": "7",
+            "open": true,
+            "end_date": "2023-11-08 00:00"
+        },
+        {
+            "id": 16,
+            "text": "문서 작성",
+            "start_date": "2023-11-02 00:00",
+            "duration": 7,
+            "order": "3",
+            "parent": "11",
+            "progress": 0,
+            "user": "6",
+            "open": true,
+            "end_date": "2023-11-09 00:00"
+        },
+        {
+            "id": 24,
+            "text": "릴리스 v1.0",
+            "start_date": "2023-11-15 00:00",
+            "order": "3",
+            "type": "milestone",
+            "parent": "11",
+            "progress": 0,
+            "open": true,
+            "user": "0",
+            "end_date": "2023-11-15 00:00",
+            "duration": 0
+        }
+    ],
+    "links": [
+        {
+            "id": "1",
+            "source": "1",
+            "target": "2",
+            "type": "1"
+        },
+        {
+            "id": "2",
+            "source": "2",
+            "target": "3",
+            "type": "0"
+        },
+        {
+            "id": "3",
+            "source": "3",
+            "target": "4",
+            "type": "0"
+        },
+        {
+            "id": "4",
+            "source": "2",
+            "target": "5",
+            "type": "2"
+        },
+        {
+            "id": "5",
+            "source": "2",
+            "target": "6",
+            "type": "2"
+        },
+        {
+            "id": "6",
+            "source": "3",
+            "target": "7",
+            "type": "2"
+        },
+        {
+            "id": "7",
+            "source": "4",
+            "target": "8",
+            "type": "2"
+        },
+        {
+            "id": "8",
+            "source": "4",
+            "target": "9",
+            "type": "2"
+        },
+        {
+            "id": "9",
+            "source": "4",
+            "target": "10",
+            "type": "2"
+        },
+        {
+            "id": "10",
+            "source": "11",
+            "target": "12",
+            "type": "1"
+        },
+        {
+            "id": "11",
+            "source": "11",
+            "target": "13",
+            "type": "1"
+        },
+        {
+            "id": "12",
+            "source": "11",
+            "target": "14",
+            "type": "1"
+        },
+        {
+            "id": "13",
+            "source": "11",
+            "target": "15",
+            "type": "1"
+        },
+        {
+            "id": "14",
+            "source": "11",
+            "target": "16",
+            "type": "1"
+        },
+        {
+            "id": "15",
+            "source": "13",
+            "target": "17",
+            "type": "1"
+        },
+        {
+            "id": "16",
+            "source": "17",
+            "target": "25",
+            "type": "0"
+        },
+        {
+            "id": "17",
+            "source": "18",
+            "target": "19",
+            "type": "0"
+        },
+        {
+            "id": "18",
+            "source": "19",
+            "target": "20",
+            "type": "0"
+        },
+        {
+            "id": "19",
+            "source": "15",
+            "target": "21",
+            "type": "2"
+        },
+        {
+            "id": "20",
+            "source": "15",
+            "target": "22",
+            "type": "2"
+        },
+        {
+            "id": "21",
+            "source": "15",
+            "target": "23",
+            "type": "2"
+        },
+        {
+            "id": "22",
+            "source": "13",
+            "target": "24",
+            "type": "0"
+        },
+        {
+            "id": "23",
+            "source": "25",
+            "target": "18",
+            "type": "0"
+        }
+    ]
+}

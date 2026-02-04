@@ -1,6 +1,7 @@
 package com.yedam.app.gantt.service.impl;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
@@ -18,8 +19,8 @@ public class GanttServiceImpl implements GanttService {
 	
 	// 전체조회
 	@Override
-	public List<GanttVO> findAll() {
-		return ganttMapper.selectAll();
+	public List<Map<String, Object>> getGanttList(GanttVO ganttVO) {
+		return ganttMapper.selectGanttList(ganttVO);
 	}
 
 }
