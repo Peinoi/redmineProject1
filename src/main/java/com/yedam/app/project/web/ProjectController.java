@@ -24,4 +24,11 @@ public class ProjectController {
 		return "project/projects";
 
 	}
+
+	@GetMapping("projectadd")
+	public String projectAdd() {
+		return "project/projectadd";
+
+	}
+	
 }

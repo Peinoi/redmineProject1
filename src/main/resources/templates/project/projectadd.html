@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title></title>
+<link rel="stylesheet" th:href="@{/css/project/project.css}">
+</head>
+<body>
+	<div id="container">
+		<div class="x-page-title">
+			<h3 class="page-title">프로젝트 등록</h3>
+			<div class="page-title-sub">프로젝트 정보 등록</div>
+			<button class="btn btn-secondary">프로젝트 추가</button>
+		</div>
+		<form>
+			<div class="input-group">
+				<span class="input-group-text" id="visible-addon">프로젝트 명</span> <input
+					type="text" class="form-control" placeholder="Project Name"
+					aria-label="Username" aria-describedby="visible-addon">
+			</div>
+			<div class="input-group">
+				<span class="input-group-text" id="visible-addon">프로젝트 관리자</span> <input
+					type="text" class="form-control" value="김관리" aria-label="Username"
+					aria-describedby="visible-addon" readonly>
+
+			</div>
+			<div class="mb-3">
+				<label for="exampleFormControlTextarea1" class="form-label">프로젝트
+					설명</label>
+				<textarea class="form-control" id="exampleFormControlTextarea1"
+					rows="3"></textarea>
+			</div>
+
+			<div class="form-check form-check-inline">
+				<input class="form-check-input" type="radio"
+					name="inlineRadioOptions" id="inlineRadio1" value="OD1" checked>
+				<label class="form-check-label" for="inlineRadio1">진행</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input class="form-check-input" type="radio"
+					name="inlineRadioOptions" id="inlineRadio2" value="OD2" disabled>
+				<label class="form-check-label" for="inlineRadio2">중단</label>
+			</div>
+			<div class="form-check form-check-inline">
+				<input class="form-check-input" type="radio"
+					name="inlineRadioOptions" id="inlineRadio3" value="OD3" disabled>
+				<label class="form-check-label" for="inlineRadio3">종료</label>
+			</div>
+			
+			
+			
+			
+		</form>
+	</div>
+</body>
+</html>
