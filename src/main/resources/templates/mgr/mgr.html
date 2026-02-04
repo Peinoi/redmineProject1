@@ -9,55 +9,59 @@
 <link rel="stylesheet" th:href="@{/css/mgr/mgr.css}">
 </head>
 <body>
-	<div id="container">
+	<div class="container">
 		<div class="container-fluid px-4">
-			<h1 class="mt-4">관리</h1>
+			<h1 class="mt-4">관리 테스트</h1>
 			<ol class="breadcrumb mb-4">
 				<li class="breadcrumb-item active">관리</li>
 			</ol>
-			<div class="row">
-				<div class="col-xl-3 col-md-6">
+			<div class="row" id="recommend-list">
+				<div  class="col-xl-3 col-md-6 draggable" draggable="true">
 					<div class="card bg-primary text-white mb-4">
 						<div class="card-body">Projects</div>
 						<div
 							class="card-footer d-flex align-items-center justify-content-between">
-							<a class="small text-white stretched-link" href="#">프로젝트 관리</a>
+							<a class="small text-white stretched-link" th:href="@{/projects}">프로젝트
+								관리</a>
 							<div class="small text-white">
 								<i class="fas fa-angle-right"></i>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-3 col-md-6">
+				<div  class="col-xl-3 col-md-6 draggable" draggable="true">
 					<div class="card bg-primary text-white mb-4">
 						<div class="card-body">Users</div>
 						<div
 							class="card-footer d-flex align-items-center justify-content-between">
-							<a class="small text-white stretched-link" href="#">사용자 관리</a>
+							<a class="small text-white stretched-link" th:href="@{/#}">사용자
+								관리</a>
 							<div class="small text-white">
 								<i class="fas fa-angle-right"></i>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-3 col-md-6">
+				<div  class="col-xl-3 col-md-6 draggable" draggable="true">
 					<div class="card bg-primary text-white mb-4">
 						<div class="card-body">Group</div>
 						<div
 							class="card-footer d-flex align-items-center justify-content-between">
-							<a class="small text-white stretched-link" href="#">그룹 관리</a>
+							<a class="small text-white stretched-link" th:href="@{/#}">그룹
+								관리</a>
 							<div class="small text-white">
 								<i class="fas fa-angle-right"></i>
 							</div>
 						</div>
 					</div>
 				</div>
-				<div class="col-xl-3 col-md-6">
+				<div  class="col-xl-3 col-md-6 draggable" draggable="true">
 					<div class="card bg-primary text-white mb-4">
 						<div class="card-body">Role & Authority</div>
 						<div
 							class="card-footer d-flex align-items-center justify-content-between">
-							<a class="small text-white stretched-link" href="#">역할 권한 관리</a>
+							<a class="small text-white stretched-link" th:href="@{/#}">역할
+								권한 관리</a>
 							<div class="small text-white">
 								<i class="fas fa-angle-right"></i>
 							</div>
