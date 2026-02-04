@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.login.mapper.LoginMapper">
+	<select id="selectLoginInfo" resultType="LoginVO">
+		select employee_no
+				,password_hash
+				,name
+		from users
+		where employee_no = #{employeeNo}
+		and is_lock = '0'
+	</select>
+</mapper>
