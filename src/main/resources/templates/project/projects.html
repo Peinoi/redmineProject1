@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title>projects</title>
+<script
+	src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" />
+</head>
+<body>
+	<div id="container">
+		<form th:action="@{/post/save}" method="post">
+			<textarea name="content" id="editor" th:text="${data}"></textarea>
+			<button type="submit">저장</button>
+		</form>
+		<table>
+			<thead>
+				<tr>
+					<th>번호</th>
+					<th>프로젝트명</th>
+					<th>등록일</th>
+					<th>관리자</th>
+					<th>관리자번호</th>
+					<th>관리자메일</th>
+					<th>관리자상태</th>
+					<th>삭제</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr th:each="pro, status : ${list}">
+					<td>[[ ${status.index+1} ]]</td>
+					<td>[[ ${pro.projectName} ]]</td>
+					<td>[[ ${#dates.format(pro.createdOn, 'yyyy년 MM월 dd일')} ]]</td>
+					<td>[[ ${pro.name} ]]</td>
+					<td>[[ ${pro.phone} ]]</td>
+					<td>[[ ${pro.email} ]]</td>
+					<td>[[ ${pro.codeName} ]]</td>
+					<td><button>삭제</button></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+	<script th:src="@{/js/ckeditor5.js}"></script>
+</body>
+</html>

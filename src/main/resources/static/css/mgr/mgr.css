@@ -13,3 +13,17 @@ section>div {
 	font-size: 40px;
 	font-weight: bold;
 }
+/* 드래그 중인 원래 요소의 스타일 */
+.draggable.dragging {
+    opacity: 0.5;
+    border: 2 dashed #ccc;
+}
+
+/* 드래그 시 마우스 커서 모양 변경 */
+.draggable {
+    cursor: grab;
+}
+
+.draggable:active {
+    cursor: grabbing;
+}
