@@ -6,8 +6,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectService;
 import com.yedam.app.project.service.ProjectVO;
+import com.yedam.app.project.service.RoleVO;
+import com.yedam.app.project.service.UserVO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,9 +29,16 @@ public class ProjectController {
 	}
 
 	@GetMapping("projectadd")
-	public String projectAdd() {
+	public String projectAdd(Model model) {
+		List<UserVO> user = projectService.userFindAll();
+		List<RoleVO> role = projectService.roleFindAll();
+		List<GroupVO> group = projectService.groupFindAll();
+		model.addAttribute("roles", role);
+		model.addAttribute("users", user);
+		model.addAttribute("groups", group);
+
 		return "project/projectadd";
 
 	}
-	
+
 }
