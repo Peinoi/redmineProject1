@@ -7,19 +7,22 @@
 			<div class="col-12 col-md-3">
 				<label class="form-label">프로젝트</label>
 				<div class="input-group">
-					<input type="text" id="filterProjectText" class="form-control" placeholder="프로젝트 선택" readonly> <input
-						type="hidden" id="filterProjectValue">
-					<button type="button" class="btn btn-secondary" id="btnOpenProjectModal">선택</button>
+					<input type="text" id="filterProjectText" class="form-control"
+						placeholder="프로젝트 선택" readonly> <input type="hidden"
+						id="filterProjectValue">
+					<button type="button" class="btn btn-secondary"
+						id="btnOpenProjectModal">선택</button>
 				</div>
 			</div>
 
 			<div class="col-12 col-md-3">
-				<label class="form-label">일감명</label> <input type="text" id="filterTitle" class="form-control"
-					placeholder="일감명 입력">
+				<label class="form-label">일감명</label> <input type="text"
+					id="filterTitle" class="form-control" placeholder="일감명 입력">
 			</div>
 
 			<div class="col-12 col-md-3">
-				<label class="form-label">상태</label> <select id="filterStatus" class="form-select">
+				<label class="form-label">상태</label> <select id="filterStatus"
+					class="form-select">
 					<option value="">전체</option>
 					<option value="OB1">신규</option>
 					<option value="OB2">진행</option>
@@ -30,7 +33,8 @@
 			</div>
 
 			<div class="col-12 col-md-3">
-				<label class="form-label">우선순위</label> <select id="filterPriority" class="form-select">
+				<label class="form-label">우선순위</label> <select id="filterPriority"
+					class="form-select">
 					<option value="">전체</option>
 					<option value="OA1">긴급</option>
 					<option value="OA2">높음</option>
@@ -44,27 +48,33 @@
 			<div class="col-12 col-md-3">
 				<label class="form-label">담당자</label>
 				<div class="input-group">
-					<input type="text" id="filterAssigneeText" class="form-control" placeholder="담당자 선택" readonly> <input
-						type="hidden" id="filterAssigneeValue">
-					<button type="button" class="btn btn-secondary" id="btnOpenAssigneeModal">선택</button>
+					<input type="text" id="filterAssigneeText" class="form-control"
+						placeholder="담당자 선택" readonly> <input type="hidden"
+						id="filterAssigneeValue">
+					<button type="button" class="btn btn-secondary"
+						id="btnOpenAssigneeModal">선택</button>
+				</div>
+			</div>
+
+			<div class="col-12 col-md-6">
+				<div class="row g-2">
+					<div class="col">
+						<label class="form-label">일감 시작일</label> <input type="date"
+							id="filterStartDateFrom" class="form-control">
+					</div>
+					<div class="col-auto d-flex align-items-end pb-2">
+						<span class="text-muted">~</span>
+					</div>
+					<div class="col">
+						<label class="form-label">일감 시작일</label> <input type="date"
+							id="filterStartDateTo" class="form-control">
+					</div>
 				</div>
 			</div>
 
 			<div class="col-12 col-md-3">
-				<label class="form-label">등록자</label>
-				<div class="input-group">
-					<input type="text" id="filterCreatorText" class="form-control" placeholder="등록자 선택" readonly> <input
-						type="hidden" id="filterCreatorValue">
-					<button type="button" class="btn btn-secondary" id="btnOpenCreatorModal">선택</button>
-				</div>
-			</div>
-
-			<div class="col-12 col-md-3">
-				<label class="form-label">등록일</label> <input type="date" id="filterCreatedAt" class="form-control">
-			</div>
-
-			<div class="col-12 col-md-3">
-				<label class="form-label">마감기한</label> <input type="date" id="filterDueAt" class="form-control">
+				<label class="form-label">일감 종료일</label> <input type="date"
+					id="filterEndDate" class="form-control">
 			</div>
 		</div>
 		<div class="d-flex justify-content-between align-items-center mt-3">
@@ -74,7 +84,7 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<div class="modal fade" id="projectSelectModal" tabindex="-1"
 		aria-hidden="true">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -106,24 +116,6 @@
 					<input type="text" id="assigneeModalSearch"
 						class="form-control mb-2" placeholder="담당자명 검색">
 					<div class="list-group" id="assigneeModalList"></div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<div class="modal fade" id="creatorSelectModal" tabindex="-1"
-		aria-hidden="true">
-		<div class="modal-dialog modal-lg modal-dialog-scrollable">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title">등록자 선택</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"
-						aria-label="Close"></button>
-				</div>
-				<div class="modal-body">
-					<input type="text" id="creatorModalSearch"
-						class="form-control mb-2" placeholder="등록자명 검색">
-					<div class="list-group" id="creatorModalList"></div>
 				</div>
 			</div>
 		</div>

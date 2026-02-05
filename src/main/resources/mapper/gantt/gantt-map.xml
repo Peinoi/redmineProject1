@@ -22,27 +22,6 @@
 			   , completed_on
 			   , project_status
 		FROM gantt_view
-		<where>
-		    <!-- 일감 상태 -->
-		    <if test="issueStatus != null and issueStatus != ''">
-		        AND status = #{status}
-		    </if>
-		
-		    <!-- 담당자 -->
-		    <if test="assigneeName != null and assigneeName != ''">
-		        AND assignee_name = #{assigneeName}
-		    </if>
-		
-		    <!-- 프로젝트 -->
-		    <if test="projectCode != null">
-		        AND project_code = #{projectCode}
-		    </if>
-		
-		    <!-- 프로젝트 등록일 범위 -->
-		    <if test="createdOnFrom != null and createdOnTo != null">
-	            AND created_on BETWEEN #{createdOnFrom} AND #{createdOnTo}
-	        </if>
-		</where>
 		ORDER BY issue_code
 	</select>
 </mapper>

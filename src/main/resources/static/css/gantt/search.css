@@ -1,0 +1,26 @@
+/* 검색 영역(회색 톤) */
+.search-filters {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 14px 10px;
+  background: #f9fafb;
+}
+
+.search-filters + .card {
+  margin-top: 10px;
+}
+
+.search-filters .form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.search-filters .input-group .btn {
+  white-space: nowrap;
+}
+
+/* 등록일/마감기한 넓이 */
+.search-filters input[type="date"] {
+  min-width: 210px;
+}

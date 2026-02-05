@@ -1,326 +1,214 @@
+/**
+ * Gantt Chart Module
+ * 담당 기능: 데이터 필터링, 트리 구조 변환, 컬러 피커 에디터, 차트 렌더링
+ */
 (() => {
-	//검색조건 HTML 불러오기
-	fetch('search.html')
-		.then(response => response.text())
-		.then(data => {
-			document.getElementById('search').innerHTML = data;
-		});
-	// 기본 초기화
-	window.addEventListener("load", () => {
-		gantt.init("e7eGantt");
-		gantt.setSizes();
-		fData();
-	});
+    /* ========================================================================
+       1. Gantt 기본 환경 설정 (Constants & Config)
+       ======================================================================== */
+    const GANTT_CONFIG = {
+        date_format: "%Y-%m-%d %H:%i",
+        task_date: "%Y년 %m월 %d일",
+        locale: "kr"
+    };
 
-	window.addEventListener("resize", () => {
-		gantt.setSizes();
-	});
+    // 그리드 컬럼 정의
+    const mainGridConfig = {
+        columns: [
+            { name: "text", tree: true, width: 200, label: "작업명" },
+            { name: "priority", label: "우선순위", align: "center", width: 70 },
+            { name: "status", label: "상태", align: "center", width: 70 },
+            {
+                name: "progress", label: "진척도", align: "center", width: 60,
+                template: (t) => `${Math.round((t.progress || 0) * 100)}%`
+            },
+            { name: "start_date", label: "시작일", align: "center", width: 110 },
+            { name: "end_date", label: "종료일", align: "center", width: 110 },
+            { name: "assigneeName", label: "작업자", align: "center", width: 80 },
+            { name: "add", width: 44 }
+        ]
+    };
 
-	// 색깔 에디터 추가
-	let editor;
-	gantt.config.editor_types.color = {
-		show: function(id, column, config, placeholder) {
-			var html =
-				"<div><input type='color' name='" + column.name + "'></div>";
-			placeholder.innerHTML = html;
+    // 레이아웃 구성
+    gantt.config.layout = {
+        css: "gantt_container",
+        rows: [
+            {
+                cols: [
+                    { view: "grid", group: "grids", config: mainGridConfig, scrollY: "scrollVer" },
+                    { resizer: true, width: 1 },
+                    { view: "timeline", id: "timeline", scrollX: "scrollHor", scrollY: "scrollVer" },
+                    { view: "scrollbar", id: "scrollVer" }
+                ]
+            },
+            { view: "scrollbar", id: "scrollHor" }
+        ]
+    };
 
-			editor = $(placeholder)
-				.find("input")
-				.spectrum({
-					change: () => {
-						gantt.ext.inlineEditors.save();
-					},
-				});
+    // 타임라인 스케일 구성
+    gantt.config.scales = [
+        { unit: "month", step: 1, format: "%Y-%m" },
+        { unit: "day", step: 1, format: "%d, %D" }
+    ];
 
-			setTimeout(() => {
-				editor.spectrum("show");
-			});
-		},
-		hide: function() {
-			if (editor) {
-				editor.spectrum("destroy");
-				editor = null;
-			}
-		},
+    gantt.i18n.setLocale(GANTT_CONFIG.locale);
+    gantt.config.date_format = GANTT_CONFIG.date_format;
+    gantt.config.task_date = GANTT_CONFIG.task_date;
 
-		set_value: function(value, id, column, node) {
-			editor.spectrum("set", value);
-		},
+    // 우선순위별 스타일 클래스 매핑
+    gantt.templates.task_class = (start, end, task) => {
+        const priorityMap = { "긴급": "priority-now", "높음": "priority-high", "보통": "priority-medium", "낮음": "priority-low" };
+        return priorityMap[task.priority] || "";
+    };
 
-		get_value: function(id, column, node) {
-			return editor.spectrum("get").toHexString();
-		},
+    /* ========================================================================
+       2. 유틸리티 및 필터 로직 (Business Logic)
+       ======================================================================== */
+    const DateUtils = {
+        // ISO 문자열에서 YYYY-MM-DD만 추출
+        getYYYYMMDD: (d) => d?.split('T')[0] || "",
 
-		is_changed: function(value, id, column, node) {
-			var newValue = this.get_value(id, column, node);
-			return newValue !== value;
-		},
+        // 일감 시작일이 지정된 범위 내에 있는지 검사
+        isDateInRange: (issueStartStr, from, to) => {
+            const target = DateUtils.getYYYYMMDD(issueStartStr);
+            if (!target) return false;
+            if (from && to) return target >= from && target <= to;
+            if (from) return target >= from;
+            if (to) return target <= to;
+            return true;
+        }
+    };
 
-		is_valid: function(value, id, column, node) {
-			var newValue = this.get_value(id, column, node);
-			return !!newValue;
-		},
+    /**
+     * @param {Array} data 원본 데이터
+     * @param {Object} filters 검색 조건 객체
+     * @returns {Array} 필터링된 데이터
+     */
+    const getFilteredData = (data, filters) => {
+        return data.filter(item => {
+            const { projectCode, title, status, priority, assigneeCode, startDateFrom, startDateTo, endDate } = filters;
 
-		save: function(id, column, node) {
-			// only for inputs with map_to:auto. complex save behavior goes here
-		},
-		focus: function(node) {
-			editor.spectrum("show");
-		},
-	};
+            if (projectCode && String(item.projectCode) !== String(projectCode)) return false;
+            if (title && !item.title.toLowerCase().includes(title.toLowerCase())) return false;
+            if (status && item.issueStatus !== status) return false;
+            if (priority && item.priority !== priority) return false;
+            if (assigneeCode && String(item.assigneeCode) !== String(assigneeCode)) return false;
 
-	const colorEditor = {
-		type: "color",
-		map_to: "color",
-	};
+            // 기간 필터
+            if (startDateFrom || startDateTo) {
+                if (!DateUtils.isDateInRange(item.issueStartDate, startDateFrom, startDateTo)) return false;
+            }
+            // 마감일 필터
+            if (endDate && DateUtils.getYYYYMMDD(item.issueEndDate) > endDate) return false;
 
-	var mainGridConfig = {
-		columns: [{
-			name: "text",
-			tree: true,
-			width: 200,
-			label: "작업명"
-		},
+            return true;
+        });
+    };
 
-		{
-			name: "priority",
-			label: "우선순위",
-			align: "center",
-			width: 70
-		},
+    /* ========================================================================
+       3. 데이터 변환 로직 (Data Transformation)
+       ======================================================================== */
+    const transformToGanttFormat = (filteredData) => {
+        const projectMap = new Map();
 
-		{
-			name: "status",
-			label: "상태",
-			align: "center",
-			width: 70
-		},
+        // 1. 프로젝트 단위로 그룹화
+        filteredData.forEach(item => {
+            if (!projectMap.has(item.projectCode)) {
+                projectMap.set(item.projectCode, {
+                    name: item.projectName,
+                    progress: item.projectProgress,
+                    issues: []
+                });
+            }
+            projectMap.get(item.projectCode).issues.push(item);
+        });
 
-		{
-			name: "progress",
-			label: "진척도",
-			align: "center",
-			width: 60,
-			template: (t) => Math.round((t.progress || 0) * 100) + "%",
-		},
+        const finalData = [];
 
-		{
-			name: "start_date",
-			label: "시작일",
-			align: "center",
-			width: 110,
-			template: (t) => t.start_date ? gantt.templates.date_grid(t.start_date) : ""
-		},
+        // 2. 부모-자식 트리 구조 생성
+        projectMap.forEach((project, code) => {
+            let pStart = Infinity;
+            let pEnd = -Infinity;
 
-		{
-			name: "end_date",
-			label: "종료일",
-			align: "center",
-			width: 110,
-			template: (t) => t.end_date ? gantt.templates.date_grid(t.end_date) : ""
-		},
+            const childTasks = project.issues.map(item => {
+                const s = DateUtils.getYYYYMMDD(item.issueStartDate);
+                const e = DateUtils.getYYYYMMDD(item.issueEndDate);
 
-		{
-			name: "assigneeName",
-			label: "작업자",
-			align: "center",
-			width: 80,
-		},
-		{
-			name: "add",
-			width: 44
-		}
-		],
-	};
+                // 부모 프로젝트의 전체 기간 자동 계산을 위한 최소/최대값 갱신
+                if (s) pStart = Math.min(pStart, new Date(s));
+                if (e) pEnd = Math.max(pEnd, new Date(e));
 
-	var resourcePanelConfig = {
-		columns: [{
-			name: "name",
-			label: "Name",
-			align: "center",
-			template: function(resource) {
-				return resource.label;
-			},
-		},
-		{
-			name: "workload",
-			label: "Workload",
-			align: "center",
-			template: function(resource) {
-				var tasks = gantt.getTaskBy("user", resource.id);
+                return {
+                    id: item.issueCode,
+                    text: item.title,
+                    start_date: s ? new Date(s) : null,
+                    end_date: e ? new Date(e) : null,
+                    duration: item.duration || 1,
+                    progress: (item.progress || 0) / 100,
+                    priority: item.priority,
+                    status: item.issueStatus,
+                    assigneeName: item.assigneeName,
+                    user: item.assigneeCode || "0",
+                    parent: `project_${code}`
+                };
+            });
 
-				var totalDuration = 0;
-				for (var i = 0; i < tasks.length; i++) {
-					totalDuration += tasks[i].duration;
-				}
+            // 부모 프로젝트 데이터 구성
+            const parentNode = {
+                id: `project_${code}`,
+                text: project.name,
+                start_date: isFinite(pStart) ? new Date(pStart) : null,
+                end_date: isFinite(pEnd) ? new Date(pEnd) : null,
+                progress: (project.progress || 0) / 100,
+                parent: 0,
+                open: true,
+                type: gantt.config.types.project
+            };
 
-				return (totalDuration || 0) * 8 + "";
-			},
-		},
-		],
-	};
+            finalData.push(parentNode, ...childTasks);
+        });
 
-	gantt.config.layout = {
-		css: "gantt_container",
-		rows: [{
-			cols: [{
-				view: "grid",
-				group: "grids",
-				config: mainGridConfig,
-				scrollY: "scrollVer",
-			},
-			{
-				resizer: true,
-				width: 1,
-				group: "vertical",
-			},
-			{
-				view: "timeline",
-				id: "timeline",
-				scrollX: "scrollHor",
-				scrollY: "scrollVer",
-			},
-			{
-				view: "scrollbar",
-				id: "scrollVer",
-				group: "vertical",
-			},
-			],
-		},
-		{
-			view: "scrollbar",
-			id: "scrollHor",
-		},
-		],
-	};
+        return finalData;
+    };
 
-	// 기본 설정
-	gantt.i18n.setLocale("kr");
+    /* ========================================================================
+       4. 실행부 및 API 연결 (Executions)
+       ======================================================================== */
+    const fData = async (filters = {}) => {
+        try {
+            const response = await fetch("/ganttData");
+            const rawData = await response.json();
 
-	gantt.config.scales = [{
-		unit: "month",
-		step: 1,
-		format: "%Y-%m",
-	},
-	{
-		unit: "day",
-		step: 1,
-		format: "%d, %D",
-	},
-	];
+            const filtered = getFilteredData(rawData, filters);
+            const ganttData = transformToGanttFormat(filtered);
 
-	//날짜 형식
-	gantt.config.date_format = "%Y-%m-%d %H:%i"; // 실제 전달되는 데이타의 start_date등의 포맷
-	gantt.config.task_date = "%Y년 %m월 %d일";
+            gantt.clearAll();
+            gantt.parse({ data: ganttData, links: [] });
+        } catch (e) {
+            console.error("Gantt 데이터 조회 실패:", e);
+        }
+    };
 
-	//===== 우선순위별 색상 템플릿 =====
-	gantt.templates.task_class = function(start, end, task) {
-		if (task.priority === "긴급") return "priority-now";
-		if (task.priority === "높음") return "priority-high";
-		if (task.priority === "보통") return "priority-medium";
-		if (task.priority === "낮음") return "priority-low";
-		return "";
-	};
+    // 전역 노출
+    window.ganttReload = fData;
 
-	// 비동기 데이터 가져오기
-	const fData = async (filters = {}) => {
-		try {
-			// 필터 파라미터를 쿼리스트링으로 변환
-			const queryParams = new URLSearchParams();
-			Object.keys(filters).forEach(key => {
-				if (filters[key]) {
-					queryParams.append(key, filters[key]);
-				}
-			});
-			
-			const queryString = queryParams.toString();
-			const url = queryString ? `/ganttData?${queryString}` : '/ganttData';
-			
-			let response = await fetch("/ganttData");
-			let rawData = await response.json();
+    // 초기 실행 환경 조성
+    const initApp = () => {
+        // 검색 폼 HTML 로드
+        fetch('search.html')
+            .then(res => res.text())
+            .then(html => document.getElementById('search').innerHTML = html);
 
-			// 프로젝트별로 그룹화
-			let projectMap = new Map();
+        // 간트 초기화
+        window.addEventListener("load", () => {
+            gantt.init("e7eGantt");
+            gantt.setSizes();
+            fData();
+        });
 
-			rawData.forEach((item) => {
-				if (!projectMap.has(item.projectCode)) {
-					projectMap.set(item.projectCode, {
-						projectName: item.projectName,
-						issues: [],
-					});
-				}
-				projectMap.get(item.projectCode).issues.push(item);
-			});
+        window.addEventListener("resize", () => gantt.setSizes());
+    };
 
-			// dhtmlxGantt 형식으로 데이터 변환
-			let transformedData = {
-				data: [],
-				links: [],
-			};
+    initApp();
 
-			// 프로젝트와 일감을 트리 구조로 생성
-			projectMap.forEach((project, projectCode) => {
-
-				const startTimes = project.issues
-					.map(i => i.issueStartDate)
-					.filter(Boolean)
-					.map(d => new Date(d).getTime());
-
-				const endTimes = project.issues
-					.map(i => i.issueEndDate)
-					.filter(Boolean)
-					.map(d => new Date(d).getTime());
-
-				const projectStart = startTimes.length ?
-					new Date(Math.min(...startTimes)) :
-					null;
-
-				const projectEnd = endTimes.length ?
-					new Date(Math.max(...endTimes)) :
-					null;
-
-				const projectProgress =
-					project.issues[0]?.projectProgress ?? 0;
-
-				// 프로젝트 (부모)
-				transformedData.data.push({
-					id: "project_" + projectCode,
-					text: project.projectName,
-					start_date: projectStart,
-					end_date: projectEnd,
-					progress: projectProgress / 100,
-					parent: 0,
-					open: true,
-					type: gantt.config.types.project,
-				});
-
-				// 일감들 (자식)
-				project.issues.forEach((item) => {
-					transformedData.data.push({
-						id: item.issueCode,
-						text: item.title,
-						start_date: item.issueStartDate ?
-							new Date(item.issueStartDate) : null,
-						end_date: item.issueEndDate ?
-							new Date(item.issueEndDate) : null,
-						duration: item.duration || 1,
-						progress: (item.progress || 0) / 100,
-						priority: item.priority || "",
-						status: item.issueStatus || "",
-						assigneeName: item.assigneeName || "",
-						user: item.assigneeCode ?? "0",
-						parent: "project_" + projectCode
-					});
-				});
-			});
-
-			gantt.clearAll();
-			gantt.parse(transformedData);
-		} catch (error) {
-			console.error("데이터 로딩 실패:", error);
-		}
-	};
-	
-	// search.js에서 호출할 수 있도록 전역 함수로 노출
-	window.ganttReload = fData;
 })();

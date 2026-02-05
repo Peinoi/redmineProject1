@@ -30,8 +30,4 @@ public class GanttVO {
 	private Date projectEndDate;   // 프로젝트 종료일
     private Date issueStartDate;   // 일감 시작일
     private Date issueEndDate;     // 일감 종료일
-	
-	// 검색 조건
-    private Date createdOnFrom;  // 프로젝트 등록일 조회시작날짜
-    private Date createdOnTo;    // 프로젝트 등록일 조회종료날짜
 }
