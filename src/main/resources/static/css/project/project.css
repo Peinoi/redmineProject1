@@ -1,19 +1,68 @@
-.x-page-title {
-  margin: 14px 0 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+a, a:hover, a:visited, a:active {
+	color: inherit;
+	text-decoration: none;
 }
 
-.x-page-title .page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.2px;
+
+/* 역할 라디오 버튼 그룹 스타일 */
+.role-group {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
 }
 
-.x-page-title .page-title-sub {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6b7280;
+.role-group .form-check {
+	margin-bottom: 0;
+}
+
+/* 비활성화된 라디오 버튼 스타일 */
+.role-radio:disabled+label {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* 활성화된 라디오 버튼 스타일 */
+.role-radio:not(:disabled)+label {
+	cursor: pointer;
+}
+/* 테이블 헤더 고정 */
+.sticky-top {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background-color: #f8f9fa;
+}
+
+/* 역할 체크박스 스타일 */
+#roleSelectList .form-check {
+	min-width: 150px;
+}
+
+/* 체크박스 hover 효과 */
+.member-checkbox:hover, .role-checkbox:hover {
+	cursor: pointer;
+}
+
+/* 테이블 행 hover 효과 */
+#memberSelectTable tbody tr:hover {
+	background-color: #f8f9fa;
+}
+
+/* 탭 메뉴 활성화 스타일 커스텀 */
+.tabnav .nav-item.active .nav-link {
+    background-color: #0d6efd !important; /* 부트스트랩 기본 파란색 */
+    color: white !important;               /* 글자색 흰색 */
+    border-color: #0d6efd !important;
+    font-weight: bold;
+}
+
+/* 마우스를 올렸을 때(Hover) 약간 더 진한 파란색 효과 (선택사항) */
+.tabnav .nav-link:hover {
+    background-color: #f8f9fa;
+}
+
+/* 비활성 탭 스타일 정리 */
+.tabnav .nav-link {
+    color: #495057;
+    transition: all 0.2s ease; /* 부드러운 색상 전환 */
 }

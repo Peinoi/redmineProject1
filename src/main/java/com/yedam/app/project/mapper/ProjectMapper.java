@@ -3,7 +3,13 @@ package com.yedam.app.project.mapper;
 import java.util.List;
 
 import com.yedam.app.project.service.ProjectVO;
+import com.yedam.app.project.service.RoleVO;
+import com.yedam.app.project.service.UserVO;
 
 public interface ProjectMapper {
 	public List<ProjectVO> selectAll();
+
+	public List<UserVO> userAll();
+
+	public List<RoleVO> roleAll();
 }

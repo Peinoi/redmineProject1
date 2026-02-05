@@ -6,42 +6,140 @@
 <head>
 <meta charset="UTF-8">
 <title>projects</title>
-<script
-	src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js" />
+<link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
+<link rel="stylesheet" th:href="@{/css/project/project.css}">
 </head>
 <body>
 	<div id="container">
-		<form th:action="@{/post/save}" method="post">
-			<textarea name="content" id="editor" th:text="${data}"></textarea>
-			<button type="submit">저장</button>
-		</form>
-		<table>
-			<thead>
-				<tr>
-					<th>번호</th>
-					<th>프로젝트명</th>
-					<th>등록일</th>
-					<th>관리자</th>
-					<th>관리자번호</th>
-					<th>관리자메일</th>
-					<th>관리자상태</th>
-					<th>삭제</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="pro, status : ${list}">
-					<td>[[ ${status.index+1} ]]</td>
-					<td>[[ ${pro.projectName} ]]</td>
-					<td>[[ ${#dates.format(pro.createdOn, 'yyyy년 MM월 dd일')} ]]</td>
-					<td>[[ ${pro.name} ]]</td>
-					<td>[[ ${pro.phone} ]]</td>
-					<td>[[ ${pro.email} ]]</td>
-					<td>[[ ${pro.codeName} ]]</td>
-					<td><button>삭제</button></td>
-				</tr>
-			</tbody>
-		</table>
-	</div>
-	<script th:src="@{/js/ckeditor5.js}"></script>
+		<div class="x-page-title">
+			<h3 class="page-title">프로젝트 목록</h3>
+			<div class="page-title-sub">프로젝트별 진행 상태 및 기본 정보를 조회할 수 있습니다.</div>
+		</div>
+		<div class="issue-filters mb-3 mt-3">
+			<div class="row g-2 align-items-end">
+
+				<!--입력 검색 -->
+				<div class="col-12 col-md-3">
+					<label class="form-label">프로젝트명</label> <input type="text"
+						id="filterTitle" class="form-control" placeholder="프로젝트명 입력">
+				</div>
+
+
+				<!-- 셀렉트 옵션 검색 -->
+				<div class="col-12 col-md-2">
+					<label class="form-label">상태</label> <select id="filterPriority"
+						class="form-select">
+						<option value="">전체</option>
+						<option value="OD1">진행</option>
+						<option value="OD2">중지</option>
+						<option value="OD3">종료</option>
+					</select>
+				</div>
+
+				<!-- 모달 담당자 선택 검색 -->
+
+				<div class="col-12 col-md-3">
+					<label class="form-label">담당자</label>
+					<div class="input-group">
+						<input type="text" id="filterAssigneeText" class="form-control"
+							placeholder="담당자 선택" readonly> <input type="hidden"
+							id="filterAssigneeValue">
+						<button type="button" class="btn btn-secondary"
+							id="btnOpenAssigneeModal">선택</button>
+					</div>
+				</div>
+			</div>
+			<div class="d-flex justify-content-between align-items-center mt-3">
+				<div class="d-flex gap-2">
+					<button type="button" class="btn btn-success">
+						<a th:href="@{/projectadd}">프로젝트 등록</a>
+					</button>
+				</div>
+				<div class="col-auto d-flex gap-2 ms-auto">
+					<button type="button" class="btn btn-secondary"
+						id="btnResetFilters">초기화</button>
+					<button type="button" class="btn btn-primary" id="btnApplyFilters">조회</button>
+				</div>
+			</div>
+
+		</div>
+
+		<form id="issueDeleteForm" th:action="@{/issueDelete}" method="post"
+			style="display: none;"></form>
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-table me-1"></i> 프로젝트 목록
+				</div>
+				<div class="text-muted small" id="projectPageInfo"></div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle" id="issueTable">
+						<thead class="table-light">
+							<tr>
+
+								<th>번호</th>
+								<th>프로젝트명</th>
+								<th>등록일</th>
+								<th>관리자</th>
+								<th>관리자번호</th>
+								<th>관리자메일</th>
+								<th>진행 상태</th>
+								<th>종료</th>
+								<th>삭제</th>
+							</tr>
+						</thead>
+
+						<tbody id="projectTbody">
+							<tr class="projectRow" th:each="pro, status : ${list}">
+
+								<td>[[ ${status.index+1} ]]</td>
+								<td>[[ ${pro.projectName} ]]</td>
+								<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
+								<td>[[ ${pro.name} ]]</td>
+								<td>[[ ${pro.phone} ]]</td>
+								<td>[[ ${pro.email} ]]</td>
+								<td>[[ ${pro.codeName} ]]</td>
+								<td><button class="btn btn-success">종료</button></td>
+								<td><button class="btn btn-danger">삭제</button></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<!-- 페이징 -->
+				<nav class="d-flex justify-content-center mt-3 mb-3">
+					<ul class="pagination mb-0" id="projectPagination"></ul>
+				</nav>
+			</div>
+
+		</div>
+
+		<!-- 모달창 -->
+		<div class="modal fade" id="creatorSelectModal" tabindex="-1"
+			aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">관리자 선택</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"
+							aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<input type="text" id="creatorModalSearch"
+							class="form-control mb-2" placeholder="관리자명 검색">
+						<div class="list-group" id="creatorModalList"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<script
+			src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+			crossorigin="anonymous"></script>
+		<script th:src="@{/js/scripts.js}"></script>
+
+		<script th:src="@{/js/project/project.js}"></script>
 </body>
 </html>
