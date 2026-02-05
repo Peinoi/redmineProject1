@@ -23,7 +23,7 @@ public class GanttController {
 		return ganttService.getGanttList(ganttVO);
 	}
 	
-	@GetMapping("ganttList")
+	@GetMapping("ganttChart")
 	public String ganttList() {
 		return "gantt/list";
 	}

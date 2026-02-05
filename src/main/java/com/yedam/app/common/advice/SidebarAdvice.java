@@ -21,13 +21,13 @@ public class SidebarAdvice {
         boolean inProjectArea =
                 uri.equals("/projects")
              || uri.startsWith("/projects/")
-             || uri.equals("/issues")
-             || uri.equals("/my-schedule")
-             || uri.equals("/schedule")
-             || uri.equals("/calendar")
-             || uri.equals("/notice")
-             || uri.equals("/docs")
-             || uri.equals("/settings");
+             || uri.equals("/issueList")
+             || uri.equals("/kanbanboard")
+             || uri.equals("/ganttChart")
+             || uri.equals("/")
+             || uri.equals("/noticeList")
+             || uri.equals("/")
+             || uri.equals("/projects");
 
         model.addAttribute("inProjectArea", inProjectArea);
 	}
