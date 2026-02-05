@@ -5,12 +5,12 @@ import java.util.List;
 import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectVO;
 import com.yedam.app.project.service.RoleVO;
-import com.yedam.app.project.service.UserVO;
+import com.yedam.app.project.service.PruserVO;
 
 public interface ProjectMapper {
 	public List<ProjectVO> selectAll();
 
-	public List<UserVO> userAll();
+	public List<PruserVO> userAll();
 
 	public List<RoleVO> roleAll();
 

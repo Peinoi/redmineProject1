@@ -14,7 +14,7 @@ import lombok.ToString;
 @ToString
 @EqualsAndHashCode
 @RequiredArgsConstructor
-public class UserVO {
+public class PruserVO {
 	private Integer userCode; // 회원 코드
 	private Integer employeeNo; // 사번 (아이디 역할도 함)
 	private String name; // 이름

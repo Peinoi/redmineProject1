@@ -5,7 +5,7 @@ import java.util.List;
 public interface ProjectService {
 	public List<ProjectVO> findAll();
 
-	public List<UserVO> userFindAll();
+	public List<PruserVO> userFindAll();
 
 	public List<RoleVO> roleFindAll();
 

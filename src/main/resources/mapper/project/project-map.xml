@@ -25,7 +25,7 @@
 		,explanation
 		FROM role
 	</select>
-	<select id="userAll" resultType="UserVO">
+	<select id="userAll" resultType="PruserVO">
 		SELECT
 		user_code
 		,employee_no

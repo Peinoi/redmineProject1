@@ -9,7 +9,7 @@ import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectService;
 import com.yedam.app.project.service.ProjectVO;
 import com.yedam.app.project.service.RoleVO;
-import com.yedam.app.project.service.UserVO;
+import com.yedam.app.project.service.PruserVO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,7 +25,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public List<UserVO> userFindAll() {
+	public List<PruserVO> userFindAll() {
 		return projectMapper.userAll();
 	}
 
