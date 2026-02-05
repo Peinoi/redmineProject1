@@ -1,35 +1,34 @@
+// /js/issue/issue-list.js
 (() => {
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
 
   const pageSize = 10;
-
-  const rowsAll = () => $$("#issueTbody tr.issueRow");
-  const rowsVisible = () => rowsAll().filter((tr) => tr.dataset.filtered !== "1");
+  let page = 1;
 
   const ui = {
+    tbody: $("#issueTbody"),
     chkAll: $("#chkAll"),
     pagination: $("#issuePagination"),
     pageInfo: $("#issuePageInfo"),
 
+    // filters
     projectText: $("#filterProjectText"),
     projectValue: $("#filterProjectValue"),
     title: $("#filterTitle"),
     status: $("#filterStatus"),
     priority: $("#filterPriority"),
-
     assigneeText: $("#filterAssigneeText"),
     assigneeValue: $("#filterAssigneeValue"),
-
     creatorText: $("#filterCreatorText"),
     creatorValue: $("#filterCreatorValue"),
-
     createdAt: $("#filterCreatedAt"),
     dueAt: $("#filterDueAt"),
 
     btnApply: $("#btnApplyFilters"),
     btnReset: $("#btnResetFilters"),
 
+    // modals
     btnProjectModal: $("#btnOpenProjectModal"),
     btnAssigneeModal: $("#btnOpenAssigneeModal"),
     btnCreatorModal: $("#btnOpenCreatorModal"),
@@ -45,7 +44,14 @@
     projectModalSearch: $("#projectModalSearch"),
     assigneeModalSearch: $("#assigneeModalSearch"),
     creatorModalSearch: $("#creatorModalSearch"),
+
+    // actions
+    btnCreate: $("#btnIssueCreate"),
+    btnDelete: $("#btnIssueDelete"),
+    deleteForm: $("#issueDeleteForm"),
   };
+
+  if (!ui.tbody) return;
 
   const STATUS_LABEL = {
     OB1: "신규",
@@ -54,225 +60,90 @@
     OB4: "반려",
     OB5: "완료",
   };
+  const PRIORITY_LABEL = { OA1: "긴급", OA2: "높음", OA3: "보통", OA4: "낮음" };
 
-  const PRIORITY_LABEL = {
-    OA1: "긴급",
-    OA2: "높음",
-    OA3: "보통",
-    OA4: "낮음",
-  };
+  const rows = () => $$("#issueTbody tr.issueRow");
+  const visibleRows = () => rows().filter((tr) => tr.dataset.filtered !== "1");
 
-  let currentPage = 1;
-
-  const projectModal = new bootstrap.Modal(ui.projectModalEl);
-  const assigneeModal = new bootstrap.Modal(ui.assigneeModalEl);
-  const creatorModal = new bootstrap.Modal(ui.creatorModalEl);
-
-  // 프로젝트 모달 캐시
-  let projectCache = [];
-
-  // 유저 모달(담당자/등록자) 캐시
-  let userCache = [];
-
-  function rowData(tr) {
+  const getRow = (tr) => {
     const d = tr.dataset;
     return {
       project: (d.project || "").trim(),
       projectCode: (d.projectCode || "").trim(),
-      title: (d.title || "").trim(),
-      status: (d.status || "").trim(),
-      priority: (d.priority || "").trim(),
-
-      // 이름(표시용)
-      assignee: (d.assignee || "").trim(),
-      creator: (d.creator || "").trim(),
-
-      // 코드(필터용)
+      title: (d.title || "").trim().toLowerCase(),
+      status: (d.status || "").trim(), // 라벨(신규/진행/...)
+      priority: (d.priority || "").trim(), // 라벨(긴급/높음/...)
       assigneeCode: (d.assigneeCode || "").trim(),
       creatorCode: (d.creatorCode || "").trim(),
-
       created: (d.created || "").trim(),
       due: (d.due || "").trim(),
     };
-  }
+  };
 
-  function sameDay(rowDate, filterDate) {
+  const sameDay = (rowDate, filterDate) => {
     if (!filterDate) return true;
     if (!rowDate) return false;
     return rowDate.slice(0, 10) === filterDate;
-  }
+  };
 
-  // 프로젝트 모달 렌더
-  function renderProjectModalList(items) {
-    ui.projectModalList.innerHTML = "";
+  // ---------- pagination ----------
+  const renderPagination = (totalPages) => {
+    ui.pagination.innerHTML = "";
+    if (totalPages <= 1) return;
 
-    if (!items.length) {
-      const empty = document.createElement("div");
-      empty.className = "text-muted";
-      empty.textContent = "결과가 없습니다.";
-      ui.projectModalList.appendChild(empty);
-      return;
-    }
+    const addBtn = (label, nextPage, disabled, active) => {
+      const li = document.createElement("li");
+      li.className = "page-item";
+      if (disabled) li.classList.add("disabled");
+      if (active) li.classList.add("active");
 
-    items.forEach((it) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "list-group-item list-group-item-action";
-      btn.textContent = it.name;
+      btn.className = "page-link";
+      btn.textContent = label;
       btn.addEventListener("click", () => {
-        ui.projectText.value = it.name;
-        ui.projectValue.value = String(it.code);
-        projectModal.hide();
-      });
-      ui.projectModalList.appendChild(btn);
-    });
-  }
-
-  async function openProjectModal() {
-    ui.projectModalSearch.value = "";
-
-    if (projectCache.length === 0) {
-      const res = await fetch("/api/projects/modal", {
-        headers: { Accept: "application/json" },
+        if (disabled) return;
+        page = nextPage;
+        ui.chkAll.checked = false;
+        render();
       });
 
-      if (!res.ok) {
-        alert("프로젝트 목록을 불러오지 못했습니다.");
-        return;
-      }
+      li.appendChild(btn);
+      ui.pagination.appendChild(li);
+    };
 
-      const projects = await res.json();
-      projectCache = projects.map((p) => ({
-        code: p.projectCode,
-        name: p.projectName,
-      }));
+    addBtn("이전", Math.max(1, page - 1), page === 1, false);
+    for (let p = 1; p <= totalPages; p++)
+      addBtn(String(p), p, false, p === page);
+    addBtn("다음", Math.min(totalPages, page + 1), page === totalPages, false);
+  };
+
+  const render = () => {
+    const list = visibleRows();
+    const total = list.length;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    if (page > totalPages) page = totalPages;
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    rows().forEach((tr) => (tr.style.display = "none"));
+    list.slice(start, end).forEach((tr) => (tr.style.display = ""));
+
+    renderPagination(totalPages);
+
+    if (ui.pageInfo) {
+      const from = total === 0 ? 0 : start + 1;
+      const to = Math.min(end, total);
+      ui.pageInfo.textContent = `${from}-${to} / ${total}`;
     }
+  };
 
-    renderProjectModalList(projectCache);
-    projectModal.show();
-  }
-
-  // 유저 캐시 로드
-  async function ensureUserCache() {
-    if (userCache.length > 0) return true;
-
-    const res = await fetch("/api/users/modal", {
-      headers: { Accept: "application/json" },
-    });
-
-    if (!res.ok) {
-      alert("사용자 목록을 불러오지 못했습니다.");
-      return false;
-    }
-
-    const users = await res.json();
-    userCache = users.map((u) => ({
-      code: String(u.userCode),
-      name: u.userName,
-    }));
-    return true;
-  }
-
-  // 유저 모달 렌더 (미할당 옵션 제거 버전)
-  function renderUserModalList(listEl, items, onPick) {
-    listEl.innerHTML = "";
-
-    if (!items.length) {
-      const empty = document.createElement("div");
-      empty.className = "text-muted";
-      empty.textContent = "결과가 없습니다.";
-      listEl.appendChild(empty);
-      return;
-    }
-
-    items.forEach((u) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action";
-      btn.textContent = u.name;
-      btn.addEventListener("click", () => onPick(u));
-      listEl.appendChild(btn);
-    });
-  }
-
-  async function openAssigneeModal() {
-    ui.assigneeModalSearch.value = "";
-
-    const ok = await ensureUserCache();
-    if (!ok) return;
-
-    renderUserModalList(ui.assigneeModalList, userCache, (picked) => {
-      ui.assigneeText.value = picked.name;
-      ui.assigneeValue.value = picked.code;
-      assigneeModal.hide();
-    });
-
-    assigneeModal.show();
-  }
-
-  async function openCreatorModal() {
-    ui.creatorModalSearch.value = "";
-
-    const ok = await ensureUserCache();
-    if (!ok) return;
-
-    renderUserModalList(ui.creatorModalList, userCache, (picked) => {
-      ui.creatorText.value = picked.name;
-      ui.creatorValue.value = picked.code;
-      creatorModal.hide();
-    });
-
-    creatorModal.show();
-  }
-
-  function bindProjectModalSearch() {
-    ui.projectModalSearch.addEventListener("input", () => {
-      const q = ui.projectModalSearch.value.trim().toLowerCase();
-      const filtered = projectCache.filter((p) =>
-        String(p.name).toLowerCase().includes(q)
-      );
-      renderProjectModalList(filtered);
-    });
-  }
-
-  // 담당자/등록자 모달 검색
-  function bindUserModalSearch() {
-    ui.assigneeModalSearch.addEventListener("input", async () => {
-      const ok = await ensureUserCache();
-      if (!ok) return;
-
-      const q = ui.assigneeModalSearch.value.trim().toLowerCase();
-      const filtered = userCache.filter((u) =>
-        String(u.name).toLowerCase().includes(q)
-      );
-
-      renderUserModalList(ui.assigneeModalList, filtered, (picked) => {
-        ui.assigneeText.value = picked.name;
-        ui.assigneeValue.value = picked.code;
-        assigneeModal.hide();
-      });
-    });
-
-    ui.creatorModalSearch.addEventListener("input", async () => {
-      const ok = await ensureUserCache();
-      if (!ok) return;
-
-      const q = ui.creatorModalSearch.value.trim().toLowerCase();
-      const filtered = userCache.filter((u) =>
-        String(u.name).toLowerCase().includes(q)
-      );
-
-      renderUserModalList(ui.creatorModalList, filtered, (picked) => {
-        ui.creatorText.value = picked.name;
-        ui.creatorValue.value = picked.code;
-        creatorModal.hide();
-      });
-    });
-  }
-
-  function applyFilters() {
+  // ---------- filtering ----------
+  const applyFilters = () => {
     const pCode = ui.projectValue.value.trim();
-    const t = ui.title.value.trim().toLowerCase();
+    const pName = ui.projectText.value.trim();
+    const title = ui.title.value.trim().toLowerCase();
 
     const sCode = ui.status.value.trim();
     const prCode = ui.priority.value.trim();
@@ -285,169 +156,270 @@
     const created = ui.createdAt.value.trim();
     const due = ui.dueAt.value.trim();
 
-    rowsAll().forEach((tr) => {
-      const d = rowData(tr);
+    rows().forEach((tr) => {
+      const d = getRow(tr);
       let ok = true;
 
       if (pCode) {
-        if (d.projectCode) {
-          if (d.projectCode !== pCode) ok = false;
-        } else {
-          if (d.project !== ui.projectText.value.trim()) ok = false;
-        }
+        // projectCode가 있으면 code로 우선 비교, 없으면 텍스트로 비교
+        ok =
+          ok && (d.projectCode ? d.projectCode === pCode : d.project === pName);
       }
 
-      if (t && !d.title.toLowerCase().includes(t)) ok = false;
+      if (title) ok = ok && d.title.includes(title);
+      if (sLabel) ok = ok && d.status === sLabel;
+      if (prLabel) ok = ok && d.priority === prLabel;
 
-      if (sLabel && d.status !== sLabel) ok = false;
-      if (prLabel && d.priority !== prLabel) ok = false;
+      if (aCode) ok = ok && d.assigneeCode === aCode;
+      if (cCode) ok = ok && d.creatorCode === cCode;
 
-      if (aCode && (d.assigneeCode || "") !== aCode) ok = false;
-      if (cCode && (d.creatorCode || "") !== cCode) ok = false;
-
-      if (!sameDay(d.created, created)) ok = false;
-      if (!sameDay(d.due, due)) ok = false;
+      ok = ok && sameDay(d.created, created);
+      ok = ok && sameDay(d.due, due);
 
       tr.dataset.filtered = ok ? "0" : "1";
     });
 
-    currentPage = 1;
+    page = 1;
     ui.chkAll.checked = false;
-    renderPage();
-  }
+    render();
+  };
 
-  function resetFilters() {
-    ui.projectText.value = "";
-    ui.projectValue.value = "";
-    ui.title.value = "";
-    ui.status.value = "";
-    ui.priority.value = "";
-    ui.assigneeText.value = "";
-    ui.assigneeValue.value = "";
-    ui.creatorText.value = "";
-    ui.creatorValue.value = "";
-    ui.createdAt.value = "";
-    ui.dueAt.value = "";
+  const resetFilters = () => {
+    [
+      ui.projectText,
+      ui.projectValue,
+      ui.title,
+      ui.status,
+      ui.priority,
+      ui.assigneeText,
+      ui.assigneeValue,
+      ui.creatorText,
+      ui.creatorValue,
+      ui.createdAt,
+      ui.dueAt,
+    ].forEach((el) => {
+      if (!el) return;
+      el.value = "";
+    });
 
-    rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
+    rows().forEach((tr) => (tr.dataset.filtered = "0"));
     ui.chkAll.checked = false;
-    currentPage = 1;
-    renderPage();
-  }
+    page = 1;
+    render();
+  };
 
-  function renderPagination(totalPages) {
-    ui.pagination.innerHTML = "";
-    if (totalPages <= 1) return;
+  // ---------- checkbox ----------
+  const currentPageRows = () =>
+    rows().filter((tr) => tr.style.display !== "none");
 
-    const makeItem = (label, page, disabled, active) => {
-      const li = document.createElement("li");
-      li.className = "page-item";
-      if (disabled) li.classList.add("disabled");
-      if (active) li.classList.add("active");
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "page-link";
-      btn.textContent = label;
-      btn.addEventListener("click", () => {
-        if (disabled) return;
-        currentPage = page;
-        ui.chkAll.checked = false;
-        renderPage();
-      });
-
-      li.appendChild(btn);
-      return li;
-    };
-
-    ui.pagination.appendChild(
-      makeItem("이전", Math.max(1, currentPage - 1), currentPage === 1, false)
-    );
-
-    for (let p = 1; p <= totalPages; p++) {
-      ui.pagination.appendChild(makeItem(String(p), p, false, p === currentPage));
-    }
-
-    ui.pagination.appendChild(
-      makeItem("다음", Math.min(totalPages, currentPage + 1), currentPage === totalPages, false)
-    );
-  }
-
-  function renderPage() {
-    const visible = rowsVisible();
-    const total = visible.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
-    if (currentPage > totalPages) currentPage = totalPages;
-
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
-
-    rowsAll().forEach((tr) => {
-      tr.style.display = "none";
-    });
-
-    visible.slice(start, end).forEach((tr) => {
-      tr.style.display = "";
-    });
-
-    renderPagination(totalPages);
-
-    if (ui.pageInfo) {
-      const from = total === 0 ? 0 : start + 1;
-      const to = Math.min(end, total);
-      ui.pageInfo.textContent = `${from}-${to} / ${total}`;
-    }
-  }
-
-  function getCurrentPageRows() {
-    return rowsAll().filter((tr) => tr.style.display !== "none");
-  }
-
-  function setCurrentPageChecks(checked) {
-    getCurrentPageRows().forEach((tr) => {
-      const cb = tr.querySelector(".row-check");
-      if (cb) cb.checked = checked;
-    });
-  }
-
-  function syncChkAllState() {
-    const cbs = getCurrentPageRows()
+  const syncChkAll = () => {
+    const cbs = currentPageRows()
       .map((tr) => tr.querySelector(".row-check"))
       .filter(Boolean);
 
-    if (cbs.length === 0) {
-      ui.chkAll.checked = false;
+    ui.chkAll.checked = cbs.length > 0 && cbs.every((cb) => cb.checked);
+  };
+
+  // ---------- modals ----------
+  const projectModal = ui.projectModalEl
+    ? new bootstrap.Modal(ui.projectModalEl)
+    : null;
+  const assigneeModal = ui.assigneeModalEl
+    ? new bootstrap.Modal(ui.assigneeModalEl)
+    : null;
+  const creatorModal = ui.creatorModalEl
+    ? new bootstrap.Modal(ui.creatorModalEl)
+    : null;
+
+  let projectCache = [];
+  let userCache = [];
+
+  const renderListButtons = (listEl, items, onPick) => {
+    listEl.innerHTML = "";
+    if (!items.length) {
+      const div = document.createElement("div");
+      div.className = "text-muted";
+      div.textContent = "결과가 없습니다.";
+      listEl.appendChild(div);
       return;
     }
+    items.forEach((it) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "list-group-item list-group-item-action";
+      btn.textContent = it.name;
+      btn.addEventListener("click", () => onPick(it));
+      listEl.appendChild(btn);
+    });
+  };
 
-    ui.chkAll.checked = cbs.every((cb) => cb.checked);
-  }
+  const openProjectModal = async () => {
+    if (!projectModal) return;
+    ui.projectModalSearch.value = "";
 
-  ui.btnApply.addEventListener("click", applyFilters);
-  ui.btnReset.addEventListener("click", resetFilters);
-
-  ui.btnProjectModal.addEventListener("click", openProjectModal);
-  ui.btnAssigneeModal.addEventListener("click", openAssigneeModal);
-  ui.btnCreatorModal.addEventListener("click", openCreatorModal);
-
-  bindProjectModalSearch();
-  bindUserModalSearch();
-
-  ui.chkAll.addEventListener("change", (e) => {
-    setCurrentPageChecks(e.target.checked);
-  });
-
-  $("#issueTbody").addEventListener("change", (e) => {
-    if (e.target && e.target.classList.contains("row-check")) {
-      syncChkAllState();
+    if (projectCache.length === 0) {
+      const res = await fetch("/api/projects/modal", {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return alert("프로젝트 목록을 불러오지 못했습니다.");
+      const data = await res.json();
+      projectCache = data.map((p) => ({
+        code: String(p.projectCode),
+        name: p.projectName,
+      }));
     }
+
+    renderListButtons(ui.projectModalList, projectCache, (picked) => {
+      ui.projectText.value = picked.name;
+      ui.projectValue.value = picked.code;
+      projectModal.hide();
+    });
+
+    projectModal.show();
+  };
+
+  const ensureUserCache = async () => {
+    if (userCache.length > 0) return true;
+    const res = await fetch("/api/users/modal", {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) {
+      alert("사용자 목록을 불러오지 못했습니다.");
+      return false;
+    }
+    const data = await res.json();
+    userCache = data.map((u) => ({
+      code: String(u.userCode),
+      name: u.userName,
+    }));
+    return true;
+  };
+
+  const openUserModal = async (type) => {
+    const modal = type === "assignee" ? assigneeModal : creatorModal;
+    const listEl =
+      type === "assignee" ? ui.assigneeModalList : ui.creatorModalList;
+    const searchEl =
+      type === "assignee" ? ui.assigneeModalSearch : ui.creatorModalSearch;
+
+    if (!modal) return;
+
+    searchEl.value = "";
+    const ok = await ensureUserCache();
+    if (!ok) return;
+
+    const onPick = (picked) => {
+      if (type === "assignee") {
+        ui.assigneeText.value = picked.name;
+        ui.assigneeValue.value = picked.code;
+      } else {
+        ui.creatorText.value = picked.name;
+        ui.creatorValue.value = picked.code;
+      }
+      modal.hide();
+    };
+
+    renderListButtons(listEl, userCache, onPick);
+    modal.show();
+  };
+
+  // ---------- row click -> detail ----------
+  const goDetail = (tr) => {
+    const code = tr.querySelector(".row-check")?.value;
+    if (!code) return;
+    location.href = `/issueInfo?issueCode=${encodeURIComponent(code)}`;
+  };
+
+  // ---------- delete ----------
+  const submitDelete = () => {
+    if (!ui.deleteForm) return;
+
+    const checked = $$(".row-check:checked")
+      .map((cb) => cb.value)
+      .filter((v) => v && v.trim() !== "");
+
+    if (checked.length === 0) return alert("삭제할 일감을 선택해 주세요.");
+    if (!confirm(`${checked.length}건을 삭제할까요?`)) return;
+
+    ui.deleteForm.innerHTML = "";
+    checked.forEach((code) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "issueCodes";
+      input.value = code;
+      ui.deleteForm.appendChild(input);
+    });
+
+    ui.deleteForm.submit();
+  };
+
+  // ---------- bind ----------
+  ui.btnApply?.addEventListener("click", applyFilters);
+  ui.btnReset?.addEventListener("click", resetFilters);
+
+  ui.btnProjectModal?.addEventListener("click", openProjectModal);
+  ui.btnAssigneeModal?.addEventListener("click", () =>
+    openUserModal("assignee"),
+  );
+  ui.btnCreatorModal?.addEventListener("click", () => openUserModal("creator"));
+
+  ui.projectModalSearch?.addEventListener("input", () => {
+    const q = ui.projectModalSearch.value.trim().toLowerCase();
+    const list = projectCache.filter((p) => p.name.toLowerCase().includes(q));
+    renderListButtons(ui.projectModalList, list, (picked) => {
+      ui.projectText.value = picked.name;
+      ui.projectValue.value = picked.code;
+      projectModal?.hide();
+    });
   });
 
-  ["#filterTitle", "#filterProjectText", "#filterAssigneeText", "#filterCreatorText"].forEach((sel) => {
-    const el = $(sel);
-    if (!el) return;
-    el.addEventListener("keydown", (e) => {
+  ui.assigneeModalSearch?.addEventListener("input", async () => {
+    const ok = await ensureUserCache();
+    if (!ok) return;
+    const q = ui.assigneeModalSearch.value.trim().toLowerCase();
+    const list = userCache.filter((u) => u.name.toLowerCase().includes(q));
+    renderListButtons(ui.assigneeModalList, list, (picked) => {
+      ui.assigneeText.value = picked.name;
+      ui.assigneeValue.value = picked.code;
+      assigneeModal?.hide();
+    });
+  });
+
+  ui.creatorModalSearch?.addEventListener("input", async () => {
+    const ok = await ensureUserCache();
+    if (!ok) return;
+    const q = ui.creatorModalSearch.value.trim().toLowerCase();
+    const list = userCache.filter((u) => u.name.toLowerCase().includes(q));
+    renderListButtons(ui.creatorModalList, list, (picked) => {
+      ui.creatorText.value = picked.name;
+      ui.creatorValue.value = picked.code;
+      creatorModal?.hide();
+    });
+  });
+
+  ui.chkAll?.addEventListener("change", (e) => {
+    currentPageRows().forEach((tr) => {
+      const cb = tr.querySelector(".row-check");
+      if (cb) cb.checked = e.target.checked;
+    });
+  });
+
+  // tbody 이벤트는 위임으로 한 번에 처리
+  ui.tbody.addEventListener("click", (e) => {
+    // 체크박스/라벨/버튼/링크 클릭은 상세 이동 막기
+    if (e.target.closest("input, label, button, a")) return;
+
+    const tr = e.target.closest("tr.issueRow");
+    if (tr && tr.style.display !== "none") goDetail(tr);
+  });
+
+  ui.tbody.addEventListener("change", (e) => {
+    if (e.target.classList.contains("row-check")) syncChkAll();
+  });
+
+  // Enter로 조회
+  [ui.title, ui.projectText, ui.assigneeText, ui.creatorText].forEach((el) => {
+    el?.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         applyFilters();
@@ -455,47 +427,13 @@
     });
   });
 
-  const btnIssueCreate = document.querySelector("#btnIssueCreate");
-  if (btnIssueCreate) {
-    btnIssueCreate.addEventListener("click", () => {
-      window.location.href = "/issueInsert";
-    });
-  }
-  
-  const btnIssueDelete = document.querySelector("#btnIssueDelete");
-  const deleteForm = document.querySelector("#issueDeleteForm");
+  ui.btnCreate?.addEventListener(
+    "click",
+    () => (location.href = "/issueInsert"),
+  );
+  ui.btnDelete?.addEventListener("click", submitDelete);
 
-  if (btnIssueDelete && deleteForm) {
-    btnIssueDelete.addEventListener("click", () => {
-      const checked = Array.from(document.querySelectorAll(".row-check:checked"))
-        .map((cb) => cb.value)
-        .filter((v) => v && v.trim() !== "");
-
-      if (checked.length === 0) {
-        alert("삭제할 일감을 선택해 주세요.");
-        return;
-      }
-
-      if (!confirm(`${checked.length}건을 삭제할까요?`)) return;
-
-      // 기존 hidden 제거 후 다시 생성
-      deleteForm.innerHTML = "";
-
-      checked.forEach((code) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = "issueCodes"; // 컨트롤러에서 받을 파라미터명
-        input.value = code;
-        deleteForm.appendChild(input);
-      });
-
-      deleteForm.submit();
-    });
-  }
-
-
-
-  // 초기 화면
-  rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
-  renderPage();
+  // init
+  rows().forEach((tr) => (tr.dataset.filtered = "0"));
+  render();
 })();

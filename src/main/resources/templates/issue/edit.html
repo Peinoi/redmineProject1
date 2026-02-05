@@ -7,51 +7,53 @@
 >
   <head>
     <meta charset="UTF-8" />
-    <title>일감 등록</title>
-    <link rel="stylesheet" th:href="@{/css/issue/issue-insert.css}" />
+    <title>일감 수정</title>
+    <link rel="stylesheet" th:href="@{/css/issue/issue-edit.css}" />
   </head>
 
   <body>
     <div class="x-page-title">
-      <h3 class="page-title">일감 등록</h3>
-      <div class="page-title-sub">프로젝트별 일감을 등록할 수 있습니다.</div>
+      <h3 class="page-title">일감 수정</h3>
+      <div class="page-title-sub">일감을 수정할 수 있습니다.</div>
     </div>
 
     <div class="card issue-card mb-4">
       <div class="card-header">
-        <div class="card-header-title">일감 등록</div>
+        <div class="card-header-title">일감 수정</div>
       </div>
 
       <div class="card-body">
         <form
-          id="issueInsertForm"
-          th:action="@{/issueInsert}"
+          id="issueEditForm"
+          th:action="@{/issueEdit}"
           method="post"
           enctype="multipart/form-data"
         >
+          <input type="hidden" name="issueCode" th:value="${issue.issueCode}" />
+
+          <input
+            type="hidden"
+            name="projectCode"
+            id="projectCode"
+            th:value="${issue.projectCode}"
+          />
+
           <input type="hidden" name="createdAt" id="createdAt" />
           <input type="hidden" name="dueAt" id="dueAt" />
+          <input type="hidden" name="startedAt" id="startedAt" />
+          <input type="hidden" name="resolvedAt" id="resolvedAt" />
 
           <div class="row g-3 align-items-end">
             <div class="col-12 col-md-6">
               <label class="form-label">프로젝트</label>
-              <div class="input-group">
-                <input
-                  type="text"
-                  id="projectText"
-                  class="form-control"
-                  placeholder="프로젝트 선택"
-                  readonly
-                />
-                <input type="hidden" name="projectCode" id="projectCode" />
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  id="btnOpenProjectModal"
-                >
-                  선택
-                </button>
-              </div>
+              <input
+                type="text"
+                id="projectText"
+                class="form-control"
+                readonly
+                th:value="${issue.projectName}"
+              />
+              <div class="form-text">프로젝트는 변경할 수 없습니다.</div>
             </div>
 
             <div class="col-12 col-md-6">
@@ -64,7 +66,9 @@
                 placeholder="제목 입력"
                 maxlength="200"
                 required
+                th:value="${issue.title}"
               />
+              <div class="form-text">&nbsp;</div>
             </div>
           </div>
 
@@ -77,23 +81,38 @@
                 class="form-control issue-textarea"
                 rows="6"
                 placeholder="설명 입력"
+                th:text="${issue.description}"
               ></textarea>
             </div>
           </div>
 
+          <!-- 상태 / 우선순위 / 담당자 -->
           <div class="row g-3 mt-1 align-items-end">
             <div class="col-12 col-md-4">
               <label class="form-label">상태</label>
               <select
                 name="statusId"
-                id="statusCode"
+                id="statusId"
                 class="form-select"
                 required
               >
                 <option value="">선택</option>
-                <option value="OB1">신규</option>
+                <option value="OB1" th:selected="${issue.statusId == 'OB1'}">
+                  신규
+                </option>
+                <option value="OB2" th:selected="${issue.statusId == 'OB2'}">
+                  진행
+                </option>
+                <option value="OB3" th:selected="${issue.statusId == 'OB3'}">
+                  해결
+                </option>
+                <option value="OB4" th:selected="${issue.statusId == 'OB4'}">
+                  반려
+                </option>
+                <option value="OB5" th:selected="${issue.statusId == 'OB5'}">
+                  완료
+                </option>
               </select>
-              <div class="form-text">&nbsp;</div>
             </div>
 
             <div class="col-12 col-md-4">
@@ -105,14 +124,19 @@
                 required
               >
                 <option value="">선택</option>
-                <option value="OA1">긴급</option>
-                <option value="OA2">높음</option>
-                <option value="OA3">보통</option>
-                <option value="OA4">낮음</option>
+                <option value="OA1" th:selected="${issue.priority == 'OA1'}">
+                  긴급
+                </option>
+                <option value="OA2" th:selected="${issue.priority == 'OA2'}">
+                  높음
+                </option>
+                <option value="OA3" th:selected="${issue.priority == 'OA3'}">
+                  보통
+                </option>
+                <option value="OA4" th:selected="${issue.priority == 'OA4'}">
+                  낮음
+                </option>
               </select>
-              <div class="form-text priority-help">
-                우선순위 선택 시 마감기한이 자동 설정됩니다.
-              </div>
             </div>
 
             <div class="col-12 col-md-4">
@@ -124,8 +148,14 @@
                   class="form-control"
                   placeholder="담당자 선택"
                   readonly
+                  th:value="${issue.assigneeName}"
                 />
-                <input type="hidden" name="assigneeCode" id="assigneeCode" />
+                <input
+                  type="hidden"
+                  name="assigneeCode"
+                  id="assigneeCode"
+                  th:value="${issue.assigneeCode}"
+                />
                 <button
                   type="button"
                   class="btn btn-secondary"
@@ -134,30 +164,58 @@
                   선택
                 </button>
               </div>
-              <div class="form-text">&nbsp;</div>
             </div>
           </div>
 
           <div class="row g-3 mt-1 align-items-end">
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <label class="form-label">등록일</label>
               <input
                 type="date"
                 id="createdDateView"
                 class="form-control"
                 readonly
+                th:value="${issue.createdAt != null ? #temporals.format(issue.createdAt,'yyyy-MM-dd') : ''}"
               />
-              <div class="form-text">등록일은 오늘 날짜로 자동 설정됩니다.</div>
+              <div class="form-text">등록일은 변경할 수 없습니다.</div>
             </div>
 
-            <div class="col-12 col-md-4">
+            <div class="col-12 col-md-3">
               <label class="form-label">마감기한</label>
-              <input type="date" id="dueDateView" class="form-control" />
-              <div class="form-text">
-                우선순위로 자동 설정되며 필요 시 수정 가능합니다.
-              </div>
+              <input
+                type="date"
+                id="dueDateView"
+                class="form-control"
+                th:value="${issue.dueAt != null ? #temporals.format(issue.dueAt,'yyyy-MM-dd') : ''}"
+              />
+              <div class="form-text">&nbsp;</div>
             </div>
 
+            <div class="col-12 col-md-3">
+              <label class="form-label">시작일</label>
+              <input
+                type="date"
+                id="startedDateView"
+                class="form-control"
+                th:value="${issue.startedAt != null ? #temporals.format(issue.startedAt,'yyyy-MM-dd') : ''}"
+              />
+              <div class="form-text">&nbsp;</div>
+            </div>
+
+            <div class="col-12 col-md-3">
+              <label class="form-label">완료일</label>
+              <input
+                type="date"
+                id="resolvedDateView"
+                class="form-control"
+                th:value="${issue.resolvedAt != null ? #temporals.format(issue.resolvedAt,'yyyy-MM-dd') : ''}"
+              />
+              <div class="form-text">&nbsp;</div>
+            </div>
+          </div>
+
+          <!-- 진척도 -->
+          <div class="row g-3 mt-1 align-items-end">
             <div class="col-12 col-md-4">
               <label class="form-label">진척도(0~100)</label>
               <input
@@ -168,15 +226,11 @@
                 min="0"
                 max="100"
                 step="1"
-                value="0"
+                th:value="${issue.progress}"
               />
-              <div class="form-text">&nbsp;</div>
             </div>
-          </div>
 
-          <!-- 파일 -->
-          <div class="row g-3 mt-1">
-            <div class="col-12">
+            <div class="col-12 col-md-8">
               <label class="form-label">파일 등록</label>
               <input
                 type="file"
@@ -184,12 +238,10 @@
                 name="uploadFile"
                 class="form-control"
               />
-              <div class="form-text" id="selectedFileName">
-                선택된 파일 없음
-              </div>
             </div>
           </div>
 
+          <!-- 버튼 -->
           <div class="d-flex justify-content-between align-items-center mt-4">
             <button type="button" class="btn btn-secondary" id="btnBack">
               돌아가기
@@ -200,7 +252,7 @@
                 초기화
               </button>
               <button type="submit" class="btn btn-success" id="btnSubmit">
-                일감 등록
+                수정 저장
               </button>
             </div>
           </div>
@@ -208,37 +260,7 @@
       </div>
     </div>
 
-    <!-- 모달 -->
-    <div
-      class="modal fade"
-      id="projectSelectModal"
-      tabindex="-1"
-      aria-hidden="true"
-    >
-      <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">프로젝트 선택</h5>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <input
-              type="text"
-              id="projectModalSearch"
-              class="form-control mb-2"
-              placeholder="프로젝트명 검색"
-            />
-            <div class="list-group" id="projectModalList"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
+    <!-- 담당자 선택 모달 -->
     <div
       class="modal fade"
       id="assigneeSelectModal"
@@ -274,6 +296,7 @@
       crossorigin="anonymous"
     ></script>
     <script th:src="@{/js/scripts.js}"></script>
-    <script th:src="@{/js/issue/issue-insert.js}"></script>
+
+    <script th:src="@{/js/issue/issue-edit.js}"></script>
   </body>
 </html>

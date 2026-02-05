@@ -39,6 +39,10 @@ public class IssueVO {
 	private Integer position;     
 
 	private Long fileCode;
+	private String originalName;
+	private String filePath;
+	@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+	private LocalDateTime uploadedAt;
 	
 	private String projectName;
 	

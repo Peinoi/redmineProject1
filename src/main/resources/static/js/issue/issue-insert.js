@@ -1,102 +1,102 @@
+// /js/issue/issue-insert.js
 (() => {
-  const $ = (sel) => document.querySelector(sel);
+  const $ = (s) => document.querySelector(s);
 
   const form = $("#issueInsertForm");
 
-  const createdDateView = $("#createdDateView");
-  const dueDateView = $("#dueDateView");
-  const createdAtHidden = $("#createdAt");
-  const dueAtHidden = $("#dueAt");
+  const createdView = $("#createdDateView");
+  const dueView = $("#dueDateView");
+  const createdAt = $("#createdAt");
+  const dueAt = $("#dueAt");
 
-  const prioritySel = $("#priority");
+  const priority = $("#priority");
 
   const projectText = $("#projectText");
   const projectCode = $("#projectCode");
   const assigneeText = $("#assigneeText");
   const assigneeCode = $("#assigneeCode");
 
+  const fileInp = $("#uploadFile");
+  const label = $("#selectedFileName");
+
+  const projectModalEl = $("#projectSelectModal");
+  const assigneeModalEl = $("#assigneeSelectModal");
+  const projectModal = projectModalEl
+    ? new bootstrap.Modal(projectModalEl)
+    : null;
+  const assigneeModal = assigneeModalEl
+    ? new bootstrap.Modal(assigneeModalEl)
+    : null;
+
+  const projectList = $("#projectModalList");
+  const assigneeList = $("#assigneeModalList");
+  const projectSearch = $("#projectModalSearch");
+  const assigneeSearch = $("#assigneeModalSearch");
+
+  const btnProject = $("#btnOpenProjectModal");
+  const btnAssignee = $("#btnOpenAssigneeModal");
   const btnBack = $("#btnBack");
   const btnReset = $("#btnReset");
 
-  // 모달
-  const projectModalEl = $("#projectSelectModal");
-  const assigneeModalEl = $("#assigneeSelectModal");
-  const projectModal = projectModalEl ? new bootstrap.Modal(projectModalEl) : null;
-  const assigneeModal = assigneeModalEl ? new bootstrap.Modal(assigneeModalEl) : null;
-
-  const projectListEl = $("#projectModalList");
-  const assigneeListEl = $("#assigneeModalList");
-  const projectSearchEl = $("#projectModalSearch");
-  const assigneeSearchEl = $("#assigneeModalSearch");
-
-  // 캐시
-  let projectCache = [];
-  let userCache = [];
-
-  function pad2(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function toDateValue(d) {
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  }
-
-  function toLocalDateTimeValue(dateStr) {
-    if (!dateStr) return "";
-    return `${dateStr}T00:00`;
-  }
-
-  function addDays(baseDate, days) {
-    const d = new Date(baseDate.getTime());
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const toDate = (d) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  const toDT = (dateStr) => (dateStr ? `${dateStr}T00:00` : "");
+  const addDays = (base, days) => {
+    const d = new Date(base);
     d.setDate(d.getDate() + days);
     return d;
-  }
+  };
 
-  // 우선순위: 라벨/코드 둘 다 대응
-  // - select value가 "긴급" 같은 라벨이면 그대로 매칭
-  // - select value가 "OA1" 코드면 코드로 매칭
-  const priorityDaysByLabel = { 긴급: 2, 높음: 7, 보통: 14, 낮음: 21 };
-  const priorityDaysByCode = { OA1: 2, OA2: 7, OA3: 14, OA4: 21 };
+  // 우선순위별 자동 마감일(라벨/코드 모두 지원)
+  const PRIORITY_DAYS = {
+    긴급: 2,
+    높음: 7,
+    보통: 14,
+    낮음: 21,
+    OA1: 2,
+    OA2: 7,
+    OA3: 14,
+    OA4: 21,
+  };
+  const getPriorityDays = () => PRIORITY_DAYS[priority?.value] ?? null;
 
-  function getPriorityDays(value) {
-    if (!value) return null;
-    return priorityDaysByLabel[value] ?? priorityDaysByCode[value] ?? null;
-  }
+  const setCreatedToday = () => {
+    const str = toDate(new Date());
+    if (createdView) createdView.value = str;
+    if (createdAt) createdAt.value = toDT(str);
+  };
 
-  function setCreatedToday() {
-    const today = new Date();
-    const dateStr = toDateValue(today);
-    if (createdDateView) createdDateView.value = dateStr;
-    if (createdAtHidden) createdAtHidden.value = toLocalDateTimeValue(dateStr);
-  }
+  const setDueByPriority = () => {
+    if (!dueView || !dueAt || !priority) return;
 
-  function applyDueByPriority() {
-    if (!prioritySel || !dueDateView || !dueAtHidden) return;
-
-    const days = getPriorityDays(prioritySel.value);
-
-    // 우선순위가 선택되지 않았으면 마감기한 자동 세팅하지 않음
+    const days = getPriorityDays();
     if (!days) {
-      dueDateView.value = "";
-      dueAtHidden.value = "";
+      dueView.value = "";
+      dueAt.value = "";
       return;
     }
 
-    const base = new Date(); // 등록일 기준
-    const due = addDays(base, days);
-    const dueStr = toDateValue(due);
-    dueDateView.value = dueStr;
-    dueAtHidden.value = toLocalDateTimeValue(dueStr);
-  }
+    const dueStr = toDate(addDays(new Date(), days));
+    dueView.value = dueStr;
+    dueAt.value = toDT(dueStr);
+  };
 
-  function syncDueHidden() {
-    if (!dueAtHidden || !dueDateView) return;
-    dueAtHidden.value = toLocalDateTimeValue(dueDateView.value);
-  }
+  const syncDueHidden = () => {
+    if (!dueView || !dueAt) return;
+    dueAt.value = toDT(dueView.value);
+  };
 
-  function renderList(listEl, items, onPick) {
+  // -------- 파일명 표시 --------
+  const renderSelectedFileName = () => {
+    if (!label) return;
+    const f = fileInp?.files?.[0];
+    label.textContent = f ? `선택된 파일: ${f.name}` : "선택된 파일 없음";
+  };
+
+  // ---- modal common ----
+  const renderList = (listEl, items, onPick) => {
     listEl.innerHTML = "";
-
     if (!items.length) {
       const empty = document.createElement("div");
       empty.className = "text-muted";
@@ -105,236 +105,182 @@
       return;
     }
 
-    items.forEach((item) => {
+    items.forEach((it) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "list-group-item list-group-item-action";
-      btn.textContent = item.label;
-      btn.addEventListener("click", () => onPick(item));
+      btn.textContent = it.label;
+      btn.addEventListener("click", () => onPick(it));
       listEl.appendChild(btn);
     });
-  }
+  };
 
-  async function ensureProjectCache() {
-    if (projectCache.length > 0) return true;
+  const filterBy = (items, q) => {
+    const qq = (q || "").trim().toLowerCase();
+    if (!qq) return items;
+    return items.filter((it) => String(it.label).toLowerCase().includes(qq));
+  };
 
-    const res = await fetch("/api/projects/modal", {
-      headers: { Accept: "application/json" },
-    });
-
+  const fetchJson = async (url, failMsg) => {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) {
-      alert("프로젝트 목록을 불러오지 못했습니다.");
-      return false;
+      alert(failMsg);
+      return null;
     }
+    return res.json();
+  };
 
-    const projects = await res.json();
-    projectCache = projects.map((p) => ({
+  let projectCache = [];
+  let userCache = [];
+
+  const ensureProjects = async () => {
+    if (projectCache.length) return true;
+    const data = await fetchJson(
+      "/api/projects/modal",
+      "프로젝트 목록을 불러오지 못했습니다.",
+    );
+    if (!data) return false;
+    projectCache = data.map((p) => ({
       value: String(p.projectCode),
       label: p.projectName,
     }));
-
     return true;
-  }
+  };
 
-  async function ensureUserCache() {
-    if (userCache.length > 0) return true;
-
-    const res = await fetch("/api/users/modal", {
-      headers: { Accept: "application/json" },
-    });
-
-    if (!res.ok) {
-      alert("사용자 목록을 불러오지 못했습니다.");
-      return false;
-    }
-
-    const users = await res.json();
-    userCache = users.map((u) => ({
+  const ensureUsers = async () => {
+    if (userCache.length) return true;
+    const data = await fetchJson(
+      "/api/users/modal",
+      "사용자 목록을 불러오지 못했습니다.",
+    );
+    if (!data) return false;
+    userCache = data.map((u) => ({
       value: String(u.userCode),
       label: u.userName,
     }));
-
     return true;
-  }
+  };
 
-  function filterItems(items, q) {
-    if (!q) return items;
-    const qq = q.trim().toLowerCase();
-    if (!qq) return items;
-    return items.filter((it) => String(it.label).toLowerCase().includes(qq));
-  }
+  const openProjectModal = async () => {
+    if (!projectModal || !projectList) return;
+    if (!(await ensureProjects())) return;
 
-  async function openProjectModal() {
-    if (!projectModal || !projectListEl) return;
-
-    const ok = await ensureProjectCache();
-    if (!ok) return;
-
-    const q = (projectSearchEl?.value || "").trim();
-    const items = filterItems(projectCache, q);
-
-    renderList(projectListEl, items, (picked) => {
-      projectText.value = picked.label;
-      projectCode.value = picked.value;
-      if (projectSearchEl) projectSearchEl.value = "";
-      projectModal.hide();
-    });
+    renderList(
+      projectList,
+      filterBy(projectCache, projectSearch?.value),
+      (picked) => {
+        projectText.value = picked.label;
+        projectCode.value = picked.value;
+        if (projectSearch) projectSearch.value = "";
+        projectModal.hide();
+      },
+    );
 
     projectModal.show();
-  }
+  };
 
-  async function openAssigneeModal() {
-    if (!assigneeModal || !assigneeListEl) return;
+  const openAssigneeModal = async () => {
+    if (!assigneeModal || !assigneeList) return;
+    if (!(await ensureUsers())) return;
 
-    const ok = await ensureUserCache();
-    if (!ok) return;
-
-    const q = (assigneeSearchEl?.value || "").trim();
-    const items = filterItems(userCache, q);
-
-    renderList(assigneeListEl, items, (picked) => {
-      assigneeText.value = picked.label;
-      assigneeCode.value = picked.value;
-      if (assigneeSearchEl) assigneeSearchEl.value = "";
-      assigneeModal.hide();
-    });
+    renderList(
+      assigneeList,
+      filterBy(userCache, assigneeSearch?.value),
+      (picked) => {
+        assigneeText.value = picked.label;
+        assigneeCode.value = picked.value;
+        if (assigneeSearch) assigneeSearch.value = "";
+        assigneeModal.hide();
+      },
+    );
 
     assigneeModal.show();
-  }
+  };
 
-  // 검색 입력 시: 모달을 다시 show하지 말고 리스트만 갱신
-  async function refreshProjectListOnly() {
-    if (!projectListEl) return;
-    const ok = await ensureProjectCache();
-    if (!ok) return;
+  const refreshProjectList = async () => {
+    if (!projectList) return;
+    if (!(await ensureProjects())) return;
 
-    const q = (projectSearchEl?.value || "").trim();
-    const items = filterItems(projectCache, q);
+    renderList(
+      projectList,
+      filterBy(projectCache, projectSearch?.value),
+      (picked) => {
+        projectText.value = picked.label;
+        projectCode.value = picked.value;
+        if (projectSearch) projectSearch.value = "";
+        projectModal?.hide();
+      },
+    );
+  };
 
-    renderList(projectListEl, items, (picked) => {
-      projectText.value = picked.label;
-      projectCode.value = picked.value;
-      if (projectSearchEl) projectSearchEl.value = "";
-      projectModal?.hide();
-    });
-  }
+  const refreshAssigneeList = async () => {
+    if (!assigneeList) return;
+    if (!(await ensureUsers())) return;
 
-  async function refreshAssigneeListOnly() {
-    if (!assigneeListEl) return;
-    const ok = await ensureUserCache();
-    if (!ok) return;
+    renderList(
+      assigneeList,
+      filterBy(userCache, assigneeSearch?.value),
+      (picked) => {
+        assigneeText.value = picked.label;
+        assigneeCode.value = picked.value;
+        if (assigneeSearch) assigneeSearch.value = "";
+        assigneeModal?.hide();
+      },
+    );
+  };
 
-    const q = (assigneeSearchEl?.value || "").trim();
-    const items = filterItems(userCache, q);
+  // ---- bind ----
+  btnProject?.addEventListener("click", () => {
+    if (projectSearch) projectSearch.value = "";
+    openProjectModal();
+  });
 
-    renderList(assigneeListEl, items, (picked) => {
-      assigneeText.value = picked.label;
-      assigneeCode.value = picked.value;
-      if (assigneeSearchEl) assigneeSearchEl.value = "";
-      assigneeModal?.hide();
-    });
-  }
+  btnAssignee?.addEventListener("click", () => {
+    if (assigneeSearch) assigneeSearch.value = "";
+    openAssigneeModal();
+  });
 
-  // 이벤트 바인딩
-  const btnOpenProjectModal = $("#btnOpenProjectModal");
-  if (btnOpenProjectModal) {
-    btnOpenProjectModal.addEventListener("click", async () => {
-      if (projectSearchEl) projectSearchEl.value = "";
-      await openProjectModal();
-    });
-  }
+  projectSearch?.addEventListener("input", refreshProjectList);
+  assigneeSearch?.addEventListener("input", refreshAssigneeList);
 
-  const btnOpenAssigneeModal = $("#btnOpenAssigneeModal");
-  if (btnOpenAssigneeModal) {
-    btnOpenAssigneeModal.addEventListener("click", async () => {
-      if (assigneeSearchEl) assigneeSearchEl.value = "";
-      await openAssigneeModal();
-    });
-  }
+  priority?.addEventListener("change", setDueByPriority);
+  dueView?.addEventListener("change", syncDueHidden);
 
-  if (projectSearchEl) {
-    projectSearchEl.addEventListener("input", refreshProjectListOnly);
-  }
+  // 파일 선택 시 파일명 표시
+  fileInp?.addEventListener("change", renderSelectedFileName);
 
-  if (assigneeSearchEl) {
-    assigneeSearchEl.addEventListener("input", refreshAssigneeListOnly);
-  }
+  btnBack?.addEventListener("click", () => history.back());
 
-  if (prioritySel) {
-    prioritySel.addEventListener("change", applyDueByPriority);
-  }
+  btnReset?.addEventListener("click", () => {
+    form?.reset();
+    projectText.value = "";
+    projectCode.value = "";
+    assigneeText.value = "";
+    assigneeCode.value = "";
+    setCreatedToday();
+    setDueByPriority();
+    renderSelectedFileName(); // 파일명 표시도 초기화
+  });
 
-  if (dueDateView) {
-    dueDateView.addEventListener("change", syncDueHidden);
-  }
+  form?.addEventListener("submit", (e) => {
+    if (createdAt && !createdAt.value) setCreatedToday();
 
-  if (btnBack) {
-    btnBack.addEventListener("click", () => history.back());
-  }
+    if (dueView && dueAt) {
+      if (dueView.value) syncDueHidden();
+      else setDueByPriority();
+    }
 
-  if (btnReset) {
-    btnReset.addEventListener("click", () => {
-      if (form) form.reset();
+    if (!projectCode.value)
+      return (e.preventDefault(), alert("프로젝트를 선택해 주세요."));
+    if (!$("#title")?.value.trim())
+      return (e.preventDefault(), alert("제목을 입력해 주세요."));
+    if (!$("#statusCode")?.value)
+      return (e.preventDefault(), alert("상태를 선택해 주세요."));
+    if (!priority?.value)
+      return (e.preventDefault(), alert("우선순위를 선택해 주세요."));
+  });
 
-      projectText.value = "";
-      projectCode.value = "";
-      assigneeText.value = "";
-      assigneeCode.value = "";
-
-      setCreatedToday();
-      applyDueByPriority();
-    });
-  }
-
-  // submit 직전 hidden 값 보정 + 필수 체크
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      // createdAt 오늘
-      if (createdAtHidden && !createdAtHidden.value) {
-        setCreatedToday();
-      }
-
-      // dueAt 동기화
-      if (dueDateView && dueAtHidden) {
-        if (dueDateView.value) {
-          syncDueHidden();
-        } else {
-          applyDueByPriority();
-        }
-      }
-
-      // 프로젝트 필수
-      if (!projectCode.value) {
-        e.preventDefault();
-        alert("프로젝트를 선택해 주세요.");
-        return;
-      }
-
-      // 제목 필수
-      const title = $("#title");
-      if (!title || !title.value.trim()) {
-        e.preventDefault();
-        alert("제목을 입력해 주세요.");
-        return;
-      }
-
-      // 상태 필수
-      const statusCode = $("#statusCode");
-      if (!statusCode || !statusCode.value) {
-        e.preventDefault();
-        alert("상태를 선택해 주세요.");
-        return;
-      }
-
-      // 우선순위 필수
-      if (!prioritySel || !prioritySel.value) {
-        e.preventDefault();
-        alert("우선순위를 선택해 주세요.");
-        return;
-      }
-    });
-  }
-
-  // 초기 세팅
+  // init
   setCreatedToday();
+  renderSelectedFileName();
 })();

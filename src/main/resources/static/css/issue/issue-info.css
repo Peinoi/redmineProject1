@@ -1,0 +1,331 @@
+/* /css/issue/issue-info.css */
+
+:root {
+  --border: #e6e8ee;
+  --bg: #ffffff;
+  --muted: #6b7280;
+  --text: #111827;
+  --subtle: #f7f8fb;
+  --shadow: 0 8px 24px rgba(17, 24, 39, 0.08);
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+body { font-size: 16px; }
+input, select, textarea, button { font-size: 16px; }
+
+.issue-summary,
+.issue-desc,
+.issue-history { margin-top: 16px; }
+
+/* Title */
+.x-page-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 18px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+.page-title-sub {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Summary */
+.issue-summary {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.issue-summary-head {
+  padding: 14px 16px;
+  background: var(--subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.issue-summary-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.issue-summary-title .project {
+  color: var(--muted);
+  font-weight: 800;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.issue-summary-title .sep {
+  color: var(--muted);
+  flex: 0 0 auto;
+}
+
+.issue-summary-title .issue {
+  color: var(--text);
+  font-weight: 900;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 860px) {
+  .issue-summary-title { font-size: 16px; }
+}
+
+/* Meta table */
+.issue-meta {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.issue-meta tbody tr + tr {
+  border-top: 1px solid var(--border);
+}
+
+.issue-meta th,
+.issue-meta td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  font-size: 16px;
+}
+
+.issue-meta th {
+  white-space: nowrap;
+  background: var(--subtle);
+  color: var(--muted);
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+}
+
+.issue-meta th:nth-child(1),
+.issue-meta th:nth-child(3) {
+  width: 110px;
+}
+
+.issue-meta td:nth-child(2),
+.issue-meta td:nth-child(4) {
+  width: calc((100% - 220px) / 2);
+}
+
+.issue-meta td {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.issue-meta td span { font-weight: 700; }
+
+/* File row */
+.issue-meta tbody tr:last-child td:nth-child(4) {
+  padding: 0;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split {
+  display: flex;
+  gap: 0;
+  width: 100%;
+  align-items: stretch;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left,
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  align-items: stretch;
+  padding: 0;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left {
+  border-right: 1px solid var(--border);
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right .text-muted {
+  display: none !important;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before,
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before {
+  content: "";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 16px;
+  background: var(--subtle);
+  color: var(--muted);
+  font-weight: 700;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before {
+  content: "파일명";
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before {
+  content: "파일 등록일";
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left > *,
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right > * {
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left a {
+  display: block;
+  width: 100%;
+  max-width: none !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.issue-meta tbody tr:last-child td:nth-child(2) {
+  white-space: nowrap;
+}
+
+/* Section title */
+.section-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+
+/* Description */
+.issue-desc {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.desc-box {
+  margin: 0;
+  padding: 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 120px;
+}
+
+/* History */
+.issue-history {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.history-box {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--subtle);
+  padding: 18px;
+  min-height: 140px;
+  font-size: 16px;
+}
+
+.history-box .empty {
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* Full width */
+.x-page-title,
+.issue-summary,
+.issue-desc,
+.issue-history {
+  max-width: none;
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+  .issue-meta,
+  .issue-meta tbody,
+  .issue-meta tr,
+  .issue-meta th,
+  .issue-meta td {
+    display: block;
+    width: 100%;
+  }
+
+  .issue-meta tbody tr {
+    border-top: 0;
+    padding: 10px 0;
+  }
+
+  .issue-meta tbody tr + tr {
+    border-top: 1px solid var(--border);
+  }
+
+  .issue-meta th {
+    border-right: 0;
+    padding: 12px 16px 6px;
+    background: transparent;
+    width: 100% !important;
+  }
+
+  .issue-meta td {
+    padding: 0 16px 12px;
+    width: 100% !important;
+  }
+
+  .issue-meta tbody tr:last-child td:nth-child(4) {
+    padding: 0 16px 12px;
+  }
+
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split {
+    display: block;
+  }
+
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left,
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right {
+    border-right: 0;
+    grid-template-columns: 110px minmax(0, 1fr);
+  }
+
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before,
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before,
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left > *,
+  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right > * {
+    padding: 12px 0;
+  }
+}

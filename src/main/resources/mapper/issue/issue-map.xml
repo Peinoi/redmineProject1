@@ -53,6 +53,71 @@
   ORDER BY i.issue_code
 </select>
 
+<!-- 단건 -->
+<select id="selectIssue" parameterType="IssueVO" resultType="IssueVO">
+	SELECT
+    i.issue_code,
+    i.project_code,
+    i.status_code,
+    i.title,
+    i.description,
+    i.priority,
+    i.assignee_code,
+    i.created_by_code,
+    i.created_at,
+    i.due_at,
+    i.started_at,
+    i.resolved_at,
+    i.updated_at,
+    i.progress,
+    i.position,
+    i.file_code,
+    
+    s.code_id AS status_id,
+
+    p.project_name,
+
+    cs.code_name AS status_name,
+    cp.code_name AS priority_name,
+    
+    ua.name AS assignee_name,
+    uc.name AS creator_name,
+    
+    ad.original_name,
+  	ad.path AS file_path,
+  	at.uploaded_at
+
+  FROM issues i
+  LEFT JOIN projects p
+    ON p.project_code = i.project_code
+
+  JOIN status s
+    ON s.status_code = i.status_code
+
+  LEFT JOIN common_code cs
+    ON cs.code_id = s.code_id
+    AND cs.group_code = 'OB'
+
+  LEFT JOIN common_code cp
+    ON cp.code_id = i.priority
+    AND cp.group_code = 'OA'
+    
+    LEFT JOIN users ua
+    ON ua.user_code = i.assignee_code
+    
+	LEFT JOIN users uc 
+	ON uc.user_code = i.created_by_code
+	
+	LEFT JOIN attachments_detail ad
+  	ON ad.file_code = i.file_code
+    AND ad.is_used = 1
+    
+    LEFT JOIN attachments at
+    ON at.file_code = ad.file_code
+	
+	WHERE issue_code = #{issueCode}
+	</select>
+	
 <!-- 등록 -->
  <insert id="insertIssue" parameterType="com.yedam.app.issue.service.IssueVO">
   <selectKey keyProperty="issueCode" resultType="long" order="BEFORE">
@@ -125,6 +190,13 @@
   </trim>
 </insert>
  
+ <!-- 첨부파일 등록 -->
+ <update id="updateIssueFileCode">
+  UPDATE issues
+  SET file_code = #{fileCode}
+  WHERE issue_code = #{issueCode}
+</update>
+ 
  
  <!-- 삭제 -->
  <delete id="deleteIssues">
@@ -134,5 +206,65 @@
     #{id}
   </foreach>
 </delete>
+ 
+ <select id="selectFileCodesByIssueCodes" resultType="long">
+  SELECT DISTINCT file_code
+  FROM issues
+  WHERE issue_code IN
+  <foreach collection="issueCodes" item="id" open="(" separator="," close=")">
+    #{id}
+  </foreach>
+  AND file_code IS NOT NULL
+</select>
+
+<select id="countIssuesByFileCode" resultType="int">
+  SELECT COUNT(*)
+  FROM issues
+  WHERE file_code = #{fileCode}
+</select>
+ 
+ 
+ <!-- 수정 -->
+<update id="updateIssue">
+  UPDATE issues
+  <set>
+    title = #{issue.title},
+    description = #{issue.description},
+    priority = #{issue.priority},
+
+    <if test="issue.assigneeCode != null">
+      assignee_code = #{issue.assigneeCode},
+    </if>
+
+    <if test="issue.statusId != null and issue.statusId != ''">
+      status_code = (
+        SELECT s.status_code
+        FROM status s
+        WHERE s.project_code = #{issue.projectCode}
+          AND s.code_id = #{issue.statusId}
+      ),
+    </if>
+
+    <if test="issue.dueAt != null">
+      due_at = #{issue.dueAt, jdbcType=TIMESTAMP},
+    </if>
+
+    <if test="issue.startedAt != null">
+      started_at = #{issue.startedAt, jdbcType=TIMESTAMP},
+    </if>
+
+    <if test="issue.resolvedAt != null">
+      resolved_at = #{issue.resolvedAt, jdbcType=TIMESTAMP},
+    </if>
+
+    <if test="issue.progress != null">
+      progress = #{issue.progress},
+    </if>
+
+    updated_at = SYSTIMESTAMP
+  </set>
+  WHERE issue_code = #{issueCode}
+</update>
+
  
 </mapper>

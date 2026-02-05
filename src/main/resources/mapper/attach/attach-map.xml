@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.attach.mapper.AttachmentMapper">
+
+<insert id="insertAttachment" parameterType="AttachmentVO">
+    <selectKey keyProperty="fileCode" resultType="long" order="BEFORE">
+      SELECT NVL(MAX(file_code), 0) + 1 FROM attachments
+    </selectKey>
+
+    INSERT INTO attachments (
+      file_code,
+      user_code,
+      uploaded_at,
+      table_code
+    ) VALUES (
+      #{fileCode},
+      #{userCode},
+      SYSTIMESTAMP,
+      #{tableCode}
+    )
+  </insert>
+
+  <insert id="insertAttachmentDetail" parameterType="com.yedam.app.attach.service.AttachmentVO">
+    <selectKey keyProperty="fileDetailCode" resultType="long" order="BEFORE">
+      SELECT NVL(MAX(file_detail_code), 0) + 1 FROM attachments_detail
+    </selectKey>
+
+    INSERT INTO attachments_detail (
+      file_detail_code,
+      file_code,
+      original_name,
+      stored_name,
+      path,
+      mime_type,
+      size_bytes,
+      is_used
+    ) VALUES (
+      #{fileDetailCode},
+      #{fileCode},
+      #{originalName},
+      #{storedName},
+      #{path},
+      #{mimeType},
+      #{sizeBytes},
+      #{isUsed}
+    )
+  </insert>
+
+  <!-- 단일 첨부라서 file_code로 detail 1건 조회 -->
+  <select id="selectDetailByFileCode" parameterType="long" resultType="com.yedam.app.attach.service.AttachmentVO">
+    SELECT
+      d.file_detail_code,
+      d.file_code,
+      d.original_name,
+      d.stored_name,
+      d.path,
+      d.mime_type,
+      d.size_bytes,
+      d.is_used,
+      a.user_code,
+      a.uploaded_at,
+      a.table_code
+    FROM attachments_detail d
+    JOIN attachments a
+      ON a.file_code = d.file_code
+    WHERE d.file_code = #{fileCode}
+      AND d.is_used = 1
+  </select>
+  
+  <delete id="deleteAttachmentDetailByFileCode" parameterType="long">
+  DELETE FROM attachments_detail
+  WHERE file_code = #{fileCode}
+</delete>
+
+<delete id="deleteAttachmentByFileCode" parameterType="long">
+  DELETE FROM attachments
+  WHERE file_code = #{fileCode}
+</delete>
+  
+  </mapper>
