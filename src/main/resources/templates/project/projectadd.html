@@ -41,8 +41,7 @@
 
 			<!-- 설명 -->
 			<div class="mb-3">
-				<label for="editor" class="form-label fw-bold">프로젝트 설명 <span
-					class="text-danger">*</span></label>
+				<label for="editor" class="form-label fw-bold">프로젝트 설명</label>
 				<textarea name="description" id="editor"></textarea>
 				<small class="form-text text-muted">최대 1000자</small>
 			</div>
@@ -140,102 +139,83 @@
 							aria-label="Close"></button>
 					</div>
 					<div class="modal-body">
-						<!-- 탭 메뉴 -->
-						<div class="tab">
-							<ul class="tabnav nav nav-tabs mb-3">
-								<li class="nav-item"><a class="nav-link" href="#mem">구성원</a></li>
-								<li class="nav-item"><a class="nav-link" href="#group">그룹</a></li>
-							</ul>
+						<ul class="tabnav nav nav-tabs mb-3">
+							<li class="nav-item"><a class="nav-link active" href="#mem">구성원</a></li>
+							<li class="nav-item"><a class="nav-link" href="#group">그룹</a></li>
+						</ul>
 
-							<!-- 탭 컨텐츠 -->
-							<div class="tabcontent">
-								<!-- 구성원 탭 -->
-								<div id="mem" style="display: none;">
-									<input type="text" id="creatorModalSearch"
-										class="form-control mb-3" placeholder="구성원 검색 (이름 또는 이메일)">
-
-									<!-- 구성원 테이블 -->
-									<div class="mb-4">
-										<div class="card">
-											<div class="card-header">
-												<strong>구성원 선택</strong>
-											</div>
-											<div class="card-body p-0">
-												<div class="table-responsive"
-													style="max-height: 300px; overflow-y: auto;">
-													<table class="table table-hover align-middle mb-0"
-														id="memberSelectTable">
-														<thead class="table-light sticky-top">
-															<tr>
-																<th style="width: 60px">
-																	<div class="form-check">
-																		<input class="form-check-input" type="checkbox"
-																			id="selectAllMembers">
-																	</div>
-																</th>
-																<th>이름</th>
-															</tr>
-														</thead>
-														<tbody id="memberSelectList">
-															<tr>
-																<td colspan="2" class="text-center text-muted py-3">
-																	구성원을 불러오는 중...</td>
-															</tr>
-														</tbody>
-													</table>
-												</div>
-											</div>
-										</div>
-									</div>
-
-									<!-- 역할 선택 -->
-									<div class="mb-3">
-										<div class="card">
-											<div class="card-header">
-												<strong>역할</strong>
-											</div>
-											<div class="card-body">
-												<div id="roleSelectList" class="d-flex flex-wrap gap-3">
-													<!-- 역할 체크박스들이 여기에 동적으로 추가됨 -->
-												</div>
-											</div>
-										</div>
-									</div>
-
-									<!-- 추가 버튼 -->
-									<button type="button" class="btn btn-primary w-100"
-										id="btnAddSelectedMembers">
-										<i class="fas fa-user-plus me-1"></i>선택한 구성원 추가
-									</button>
-								</div>
-
-								<!-- 그룹 탭 (보류) -->
-								<div id="group" style="display: none;">
-									<div class="alert alert-info text-center">
-										<i class="fas fa-info-circle me-2"></i> 그룹 기능은 현재 개발 중입니다.
+						<div class="tabcontent">
+							<div id="mem">
+								<input type="text" id="creatorModalSearch"
+									class="form-control mb-3" placeholder="구성원 검색">
+								<div class="card mb-3">
+									<div class="card-body p-0">
+										<table class="table table-hover mb-0">
+											<thead class="table-light">
+												<tr>
+													<th style="width: 60px"><input type="checkbox"
+														id="selectAllMembers" class="form-check-input"></th>
+													<th>이름</th>
+												</tr>
+											</thead>
+											<tbody id="memberSelectList"></tbody>
+										</table>
 									</div>
 								</div>
 							</div>
+
+							<div id="group" style="display: none;">
+								<input type="text" id="groupModalSearch"
+									class="form-control mb-3" placeholder="그룹 검색">
+								<div class="card mb-3">
+									<div class="card-body p-0">
+										<table class="table table-hover mb-0">
+											<thead class="table-light">
+												<tr>
+													<th style="width: 60px"><input type="checkbox"
+														id="selectAllgroup" class="form-check-input"></th>
+													<th>그룹명</th>
+												</tr>
+											</thead>
+											<tbody id="groupSelectList"></tbody>
+										</table>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="common-selection-area border-top pt-3">
+							<div class="mb-3">
+								<label class="fw-bold mb-2">역할 선택</label>
+								<div id="roleSelectList"
+									class="d-flex flex-wrap gap-3 p-2 bg-light rounded"></div>
+							</div>
+							<button type="button" class="btn btn-success w-100"
+								id="btnAddSelectedMembers">
+								<i class="fas fa-plus me-1"></i>선택한 항목 추가하기
+							</button>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
-		<script th:inline="javascript">
-			/*<![CDATA[*/
-			// Thymeleaf에서 데이터를 JavaScript 변수로 전달
-			window.serverData = {
-				users : /*[[${users}]]*/[],
-				roles : /*[[${roles}]]*/[]
-			};
-			/*]]>*/
-		</script>
-		<!-- CKEditor 초기화 스크립트 먼저 로드 -->
-		<script
-			src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
+	</div>
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		// Thymeleaf에서 데이터를 JavaScript 변수로 전달
+		window.serverData = {
+			users : /*[[${users}]]*/[],
+			roles : /*[[${roles}]]*/[],
+			groups : /*[[${groups}]]*/[]
+		};
+		/*]]>*/
+	</script>
+	<!-- CKEditor 초기화 스크립트 먼저 로드 -->
+	<script
+		src="https://cdn.ckeditor.com/ckeditor5/41.0.0/classic/ckeditor.js"></script>
 
-		<script th:src="@{/js/ckeditor5.js}"></script>
-		<!-- 프로젝트 추가 스크립트는 CKEditor 초기화 후 로드 -->
-		<script th:src="@{/js/project/projectadd.js}"></script>
+	<script th:src="@{/js/ckeditor5.js}"></script>
+	<!-- 프로젝트 추가 스크립트는 CKEditor 초기화 후 로드 -->
+	<script th:src="@{/js/project/projectadd.js}"></script>
 </body>
 </html>

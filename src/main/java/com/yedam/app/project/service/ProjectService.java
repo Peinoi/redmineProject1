@@ -9,4 +9,6 @@ public interface ProjectService {
 
 	public List<RoleVO> roleFindAll();
 
+	public List<GroupVO> groupFindAll();
+
 }

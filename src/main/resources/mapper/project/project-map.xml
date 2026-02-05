@@ -36,4 +36,12 @@
 		,is_lock
 		FROM users
 	</select>
+	
+	<select id="groupAll" resultType="GroupVO">
+		SELECT 
+		    group_code,
+		    gr_name,
+		    description
+		FROM "GROUP"
+	</select>
 </mapper>

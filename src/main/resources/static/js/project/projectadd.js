@@ -7,7 +7,7 @@ let editorInstance;
 
 // 선택된 사용자 목록 (구성원 테이블에 추가된 사용자들)
 let selectedUsers = [];
-
+let selectedGroups = [];
 // ============================================
 // 1. 페이지 로드 시 초기화
 // ============================================
@@ -147,6 +147,7 @@ function openMemberModal() {
 	// 서버에서 전달받은 데이터 사용
 	const users = window.serverData?.users || [];
 	const roles = window.serverData?.roles || [];
+	const groups = window.serverData?.groups || [];
 
 	// 현재 로그인한 사용자 정보 (세션에서)
 	const currentUserName = document.getElementById('filterWriter').value;
@@ -157,8 +158,11 @@ function openMemberModal() {
 		!selectedUsers.some(selected => selected.userCode === user.userCode)
 	);
 
+	const availableGroups = groups.filter(group =>
+		!selectedGroups.some(selected => selected.groupCode === group.groupCode)
+	);
 	displayUserList(availableUsers, roles);
-
+	displayGroupList(availableGroups, roles);
 	// Bootstrap 모달 열기
 	const modal = new bootstrap.Modal(document.getElementById('creatorSelectModal'));
 	modal.show();
@@ -214,7 +218,59 @@ function displayUserList(users, roles) {
 	// 추가 버튼 이벤트
 	setupAddMembersButton(roles);
 }
+// ============================================
+// 7. 모달에 사용자 목록 표시(그룹)
+// ============================================
+function displayGroupList(groups, roles) {
+	const groupListContainer = document.getElementById('groupSelectList');
+	/*console.log(groups);*/
+	if (!groupListContainer) return;
 
+	// 1. 기존 리스트 비우기 (중복 방지)
+	groupListContainer.innerHTML = '';
+
+	if (!groups || groups.length === 0) {
+		groupListContainer.innerHTML = `
+            <tr>
+                <td colspan="2" class="text-center text-muted py-3">
+                    추가 가능한 그룹이 없습니다.
+                </td>
+            </tr>
+        `;
+		return;
+	}
+
+	// 2. 그룹 목록 생성
+	groups.forEach(group => {
+		const row = document.createElement('tr');
+		// GroupVO의 필드명: groupCode, grName 확인
+		row.innerHTML = `
+            <td>
+                <div class="form-check">
+                    <input class="form-check-input group-checkbox" type="checkbox" 
+                           value="${group.groupCode}" 
+                           id="group${group.groupCode}"
+                           data-group-name="${group.grName}">
+                </div>
+            </td>
+            <td>
+                <label class="form-check-label w-100" for="group${group.groupCode}" style="cursor: pointer;">
+                    ${group.grName}
+                </label>
+            </td>
+        `;
+		groupListContainer.appendChild(row);
+	});
+
+	// 전체 선택 기능
+	setupSelectAllMembers();
+
+	// 역할 목록 표시
+	displayRoleList(roles);
+
+	// 추가 버튼 이벤트
+	setupAddMembersButton(roles);
+}
 // ============================================
 // 7-1. 전체 선택 기능
 // ============================================
@@ -352,7 +408,7 @@ function updateMemberTable() {
             <td>${user.name}</td>
             <td>${user.roleName}</td>
             <td>
-                <button class="btn btn-primary btn-sm" onclick="openEditModal(${index})">수정</button>
+                <button class="btn btn-success btn-sm" onclick="openEditModal(${index})">수정</button>
             </td>
             <td>
                 <button class="btn btn-danger btn-sm" onclick="removeMember(${index})">삭제</button>
@@ -401,7 +457,7 @@ function openEditModal(index) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="button" class="btn btn-primary" onclick="saveRoleChange(${index})">저장</button>
+                        <button type="button" class="btn btn-success" onclick="saveRoleChange(${index})">저장</button>
                     </div>
                 </div>
             </div>
@@ -421,25 +477,25 @@ function openEditModal(index) {
 // 11. 구성원 권한 변경 저장
 // ============================================
 function saveRoleChange(index) {
-    const roleSelect = document.getElementById('editRoleSelect');
-    const newRoleCode = roleSelect.value; // roleCode
-    const newRoleName = roleSelect.options[roleSelect.selectedIndex].text; // roleName
+	const roleSelect = document.getElementById('editRoleSelect');
+	const newRoleCode = roleSelect.value; // roleCode
+	const newRoleName = roleSelect.options[roleSelect.selectedIndex].text; // roleName
 
-    // 데이터 업데이트
-    selectedUsers[index].roleCode = newRoleCode;
-    selectedUsers[index].roleName = newRoleName;
+	// 데이터 업데이트
+	selectedUsers[index].roleCode = newRoleCode;
+	selectedUsers[index].roleName = newRoleName;
 
-    // 테이블 갱신
-    updateMemberTable();
+	// 테이블 갱신
+	updateMemberTable();
 
-    // 모달 닫기 및 제거
-    const modalElement = document.getElementById('editMemberModal');
-    const modal = bootstrap.Modal.getInstance(modalElement);
-    modal.hide();
+	// 모달 닫기 및 제거
+	const modalElement = document.getElementById('editMemberModal');
+	const modal = bootstrap.Modal.getInstance(modalElement);
+	modal.hide();
 
-    modalElement.addEventListener('hidden.bs.modal', function () {
-        modalElement.remove();
-    }, { once: true });
+	modalElement.addEventListener('hidden.bs.modal', function() {
+		modalElement.remove();
+	}, { once: true });
 }
 
 // ============================================
