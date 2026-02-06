@@ -66,3 +66,14 @@ a, a:hover, a:visited, a:active {
     color: #495057;
     transition: all 0.2s ease; /* 부드러운 색상 전환 */
 }
+
+/* 종료된 프로젝트 행 스타일 */
+.project-row-finished {
+    background-color: #f2f2f2 !important; /* 연한 회색 */
+    color: #888; /* 글자색도 약간 흐리게 */
+}
+/* 종료 버튼 비활성화 시각화 (선택 사항) */
+.project-row-finished .btn-success {
+    pointer-events: none;
+    opacity: 0.5;
+}

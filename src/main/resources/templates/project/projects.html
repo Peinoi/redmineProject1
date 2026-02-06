@@ -52,25 +52,31 @@
 			<div class="d-flex justify-content-between align-items-center mt-3">
 				<div class="d-flex gap-2">
 					<button type="button" class="btn btn-success">
-						<a th:href="@{/projectadd}">프로젝트 등록</a>
+						<a th:href="@{/projectadd}"><i class="fas fa-check me-1"></i>프로젝트
+							등록</a>
 					</button>
 				</div>
 				<div class="col-auto d-flex gap-2 ms-auto">
 					<button type="button" class="btn btn-secondary"
-						id="btnResetFilters">초기화</button>
-					<button type="button" class="btn btn-primary" id="btnApplyFilters">조회</button>
+						id="btnResetFilters">
+						<i class="fas fa-redo me-1"></i>초기화
+					</button>
+					<button type="button" class="btn btn-primary" id="btnApplyFilters">
+						<i class="fa-solid fa-magnifying-glass"></i> 조회
+					</button>
 				</div>
 			</div>
 
 		</div>
-
 		<form id="issueDeleteForm" th:action="@{/issueDelete}" method="post"
 			style="display: none;"></form>
 		<div class="card mb-4">
+			<span>진척률</span>
 			<div
 				class="card-header d-flex align-items-center justify-content-between">
 				<div>
 					<i class="fas fa-table me-1"></i> 프로젝트 목록
+
 				</div>
 				<div class="text-muted small" id="projectPageInfo"></div>
 			</div>
@@ -87,6 +93,7 @@
 								<th>관리자번호</th>
 								<th>관리자메일</th>
 								<th>진행 상태</th>
+								<th>진척률</th>
 								<th>종료</th>
 								<th>삭제</th>
 							</tr>
@@ -102,8 +109,13 @@
 								<td>[[ ${pro.phone} ]]</td>
 								<td>[[ ${pro.email} ]]</td>
 								<td>[[ ${pro.codeName} ]]</td>
-								<td><button class="btn btn-success">종료</button></td>
-								<td><button class="btn btn-danger">삭제</button></td>
+								<td><progress id="progress" value="50" min="0" max="100"></progress>100%</td>
+								<td><button class="btn btn-success">
+										<i class="fa-regular fa-face-meh"></i> 종료
+									</button></td>
+								<td><button class="btn btn-danger">
+										<i class="fa-solid fa-face-dizzy"></i> 삭제
+									</button></td>
 							</tr>
 						</tbody>
 					</table>

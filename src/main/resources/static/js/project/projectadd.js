@@ -5,9 +5,10 @@
 // CKEditor 인스턴스
 let editorInstance;
 
-// 선택된 사용자 목록 (구성원 테이블에 추가된 사용자들)
+// 선택된 사용자/그룹 목록 (구성원 테이블에 추가된 항목들)
 let selectedUsers = [];
 let selectedGroups = [];
+
 // ============================================
 // 1. 페이지 로드 시 초기화
 // ============================================
@@ -21,8 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
 // 2. CKEditor 초기화
 // ============================================
 function initializeCKEditor() {
-	// ckeditor5.js에서 이미 초기화되므로 전역 변수만 확인
-	// CKEditor가 초기화될 때까지 대기
 	const checkEditor = setInterval(() => {
 		if (window.ckEditor) {
 			editorInstance = window.ckEditor;
@@ -34,7 +33,6 @@ function initializeCKEditor() {
 
 				if (textOnly.length > 1000) {
 					alert('프로젝트 설명은 1000자를 초과할 수 없습니다.');
-					// 마지막 변경 취소
 					editorInstance.execute('undo');
 				}
 			});
@@ -43,7 +41,6 @@ function initializeCKEditor() {
 		}
 	}, 100);
 
-	// 5초 후에도 초기화되지 않으면 타임아웃
 	setTimeout(() => {
 		clearInterval(checkEditor);
 		if (!editorInstance) {
@@ -56,32 +53,32 @@ function initializeCKEditor() {
 // 3. 이벤트 리스너 초기화
 // ============================================
 function initializeEventListeners() {
-	// 프로젝트명 실시간 유효성 검사
 	const projectNameInput = document.querySelector('[name="projectName"]');
 	projectNameInput.addEventListener('input', validateProjectName);
 
-	// 구성원 추가 버튼 (ID 수정: btnSubmit -> btnAddMember)
 	const addMemberBtn = document.querySelector('#btnAddMember');
 	if (addMemberBtn) {
 		addMemberBtn.addEventListener('click', openMemberModal);
 	}
 
-	// 초기화 버튼
 	const resetBtn = document.querySelector('#btnReset');
 	if (resetBtn) {
 		resetBtn.addEventListener('click', resetForm);
 	}
 
-	// 폼 제출 (실제 제출 버튼 ID는 btnSubmit)
 	const submitBtn = document.querySelector('#btnSubmit');
 	if (submitBtn) {
 		submitBtn.addEventListener('click', handleFormSubmit);
 	}
 
-	// 모달 검색 기능
 	const searchInput = document.getElementById('creatorModalSearch');
 	if (searchInput) {
 		searchInput.addEventListener('input', handleModalSearch);
+	}
+
+	const searchInputGroup = document.getElementById('groupModalSearch');
+	if (searchInputGroup) {
+		searchInputGroup.addEventListener('input', handleModalSearchGroup);
 	}
 }
 
@@ -91,8 +88,6 @@ function initializeEventListeners() {
 function validateProjectName(event) {
 	const input = event.target;
 	const value = input.value;
-
-	// 특수문자, 공백 제거 (한글, 영문, 숫자만 허용)
 	const filtered = value.replace(/[^\w\sㄱ-ㅎ가-힣]/g, '').replace(/\s/g, '');
 
 	if (value !== filtered) {
@@ -101,7 +96,6 @@ function validateProjectName(event) {
 		return false;
 	}
 
-	// 길이 검사 (5~50자)
 	if (filtered.length > 0 && filtered.length < 5) {
 		showValidationMessage(input, '프로젝트명은 5글자 이상이어야 합니다.');
 		return false;
@@ -121,10 +115,7 @@ function validateProjectName(event) {
 // 5. 유효성 검사 메시지 표시/숨김
 // ============================================
 function showValidationMessage(input, message) {
-	// 기존 메시지 제거
 	hideValidationMessage(input);
-
-	// 새 메시지 추가
 	const errorDiv = document.createElement('div');
 	errorDiv.className = 'invalid-feedback d-block';
 	errorDiv.textContent = message;
@@ -144,15 +135,12 @@ function hideValidationMessage(input) {
 // 6. 구성원 추가 모달 열기
 // ============================================
 function openMemberModal() {
-	// 서버에서 전달받은 데이터 사용
 	const users = window.serverData?.users || [];
 	const roles = window.serverData?.roles || [];
 	const groups = window.serverData?.groups || [];
 
-	// 현재 로그인한 사용자 정보 (세션에서)
 	const currentUserName = document.getElementById('filterWriter').value;
 
-	// 자기 자신과 이미 추가된 사용자 제외
 	const availableUsers = users.filter(user =>
 		user.name !== currentUserName &&
 		!selectedUsers.some(selected => selected.userCode === user.userCode)
@@ -161,9 +149,13 @@ function openMemberModal() {
 	const availableGroups = groups.filter(group =>
 		!selectedGroups.some(selected => selected.groupCode === group.groupCode)
 	);
+
 	displayUserList(availableUsers, roles);
 	displayGroupList(availableGroups, roles);
-	// Bootstrap 모달 열기
+
+	// 추가 버튼 이벤트 설정 (한 번만 호출)
+	setupAddMembersButton();
+
 	const modal = new bootstrap.Modal(document.getElementById('creatorSelectModal'));
 	modal.show();
 }
@@ -172,7 +164,6 @@ function openMemberModal() {
 // 7. 모달에 사용자 목록 표시
 // ============================================
 function displayUserList(users, roles) {
-	// 구성원 목록 표시
 	const memberListContainer = document.getElementById('memberSelectList');
 	memberListContainer.innerHTML = '';
 
@@ -187,7 +178,6 @@ function displayUserList(users, roles) {
 		return;
 	}
 
-	// 구성원 목록 생성
 	users.forEach(user => {
 		const row = document.createElement('tr');
 		row.innerHTML = `
@@ -209,24 +199,20 @@ function displayUserList(users, roles) {
 		memberListContainer.appendChild(row);
 	});
 
-	// 전체 선택 기능
 	setupSelectAllMembers();
-
-	// 역할 목록 표시
 	displayRoleList(roles);
-
-	// 추가 버튼 이벤트
-	setupAddMembersButton(roles);
+	// 역할 목록과 추가 버튼은 displayGroupList에서도 호출되므로 여기서는 제거
+	// setupAddMembersButton은 탭 전환 시마다 재설정됩니다
 }
+
 // ============================================
-// 7. 모달에 사용자 목록 표시(그룹)
+// 7-2. 모달에 그룹 목록 표시
 // ============================================
 function displayGroupList(groups, roles) {
 	const groupListContainer = document.getElementById('groupSelectList');
-	/*console.log(groups);*/
+
 	if (!groupListContainer) return;
 
-	// 1. 기존 리스트 비우기 (중복 방지)
 	groupListContainer.innerHTML = '';
 
 	if (!groups || groups.length === 0) {
@@ -240,10 +226,8 @@ function displayGroupList(groups, roles) {
 		return;
 	}
 
-	// 2. 그룹 목록 생성
 	groups.forEach(group => {
 		const row = document.createElement('tr');
-		// GroupVO의 필드명: groupCode, grName 확인
 		row.innerHTML = `
             <td>
                 <div class="form-check">
@@ -262,34 +246,52 @@ function displayGroupList(groups, roles) {
 		groupListContainer.appendChild(row);
 	});
 
-	// 전체 선택 기능
-	setupSelectAllMembers();
-
-	// 역할 목록 표시
+	setupSelectAllGroup();
 	displayRoleList(roles);
-
-	// 추가 버튼 이벤트
-	setupAddMembersButton(roles);
+	// 역할 목록과 추가 버튼은 displayUserList에서도 호출되므로 중복 방지
 }
+
 // ============================================
-// 7-1. 전체 선택 기능
+// 7-1. 전체 선택 기능 (구성원)
 // ============================================
 function setupSelectAllMembers() {
 	const selectAllCheckbox = document.getElementById('selectAllMembers');
 	const memberCheckboxes = document.querySelectorAll('.member-checkbox');
 
-	// 전체 선택 체크박스 클릭 시
 	selectAllCheckbox.addEventListener('change', function() {
 		memberCheckboxes.forEach(checkbox => {
 			checkbox.checked = this.checked;
 		});
 	});
 
-	// 개별 체크박스 클릭 시 전체 선택 상태 업데이트
 	memberCheckboxes.forEach(checkbox => {
 		checkbox.addEventListener('change', function() {
 			const allChecked = Array.from(memberCheckboxes).every(cb => cb.checked);
 			const someChecked = Array.from(memberCheckboxes).some(cb => cb.checked);
+
+			selectAllCheckbox.checked = allChecked;
+			selectAllCheckbox.indeterminate = someChecked && !allChecked;
+		});
+	});
+}
+
+// ============================================
+// 7-1-2. 전체 선택 기능 (그룹)
+// ============================================
+function setupSelectAllGroup() {
+	const selectAllCheckbox = document.getElementById('selectAllgroup');
+	const groupCheckboxes = document.querySelectorAll('.group-checkbox');
+
+	selectAllCheckbox.addEventListener('change', function() {
+		groupCheckboxes.forEach(checkbox => {
+			checkbox.checked = this.checked;
+		});
+	});
+
+	groupCheckboxes.forEach(checkbox => {
+		checkbox.addEventListener('change', function() {
+			const allChecked = Array.from(groupCheckboxes).every(cb => cb.checked);
+			const someChecked = Array.from(groupCheckboxes).some(cb => cb.checked);
 
 			selectAllCheckbox.checked = allChecked;
 			selectAllCheckbox.indeterminate = someChecked && !allChecked;
@@ -320,17 +322,29 @@ function displayRoleList(roles) {
 		roleListContainer.appendChild(roleDiv);
 	});
 }
+
 // ============================================
 // 7-3. 추가 버튼 이벤트 설정
 // ============================================
-function setupAddMembersButton(roles) {
+function setupAddMembersButton() {
 	const addButton = document.getElementById('btnAddSelectedMembers');
+	if (!addButton) return;
 
-	// 기존 이벤트 리스너 제거를 위해 새 버튼으로 교체
 	const newButton = addButton.cloneNode(true);
 	addButton.parentNode.replaceChild(newButton, addButton);
 
-	newButton.addEventListener('click', () => addSelectedMembers(roles));
+	// 탭에 따라 활성
+	newButton.addEventListener('click', () => {
+		const roles = window.serverData?.roles || [];
+		const activeTab = document.querySelector('.tabnav .nav-link.active');
+		const isGroupTab = activeTab && activeTab.getAttribute('href') === '#group';
+
+		if (isGroupTab) {
+			addSelectedGroups(roles);
+		} else {
+			addSelectedMembers(roles);
+		}
+	});
 }
 
 // ============================================
@@ -340,7 +354,6 @@ function addSelectedMembers(roles) {
 	const checkedMembers = document.querySelectorAll('.member-checkbox:checked');
 	const checkedRoles = document.querySelectorAll('.role-checkbox:checked');
 
-	// 유효성 검사
 	if (checkedMembers.length === 0) {
 		alert('추가할 구성원을 선택해주세요.');
 		return;
@@ -353,7 +366,6 @@ function addSelectedMembers(roles) {
 
 	const newUsers = [];
 
-	// 선택된 구성원과 역할 조합
 	checkedMembers.forEach(memberCheckbox => {
 		checkedRoles.forEach(roleCheckbox => {
 			const userCode = memberCheckbox.value;
@@ -361,11 +373,11 @@ function addSelectedMembers(roles) {
 			const userEmail = memberCheckbox.dataset.userEmail;
 			const roleCode = roleCheckbox.value;
 
-			// 역할명 찾기
 			const roleObj = roles.find(r => r.roleCode == roleCode);
 			const roleName = roleObj ? roleObj.roleName : '';
 
 			newUsers.push({
+				type: 'user',
 				userCode: userCode,
 				name: userEmail ? `${userName} (${userEmail})` : userName,
 				roleCode: roleCode,
@@ -378,40 +390,97 @@ function addSelectedMembers(roles) {
 		selectedUsers.push(...newUsers);
 		updateMemberTable();
 
-		// 모달 닫기
 		const modal = bootstrap.Modal.getInstance(document.getElementById('creatorSelectModal'));
 		modal.hide();
 
-		// 성공 메시지
 		alert(`${checkedMembers.length}명의 구성원이 추가되었습니다.`);
 	}
 }
 
+// ============================================
+// 8-2. 선택한 그룹 추가 
+// ============================================
+function addSelectedGroups(roles) {
+	const checkedGroups = document.querySelectorAll('.group-checkbox:checked');
+	const checkedRoles = document.querySelectorAll('.role-checkbox:checked');
 
+	if (checkedGroups.length === 0) {
+		alert('추가할 그룹을 선택해주세요.');
+		return;
+	}
+
+	if (checkedRoles.length === 0) {
+		alert('최소 1개 이상의 역할을 선택해주세요.');
+		return;
+	}
+
+	const newGroups = [];
+
+	checkedGroups.forEach(groupCheckbox => {
+		checkedRoles.forEach(roleCheckbox => {
+			const groupCode = groupCheckbox.value;
+			const groupName = groupCheckbox.dataset.groupName;
+			const roleCode = roleCheckbox.value;
+
+			const roleObj = roles.find(r => r.roleCode == roleCode);
+			const roleName = roleObj ? roleObj.roleName : '';
+
+			newGroups.push({
+				type: 'group',
+				groupCode: groupCode,
+				name: groupName,
+				roleCode: roleCode,
+				roleName: roleName
+			});
+		});
+	});
+
+	if (newGroups.length > 0) {
+		selectedGroups.push(...newGroups);
+		updateMemberTable();
+
+		const modal = bootstrap.Modal.getInstance(document.getElementById('creatorSelectModal'));
+		modal.hide();
+
+		alert(`${checkedGroups.length}개의 그룹이 추가되었습니다.`);
+	}
+}
 
 // ============================================
-// 9. 구성원 테이블 업데이트
+// 9. 구성원 테이블 업데이트 
 // ============================================
 function updateMemberTable() {
 	const tbody = document.getElementById('projectTbody');
 	tbody.innerHTML = '';
 
-	if (selectedUsers.length === 0) {
+	// 구성원과 그룹 모두 표시
+	const allItems = [...selectedUsers, ...selectedGroups];
+
+	if (allItems.length === 0) {
 		tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">추가된 구성원이 없습니다.</td></tr>';
 		return;
 	}
 
-	selectedUsers.forEach((user, index) => {
+	allItems.forEach((item, globalIndex) => {
 		const row = document.createElement('tr');
 		row.className = 'projectRow';
+
+		// 타입 확인 및 실제 인덱스 계산
+		const isGroup = item.type === 'group';
+		const actualIndex = isGroup
+			? selectedGroups.indexOf(item)
+			: selectedUsers.indexOf(item);
+		const type = isGroup ? 'group' : 'user';
+		const icon = isGroup ? '👥' : '👤';
+
 		row.innerHTML = `
-            <td>${user.name}</td>
-            <td>${user.roleName}</td>
+            <td>${icon} ${item.name}</td>
+            <td>${item.roleName}</td>
             <td>
-                <button class="btn btn-success btn-sm" onclick="openEditModal(${index})">수정</button>
+                <button class="btn btn-success btn-sm" onclick="openEditModal(${actualIndex}, '${type}')">수정</button>
             </td>
             <td>
-                <button class="btn btn-danger btn-sm" onclick="removeMember(${index})">삭제</button>
+                <button class="btn btn-danger btn-sm" onclick="removeMember(${actualIndex}, '${type}')">삭제</button>
             </td>
         `;
 		tbody.appendChild(row);
@@ -421,17 +490,12 @@ function updateMemberTable() {
 // ============================================
 // 10. 구성원 수정 모달 열기
 // ============================================
+function openEditModal(index, type) {
+	const item = type === 'group' ? selectedGroups[index] : selectedUsers[index];
+	const roles = window.serverData?.roles || [];
 
-function openEditModal(index) {
-	const user = selectedUsers[index];
-
-	// 서버에서 넘어온 역할 목록 가져오기 (없을 경우 대비해 빈 배열 처리)
-	const roles = window.serverData && window.serverData.roles ? window.serverData.roles : [];
-
-	// 역할 목록을 <option> 태그로 변환
 	const roleOptions = roles.map(role => {
-		// user.roleCode와 role.roleCode 비교 (숫자/문자열 타입 다를 수 있으므로 == 사용)
-		const isSelected = (user.roleCode == role.roleCode) ? 'selected' : '';
+		const isSelected = (item.roleCode == role.roleCode) ? 'selected' : '';
 		return `<option value="${role.roleCode}" ${isSelected}>${role.roleName}</option>`;
 	}).join('');
 
@@ -440,13 +504,13 @@ function openEditModal(index) {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">구성원 권한 수정</h5>
+                        <h5 class="modal-title">${type === 'group' ? '그룹' : '구성원'} 권한 수정</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">구성원</label>
-                            <input type="text" class="form-control" value="${user.name}" readonly>
+                            <label class="form-label fw-bold">${type === 'group' ? '그룹명' : '구성원'}</label>
+                            <input type="text" class="form-control" value="${item.name}" readonly>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">권한 <span class="text-danger">*</span></label>
@@ -457,14 +521,13 @@ function openEditModal(index) {
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
-                        <button type="button" class="btn btn-success" onclick="saveRoleChange(${index})">저장</button>
+                        <button type="button" class="btn btn-success" onclick="saveRoleChange(${index}, '${type}')">저장</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
 
-	// 기존 모달 제거 
 	const existingModal = document.getElementById('editMemberModal');
 	if (existingModal) existingModal.remove();
 
@@ -476,19 +539,22 @@ function openEditModal(index) {
 // ============================================
 // 11. 구성원 권한 변경 저장
 // ============================================
-function saveRoleChange(index) {
+function saveRoleChange(index, type) {
 	const roleSelect = document.getElementById('editRoleSelect');
-	const newRoleCode = roleSelect.value; // roleCode
-	const newRoleName = roleSelect.options[roleSelect.selectedIndex].text; // roleName
+	const newRoleCode = roleSelect.value;
+	const newRoleName = roleSelect.options[roleSelect.selectedIndex].text;
 
-	// 데이터 업데이트
-	selectedUsers[index].roleCode = newRoleCode;
-	selectedUsers[index].roleName = newRoleName;
+	// 타입에 따라 다른 배열 업데이트
+	if (type === 'group') {
+		selectedGroups[index].roleCode = newRoleCode;
+		selectedGroups[index].roleName = newRoleName;
+	} else {
+		selectedUsers[index].roleCode = newRoleCode;
+		selectedUsers[index].roleName = newRoleName;
+	}
 
-	// 테이블 갱신
 	updateMemberTable();
 
-	// 모달 닫기 및 제거
 	const modalElement = document.getElementById('editMemberModal');
 	const modal = bootstrap.Modal.getInstance(modalElement);
 	modal.hide();
@@ -501,9 +567,14 @@ function saveRoleChange(index) {
 // ============================================
 // 12. 구성원 삭제
 // ============================================
-function removeMember(index) {
-	if (confirm('해당 구성원을 삭제하시겠습니까?')) {
-		selectedUsers.splice(index, 1);
+function removeMember(index, type) {
+	if (confirm(`해당 ${type === 'group' ? '그룹을' : '구성원을'} 삭제하시겠습니까?`)) {
+		// 타입에 따라 다른 배열에서 삭제
+		if (type === 'group') {
+			selectedGroups.splice(index, 1);
+		} else {
+			selectedUsers.splice(index, 1);
+		}
 		updateMemberTable();
 	}
 }
@@ -513,22 +584,18 @@ function removeMember(index) {
 // ============================================
 function resetForm() {
 	if (confirm('입력한 내용을 모두 초기화하시겠습니까?')) {
-		// 프로젝트명 초기화
 		document.querySelector('[name="projectName"]').value = '';
 
-		// CKEditor 초기화
 		if (editorInstance) {
 			editorInstance.setData('');
 		}
 
-		// 구성원 목록 초기화
 		selectedUsers = [];
+		selectedGroups = [];
 		updateMemberTable();
 
-		// 상태 라디오 버튼 초기화 (진행으로 설정)
 		document.getElementById('inlineRadio1').checked = true;
 
-		// 유효성 검사 메시지 제거
 		document.querySelectorAll('.is-invalid').forEach(el => {
 			el.classList.remove('is-invalid');
 		});
@@ -544,7 +611,6 @@ function resetForm() {
 function handleFormSubmit(event) {
 	event.preventDefault();
 
-	// 1. 프로젝트명 검사
 	const projectNameInput = document.querySelector('[name="projectName"]');
 	const projectName = projectNameInput.value.trim();
 
@@ -566,14 +632,12 @@ function handleFormSubmit(event) {
 		return false;
 	}
 
-	// 특수문자, 공백 검사
 	if (!/^[\w가-힣ㄱ-ㅎ]+$/.test(projectName)) {
 		alert('프로젝트명에는 특수문자와 공백을 사용할 수 없습니다.');
 		projectNameInput.focus();
 		return false;
 	}
 
-	// 2. 프로젝트 설명 검사
 	if (!editorInstance) {
 		alert('에디터가 초기화되지 않았습니다. 페이지를 새로고침해주세요.');
 		return false;
@@ -592,13 +656,12 @@ function handleFormSubmit(event) {
 		return false;
 	}
 
-	// 3. 구성원 검사
-	if (selectedUsers.length === 0) {
-		alert('최소 1명 이상의 구성원을 추가해주세요.');
+
+	if (selectedUsers.length === 0 && selectedGroups.length === 0) {
+		alert('최소 1명 이상의 구성원 또는 1개 이상의 그룹을 추가해주세요.');
 		return false;
 	}
 
-	// 4. 데이터 수집
 	const formData = {
 		projectName: projectName,
 		description: description,
@@ -606,10 +669,13 @@ function handleFormSubmit(event) {
 		projectUsers: selectedUsers.map(user => ({
 			userCode: user.userCode,
 			roleCode: user.roleCode
+		})),
+		projectGroups: selectedGroups.map(group => ({
+			groupCode: group.groupCode,
+			roleCode: group.roleCode
 		}))
 	};
 
-	// 5. 서버로 전송
 	submitProject(formData);
 }
 
@@ -632,7 +698,6 @@ function submitProject(formData) {
 		})
 		.then(data => {
 			alert('프로젝트가 정상적으로 등록되었습니다.');
-			// 프로젝트 대시보드로 이동
 			window.location.href = `/projects/${data.identifier}/dashboard`;
 		})
 		.catch(error => {
@@ -657,7 +722,6 @@ function handleModalSearch(event) {
 		}
 	});
 
-	// 검색 후 전체 선택 체크박스 상태 업데이트
 	const selectAllCheckbox = document.getElementById('selectAllMembers');
 	const visibleCheckboxes = Array.from(document.querySelectorAll('.member-checkbox'))
 		.filter(cb => cb.closest('tr').style.display !== 'none');
@@ -670,6 +734,36 @@ function handleModalSearch(event) {
 		selectAllCheckbox.indeterminate = someChecked && !allChecked;
 	}
 }
+
+// ============================================
+// 16-2. 모달 검색 기능 (그룹)
+// ============================================
+function handleModalSearchGroup(event) {
+	const searchTerm = event.target.value.toLowerCase();
+	const tableRows = document.querySelectorAll('#groupSelectList tr');
+
+	tableRows.forEach(row => {
+		const text = row.textContent.toLowerCase();
+		if (text.includes(searchTerm)) {
+			row.style.display = '';
+		} else {
+			row.style.display = 'none';
+		}
+	});
+
+	const selectAllCheckbox = document.getElementById('selectAllgroup');
+	const visibleCheckboxes = Array.from(document.querySelectorAll('.group-checkbox'))
+		.filter(cb => cb.closest('tr').style.display !== 'none');
+
+	if (visibleCheckboxes.length > 0) {
+		const allChecked = visibleCheckboxes.every(cb => cb.checked);
+		const someChecked = visibleCheckboxes.some(cb => cb.checked);
+
+		selectAllCheckbox.checked = allChecked;
+		selectAllCheckbox.indeterminate = someChecked && !allChecked;
+	}
+}
+
 // ============================================
 // 17. 탭 기능 (구성원/그룹)
 // ============================================
@@ -677,36 +771,34 @@ function initializeTabNavigation() {
 	const tabLinks = document.querySelectorAll('.tabnav a');
 	const tabContents = document.querySelectorAll('.tabcontent > div');
 
-	// 첫 번째 탭 활성화
 	if (tabLinks.length > 0) {
-		tabLinks[0].parentElement.classList.add('active');
+		tabLinks[0].classList.add('active');
 	}
 	if (tabContents.length > 0) {
 		tabContents[0].style.display = 'block';
-
 	}
 
 	tabLinks.forEach(link => {
 		link.addEventListener('click', function(e) {
 			e.preventDefault();
 
-			// 모든 탭 콘텐츠 숨기기
 			tabContents.forEach(content => {
 				content.style.display = 'none';
 			});
 
-			// 모든 탭 링크 비활성화
 			tabLinks.forEach(l => {
-				l.parentElement.classList.remove('active');
+				l.classList.remove('active');
 			});
 
-			// 선택한 탭 활성화
-			this.parentElement.classList.add('active');
+			this.classList.add('active');
 			const targetId = this.getAttribute('href').substring(1);
 			const targetElement = document.getElementById(targetId);
 			if (targetElement) {
 				targetElement.style.display = 'block';
 			}
+
+			// 탭 전환 시 추가 버튼 이벤트 재설정
+			setupAddMembersButton();
 		});
 	});
 }

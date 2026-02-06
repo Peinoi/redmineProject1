@@ -1,265 +1,327 @@
 (() => {
-  const $ = (sel) => document.querySelector(sel);
-  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+	const $ = (sel) => document.querySelector(sel);
+	const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const pageSize = 10;
+	const pageSize = 10;
 
-  const rowsAll = () => $$("#projectTbody tr.projectRow");
-  const rowsVisible = () => rowsAll().filter((tr) => tr.dataset.filtered !== "1");
+	const rowsAll = () => $$("#projectTbody tr.projectRow");
+	const rowsVisible = () => rowsAll().filter((tr) => tr.dataset.filtered !== "1");
 
-  const ui = {
-    title: $("#filterTitle"),
-    priority: $("#filterPriority"),
-    assigneeText: $("#filterAssigneeText"),
-    assigneeValue: $("#filterAssigneeValue"),
+	const ui = {
+		title: $("#filterTitle"),
+		priority: $("#filterPriority"),
+		assigneeText: $("#filterAssigneeText"),
+		assigneeValue: $("#filterAssigneeValue"),
 
-    btnApply: $("#btnApplyFilters"),
-    btnReset: $("#btnResetFilters"),
-    btnAssigneeModal: $("#btnOpenAssigneeModal"),
+		btnApply: $("#btnApplyFilters"),
+		btnReset: $("#btnResetFilters"),
+		btnAssigneeModal: $("#btnOpenAssigneeModal"),
 
-    creatorModalEl: $("#creatorSelectModal"),
-    creatorModalList: $("#creatorModalList"),
-    creatorModalSearch: $("#creatorModalSearch"),
+		creatorModalEl: $("#creatorSelectModal"),
+		creatorModalList: $("#creatorModalList"),
+		creatorModalSearch: $("#creatorModalSearch"),
 
-    pagination: $("#projectPagination"),
-    pageInfo: $("#projectPageInfo"),
-  };
+		pagination: $("#projectPagination"),
+		pageInfo: $("#projectPageInfo"),
+	};
 
-  const STATUS_LABEL = {
-    OD1: "진행",
-    OD2: "중지",
-    OD3: "종료",
-  };
+	const STATUS_LABEL = {
+		OD1: "진행",
+		OD2: "삭제",
+		OD3: "종료",
+	};
 
-  let currentPage = 1;
+	let currentPage = 1;
 
-  const creatorModal = new bootstrap.Modal(ui.creatorModalEl);
+	const creatorModal = new bootstrap.Modal(ui.creatorModalEl);
 
-  // 유저 모달(관리자) 캐시
-  let userCache = [];
+	// 유저 모달(관리자) 캐시
+	let userCache = [];
 
-  function rowData(tr) {
-    const cells = tr.querySelectorAll("td");
-    return {
-      number: cells[0]?.textContent.trim() || "",
-      projectName: cells[1]?.textContent.trim() || "",
-      createdOn: cells[2]?.textContent.trim() || "",
-      managerName: cells[3]?.textContent.trim() || "",
-      managerPhone: cells[4]?.textContent.trim() || "",
-      managerEmail: cells[5]?.textContent.trim() || "",
-      status: cells[6]?.textContent.trim() || "",
-    };
-  }
+	function rowData(tr) {
+		const cells = tr.querySelectorAll("td");
+		return {
+			number: cells[0]?.textContent.trim() || "",
+			projectName: cells[1]?.textContent.trim() || "",
+			createdOn: cells[2]?.textContent.trim() || "",
+			managerName: cells[3]?.textContent.trim() || "",
+			managerPhone: cells[4]?.textContent.trim() || "",
+			managerEmail: cells[5]?.textContent.trim() || "",
+			status: cells[6]?.textContent.trim() || "",
+		};
+	}
 
-  // 유저 캐시 로드
-  async function ensureUserCache() {
-    if (userCache.length > 0) return true;
+	// 유저 캐시 로드
+	async function ensureUserCache() {
+		if (userCache.length > 0) return true;
 
-    const res = await fetch("/api/users/modal", {
-      headers: { Accept: "application/json" },
-    });
+		const res = await fetch("/api/users/modal", {
+			headers: { Accept: "application/json" },
+		});
 
-    if (!res.ok) {
-      alert("사용자 목록을 불러오지 못했습니다.");
-      return false;
-    }
+		if (!res.ok) {
+			alert("사용자 목록을 불러오지 못했습니다.");
+			return false;
+		}
 
-    const users = await res.json();
-    userCache = users.map((u) => ({
-      code: String(u.userCode),
-      name: u.userName,
-    }));
-    return true;
-  }
+		const users = await res.json();
+		userCache = users.map((u) => ({
+			code: String(u.userCode),
+			name: u.userName,
+		}));
+		return true;
+	}
 
-  // 유저 모달 렌더
-  function renderUserModalList(listEl, items, onPick) {
-    listEl.innerHTML = "";
+	// 유저 모달 렌더
+	function renderUserModalList(listEl, items, onPick) {
+		listEl.innerHTML = "";
 
-    if (!items.length) {
-      const empty = document.createElement("div");
-      empty.className = "text-muted";
-      empty.textContent = "결과가 없습니다.";
-      listEl.appendChild(empty);
-      return;
-    }
+		if (!items.length) {
+			const empty = document.createElement("div");
+			empty.className = "text-muted";
+			empty.textContent = "결과가 없습니다.";
+			listEl.appendChild(empty);
+			return;
+		}
 
-    items.forEach((u) => {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "list-group-item list-group-item-action";
-      btn.textContent = u.name;
-      btn.addEventListener("click", () => onPick(u));
-      listEl.appendChild(btn);
-    });
-  }
+		items.forEach((u) => {
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "list-group-item list-group-item-action";
+			btn.textContent = u.name;
+			btn.addEventListener("click", () => onPick(u));
+			listEl.appendChild(btn);
+		});
+	}
 
-  async function openAssigneeModal() {
-    ui.creatorModalSearch.value = "";
+	async function openAssigneeModal() {
+		ui.creatorModalSearch.value = "";
 
-    const ok = await ensureUserCache();
-    if (!ok) return;
+		const ok = await ensureUserCache();
+		if (!ok) return;
 
-    renderUserModalList(ui.creatorModalList, userCache, (picked) => {
-      ui.assigneeText.value = picked.name;
-      ui.assigneeValue.value = picked.code;
-      creatorModal.hide();
-    });
+		renderUserModalList(ui.creatorModalList, userCache, (picked) => {
+			ui.assigneeText.value = picked.name;
+			ui.assigneeValue.value = picked.code;
+			creatorModal.hide();
+		});
 
-    creatorModal.show();
-  }
+		creatorModal.show();
+	}
 
-  // 관리자 모달 검색
-  function bindUserModalSearch() {
-    ui.creatorModalSearch.addEventListener("input", async () => {
-      const ok = await ensureUserCache();
-      if (!ok) return;
+	// 관리자 모달 검색
+	function bindUserModalSearch() {
+		ui.creatorModalSearch.addEventListener("input", async () => {
+			const ok = await ensureUserCache();
+			if (!ok) return;
 
-      const q = ui.creatorModalSearch.value.trim().toLowerCase();
-      const filtered = userCache.filter((u) =>
-        String(u.name).toLowerCase().includes(q)
-      );
+			const q = ui.creatorModalSearch.value.trim().toLowerCase();
+			const filtered = userCache.filter((u) =>
+				String(u.name).toLowerCase().includes(q)
+			);
 
-      renderUserModalList(ui.creatorModalList, filtered, (picked) => {
-        ui.assigneeText.value = picked.name;
-        ui.assigneeValue.value = picked.code;
-        creatorModal.hide();
-      });
-    });
-  }
+			renderUserModalList(ui.creatorModalList, filtered, (picked) => {
+				ui.assigneeText.value = picked.name;
+				ui.assigneeValue.value = picked.code;
+				creatorModal.hide();
+			});
+		});
+	}
 
-  function applyFilters() {
-    const t = ui.title.value.trim().toLowerCase();
-    const prCode = ui.priority.value.trim();
-    const prLabel = prCode ? STATUS_LABEL[prCode] : "";
-    const managerName = ui.assigneeText.value.trim();
+	function applyFilters() {
+		const t = ui.title.value.trim().toLowerCase();
+		const prCode = ui.priority.value.trim();
+		const prLabel = prCode ? STATUS_LABEL[prCode] : "";
+		const managerName = ui.assigneeText.value.trim();
 
-    rowsAll().forEach((tr) => {
-      const d = rowData(tr);
-      let ok = true;
+		rowsAll().forEach((tr) => {
+			const d = rowData(tr);
+			let ok = true;
 
-      if (t && !d.projectName.toLowerCase().includes(t)) ok = false;
-      if (prLabel && d.status !== prLabel) ok = false;
-      if (managerName && d.managerName !== managerName) ok = false;
+			if (t && !d.projectName.toLowerCase().includes(t)) ok = false;
+			if (prLabel && d.status !== prLabel) ok = false;
+			if (managerName && d.managerName !== managerName) ok = false;
 
-      tr.dataset.filtered = ok ? "0" : "1";
-    });
+			tr.dataset.filtered = ok ? "0" : "1";
+		});
 
-    currentPage = 1;
-    renderPage();
-  }
+		currentPage = 1;
+		renderPage();
+	}
 
-  function resetFilters() {
-    ui.title.value = "";
-    ui.priority.value = "";
-    ui.assigneeText.value = "";
-    ui.assigneeValue.value = "";
+	function resetFilters() {
+		ui.title.value = "";
+		ui.priority.value = "";
+		ui.assigneeText.value = "";
+		ui.assigneeValue.value = "";
 
-    rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
-    currentPage = 1;
-    renderPage();
-  }
+		rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
+		currentPage = 1;
+		renderPage();
+	}
 
-  function renderPagination(totalPages) {
-    ui.pagination.innerHTML = "";
-    if (totalPages <= 1) return;
+	function renderPagination(totalPages) {
+		ui.pagination.innerHTML = "";
+		if (totalPages <= 1) return;
 
-    const makeItem = (label, page, disabled, active) => {
-      const li = document.createElement("li");
-      li.className = "page-item";
-      if (disabled) li.classList.add("disabled");
-      if (active) li.classList.add("active");
+		const makeItem = (label, page, disabled, active) => {
+			const li = document.createElement("li");
+			li.className = "page-item";
+			if (disabled) li.classList.add("disabled");
+			if (active) li.classList.add("active");
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "page-link";
-      btn.textContent = label;
-      btn.addEventListener("click", () => {
-        if (disabled) return;
-        currentPage = page;
-        renderPage();
-      });
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "page-link";
+			btn.textContent = label;
+			btn.addEventListener("click", () => {
+				if (disabled) return;
+				currentPage = page;
+				renderPage();
+			});
 
-      li.appendChild(btn);
-      return li;
-    };
+			li.appendChild(btn);
+			return li;
+		};
 
-    ui.pagination.appendChild(
-      makeItem("이전", Math.max(1, currentPage - 1), currentPage === 1, false)
-    );
+		ui.pagination.appendChild(
+			makeItem("이전", Math.max(1, currentPage - 1), currentPage === 1, false)
+		);
 
-    for (let p = 1; p <= totalPages; p++) {
-      ui.pagination.appendChild(makeItem(String(p), p, false, p === currentPage));
-    }
+		for (let p = 1; p <= totalPages; p++) {
+			ui.pagination.appendChild(makeItem(String(p), p, false, p === currentPage));
+		}
 
-    ui.pagination.appendChild(
-      makeItem("다음", Math.min(totalPages, currentPage + 1), currentPage === totalPages, false)
-    );
-  }
+		ui.pagination.appendChild(
+			makeItem("다음", Math.min(totalPages, currentPage + 1), currentPage === totalPages, false)
+		);
+	}
 
-  function renderPage() {
-    const visible = rowsVisible();
-    const total = visible.length;
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+	function renderPage() {
+		const visible = rowsVisible();
+		const total = visible.length;
+		const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
-    if (currentPage > totalPages) currentPage = totalPages;
+		if (currentPage > totalPages) currentPage = totalPages;
 
-    const start = (currentPage - 1) * pageSize;
-    const end = start + pageSize;
+		const start = (currentPage - 1) * pageSize;
+		const end = start + pageSize;
 
-    rowsAll().forEach((tr) => {
-      tr.style.display = "none";
-    });
+		rowsAll().forEach((tr) => {
+			tr.style.display = "none";
+		});
 
-    visible.slice(start, end).forEach((tr) => {
-      tr.style.display = "";
-    });
+		visible.slice(start, end).forEach((tr) => {
+			tr.style.display = "";
+		});
 
-    renderPagination(totalPages);
+		renderPagination(totalPages);
 
-    if (ui.pageInfo) {
-      const from = total === 0 ? 0 : start + 1;
-      const to = Math.min(end, total);
-      ui.pageInfo.textContent = `${from}-${to} / ${total}`;
-    }
-  }
+		if (ui.pageInfo) {
+			const from = total === 0 ? 0 : start + 1;
+			const to = Math.min(end, total);
+			ui.pageInfo.textContent = `${from}-${to} / ${total}`;
+		}
+	}
 
-  // 이벤트 바인딩
-  ui.btnApply.addEventListener("click", applyFilters);
-  ui.btnReset.addEventListener("click", resetFilters);
-  ui.btnAssigneeModal.addEventListener("click", openAssigneeModal);
+	// 이벤트 바인딩
+	ui.btnApply.addEventListener("click", applyFilters);
+	ui.btnReset.addEventListener("click", resetFilters);
+	ui.btnAssigneeModal.addEventListener("click", openAssigneeModal);
 
-  bindUserModalSearch();
+	bindUserModalSearch();
 
-  // 엔터키로 검색
-  ["#filterTitle", "#filterAssigneeText"].forEach((sel) => {
-    const el = $(sel);
-    if (!el) return;
-    el.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        applyFilters();
-      }
-    });
-  });
+	// 행 상태에 따른 스타일 업데이트
+	function updateRowStyle(tr) {
+		const d = rowData(tr);
+		if (d.status === "종료") {
+			tr.classList.add("project-row-finished");
+		} else {
+			tr.classList.remove("project-row-finished");
+		}
+	}
 
-  // 삭제 버튼 이벤트
-  $("#projectTbody").addEventListener("click", (e) => {
-    if (e.target && e.target.classList.contains("btn-danger")) {
-      const row = e.target.closest("tr");
-      const projectName = rowData(row).projectName;
+	// 초기 로드 시 모든 행에 스타일 적용
+	rowsAll().forEach(tr => updateRowStyle(tr));
+	// 삭제 및 종료 버튼 이벤트
+	$("#projectTbody").addEventListener("click", (e) => {
+		const btn = e.target.closest("button");
+		if (!btn) return;
 
-      if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
+		const row = btn.closest("tr");
+		const projectName = rowData(row).projectName;
 
-      // 여기에 삭제 로직 추가
-      // 예: fetch로 서버에 삭제 요청 후 성공시 row.remove()
-      console.log("삭제 요청:", projectName);
-      // row.remove();
-      // renderPage();
-    }
-  });
+		// 1. 삭제 버튼 클릭 시
+		if (btn.classList.contains("btn-danger")) {
+			if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
 
-  // 초기 화면
-  rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
-  renderPage();
+			// 화면에서 즉시 제외하기 위해 filtered 데이터셋 활용
+			row.dataset.filtered = "1"; // 필터링된 것으로 간주하여 숨김
+			row.style.display = "none";
+
+			// 서버 삭제 통신(fetch)은 이곳에서 수행
+			console.log("서버 삭제 요청 예정:", projectName);
+
+			renderPage(); // 페이징 다시 계산
+		}
+
+		// 2. 종료 버튼 클릭 시
+		if (btn.classList.contains("btn-success")) {
+			if (!confirm(`"${projectName}" 프로젝트를 종료 처리하시겠습니까?`)) return;
+
+			// 상태 열(td)의 텍스트를 '종료'로 변경 (6번째 TD가 상태라고 가정)
+			const statusCell = row.querySelectorAll("td")[6];
+			if (statusCell) statusCell.textContent = "종료";
+
+			updateRowStyle(row); // 회색 배경 적용
+
+			// 서버 업데이트 통신(fetch)은 이곳에서 수행
+			console.log("서버 종료 상태 업데이트 예정:", projectName);
+		}
+	});
+	// 엔터키로 검색
+	["#filterTitle", "#filterAssigneeText"].forEach((sel) => {
+		const el = $(sel);
+		if (!el) return;
+		el.addEventListener("keydown", (e) => {
+			if (e.key === "Enter") {
+				e.preventDefault();
+				applyFilters();
+			}
+		});
+	});
+
+	// 삭제 버튼 이벤트
+	$("#projectTbody").addEventListener("click", (e) => {
+		if (e.target && e.target.classList.contains("btn-danger")) {
+			const row = e.target.closest("tr");
+			const projectName = rowData(row).projectName;
+
+			if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
+
+			// 여기에 삭제 로직 추가
+			// 예: fetch로 서버에 삭제 요청 후 성공시 row.remove()
+			console.log("삭제 요청:", projectName);
+			// row.remove();
+			// renderPage();
+		}
+	});
+
+	// 초기 화면
+	rowsAll().forEach((tr) => {
+		const d = rowData(tr);
+
+		// 상태가 '삭제'인 경우 filtered를 "1"로 설정하여 목록에서 제외
+		if (d.status === "삭제") {
+			tr.dataset.filtered = "1";
+		} else {
+			tr.dataset.filtered = "0";
+		}
+
+		// 상태가 '종료'인 경우 회색 스타일 적용 (이전 답변 코드 활용)
+		updateRowStyle(tr);
+	});
+
+	// 초기 렌더링 수행
+	renderPage();
 })();
