@@ -11,4 +11,6 @@ public class UserVO {
 	private String passwordHash;
 	private String name;
 	private String phone;
+	private String rememberEmpNo;
+	private String isLock;
 }

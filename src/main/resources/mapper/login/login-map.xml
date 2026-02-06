@@ -6,8 +6,14 @@
 				,employee_no
 				,password_hash
 				,name
+				,is_lock
 		from users
 		where employee_no = #{employeeNo}
-		and is_lock = '0'
 	</select>
+	
+	<update id="updateLastLoginAt" parameterType="int">
+		update users
+			set last_login_at = sysdate
+		where user_code = #{userCode}
+	</update>
 </mapper>

@@ -7,6 +7,32 @@
 				<div class="sb-nav-link-icon"></div> 프로젝트
 			</a> 
 			
+			<!-- 프로젝트 영역에서만 보이는 추가 메뉴 -->
+			<!-- com.yedam.app.common.advice.SidebarAdvice 여기서 프로젝트 관련 페이지 추가-->
+			<th:block th:if="${inProjectArea}">
+				<!-- 아래 링크는 임의의 링크 각자 페이지로 변경바람 -->
+				<a class="nav-link" th:href="@{/issueList}">
+				<div class="sb-nav-link-icon"></div>일감 목록</a>
+				
+				<a class="nav-link" th:href="@{/kanbanboard}">
+				<div class="sb-nav-link-icon"></div>나의 일정</a>
+				
+				<a class="nav-link" th:href="@{/ganttChart}">
+				<div class="sb-nav-link-icon"></div>일정 관리</a>
+				
+				<a class="nav-link" th:href="@{/calendar}">
+				<div class="sb-nav-link-icon"></div>일정 달력</a>
+				
+				<a class="nav-link" th:href="@{/noticeList}">
+				<div class="sb-nav-link-icon"></div>공지사항</a>
+				
+				<a class="nav-link" th:href="@{/docs}">
+				<div class="sb-nav-link-icon"></div>문서</a>
+				
+				<a class="nav-link" th:href="@{/projects}">
+				<div class="sb-nav-link-icon"></div>프로젝트 설정</a>
+			</th:block>
+			
 			<a class="nav-link" th:href="@{/projects}">
 				<div class="sb-nav-link-icon"></div> 내 페이지
 			</a> 
@@ -15,22 +41,7 @@
 				<div class="sb-nav-link-icon"></div> 관리
 			</a>
 
-			<th:block th:if="${inProjectArea}">
-
-			</th:block>
-
-			<!-- 프로젝트 영역에서만 보이는 추가 메뉴 -->
-			<!-- com.yedam.app.common.advice.SidebarAdvice 여기서 프로젝트 관련 페이지 추가-->
-			<th:block th:if="${inProjectArea}">
-				<!-- 아래 링크는 임의의 링크 각자 페이지로 변경바람 -->
-				<a class="nav-link" th:href="@{/issueList}">일감 목록</a>
-				<a class="nav-link" th:href="@{/kanbanboard}">나의 일정</a>
-				<a class="nav-link" th:href="@{/ganttChart}">일정 관리</a>
-				<a class="nav-link" th:href="@{/calendar}">일정 달력</a>
-				<a class="nav-link" th:href="@{/noticeList}">공지사항</a>
-				<a class="nav-link" th:href="@{/docs}">문서</a>
-				<a class="nav-link" th:href="@{/projects}">프로젝트 설정</a>
-			</th:block>
+			
 
 		</div>
 	</div>

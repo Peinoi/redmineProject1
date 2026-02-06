@@ -4,6 +4,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.yedam.app.login.mapper.LoginMapper;
+import com.yedam.app.login.service.LoginResultDTO;
+import com.yedam.app.login.service.LoginResultType;
 import com.yedam.app.login.service.LoginService;
 import com.yedam.app.login.service.UserVO;
 
@@ -15,24 +17,37 @@ public class LoginServiceImpl implements LoginService {
 	
 	private final LoginMapper loginMapper;
 	private final PasswordEncoder passwordEncoder;
-	
-	// 사원번호, 비밀번호 조회
+
+	// 마지막 로그인 업데이트
 	@Override
-	public UserVO findLoginInfo(UserVO userVO) {
+	public int modifyLastLoginAt(Integer userCode) {
+		return loginMapper.updateLastLoginAt(userCode);
+	}
+	
+	// 로그인 검증
+	@Override
+	public LoginResultDTO login(UserVO userVO) {
 		
 		UserVO user = loginMapper.selectLoginInfo(userVO);
-		if (user == null) return null;
-		
+		// user가 null이면 LoginResultType에는 INVALID, userVO에는 null을 넣는다
+		if(user == null) {
+			return new LoginResultDTO(LoginResultType.INVALID, null);
+		}
+
 		// 입력 비번: loginVO.getPassword()
 	    // DB 해시: user.getPasswordHash()
 										// 입력 비번				// DB 해시
-		if (!passwordEncoder.matches(userVO.getPassword(), user.getPasswordHash())) {
-			return null;
+		if(!passwordEncoder.matches(userVO.getPassword(), user.getPasswordHash())) {
+			return new LoginResultDTO(LoginResultType.INVALID, null);
 		}
 		
-		// 세션에 해시 넣지 않게 제거
-		user.setPasswordHash(null);
-		return user;
+		// DB의 is_lock이 '1'이면 LoginResultType에는 INVALID, userVO에는 null을 넣는다
+		if("1".equals(user.getIsLock())) {
+			return new LoginResultDTO(LoginResultType.LOCKED, null);
+		}
+		
+		// 성공하면 LoginResultType에는 OK, userVO에는 user를 넣는다
+		return new LoginResultDTO(LoginResultType.OK, user);
 	}
 
 }
