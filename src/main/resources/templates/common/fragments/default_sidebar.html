@@ -3,15 +3,15 @@
 	<div class="sb-sidenav-menu">
 		<div class="nav">
 
-			<a class="nav-link" href="@{/projects}">
+			<a class="nav-link" th:href="@{/projects}">
 				<div class="sb-nav-link-icon"></div> 프로젝트
 			</a> 
 			
-			<a class="nav-link" href="@{}">
+			<a class="nav-link" th:href="@{/projects}">
 				<div class="sb-nav-link-icon"></div> 내 페이지
 			</a> 
 			
-			<a class="nav-link" href="@{}"> <!-- th:if="${role == 'ADMIN'} -->
+			<a class="nav-link" th:href="@{/projects}"> <!-- th:if="${role == 'ADMIN'} -->
 				<div class="sb-nav-link-icon"></div> 관리
 			</a>
 
@@ -23,13 +23,13 @@
 			<!-- com.yedam.app.common.advice.SidebarAdvice 여기서 프로젝트 관련 페이지 추가-->
 			<th:block th:if="${inProjectArea}">
 				<!-- 아래 링크는 임의의 링크 각자 페이지로 변경바람 -->
-				<a class="nav-link" th:href="@{/issues}">일감 목록</a>
-				<a class="nav-link" th:href="@{/my-schedule}">나의 일정</a>
-				<a class="nav-link" th:href="@{/schedule}">일정 관리</a>
+				<a class="nav-link" th:href="@{/issueList}">일감 목록</a>
+				<a class="nav-link" th:href="@{/kanbanboard}">나의 일정</a>
+				<a class="nav-link" th:href="@{/ganttChart}">일정 관리</a>
 				<a class="nav-link" th:href="@{/calendar}">일정 달력</a>
-				<a class="nav-link" th:href="@{/notice}">공지사항</a>
+				<a class="nav-link" th:href="@{/noticeList}">공지사항</a>
 				<a class="nav-link" th:href="@{/docs}">문서</a>
-				<a class="nav-link" th:href="@{/settings}">설정</a>
+				<a class="nav-link" th:href="@{/projects}">프로젝트 설정</a>
 			</th:block>
 
 		</div>
