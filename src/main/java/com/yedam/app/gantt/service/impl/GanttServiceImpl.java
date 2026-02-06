@@ -1,6 +1,6 @@
 package com.yedam.app.gantt.service.impl;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class GanttServiceImpl implements GanttService {
 		}
 
 		// ===== 프로젝트별 종료일 계산용 =====
-		Map<Integer, Date> projectEndDateMap = new HashMap<>();
+		Map<Integer, LocalDateTime> projectEndDateMap = new HashMap<>();
 
 		// 2. 일감 기준 MAX 종료일 계산
 		for (GanttVO vo : list) {
@@ -50,12 +50,12 @@ public class GanttServiceImpl implements GanttService {
 			if (projectCode == null)
 				continue;
 
-			Date issueEnd = issueEndDate(vo);
+			LocalDateTime issueEnd = issueEndDate(vo);
 			if (issueEnd == null)
 				continue;
 
-			Date currentMax = projectEndDateMap.get(projectCode);
-			if (currentMax == null || issueEnd.after(currentMax)) {
+			LocalDateTime currentMax = projectEndDateMap.get(projectCode);
+			if (currentMax == null || issueEnd.isAfter(currentMax)) {
 				projectEndDateMap.put(projectCode, issueEnd);
 			}
 		}
@@ -90,7 +90,7 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// ===== 일감 시작일 규칙 =====
-	private Date issueStartDate(GanttVO vo) {
+	private LocalDateTime issueStartDate(GanttVO vo) {
 		String status = vo.getIssueStatus();
 
 		// 신규 → createdAt
@@ -108,7 +108,7 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// ===== 일감 종료일 규칙 =====
-	private Date issueEndDate(GanttVO vo) {
+	private LocalDateTime issueEndDate(GanttVO vo) {
 		// 완료 → resolvedAt
 		if ("완료".equals(vo.getIssueStatus()) && vo.getResolvedAt() != null) {
 			return vo.getResolvedAt();
@@ -116,4 +116,5 @@ public class GanttServiceImpl implements GanttService {
 		// 그 외 → dueAt
 		return vo.getDueAt();
 	}
+
 }

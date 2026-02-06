@@ -10,24 +10,19 @@
 		priority: $("#filterPriority"),
 		assigneeText: $("#filterAssigneeText"),
 		assigneeValue: $("#filterAssigneeValue"),
-		creatorText: $("#filterCreatorText"),
-		creatorValue: $("#filterCreatorValue"),
-		createdAt: $("#filterCreatedAt"),
-		dueAt: $("#filterDueAt"),
+		startDateFrom: $("#filterStartDateFrom"),
+		startDateTo: $("#filterStartDateTo"),
+		endDate: $("#filterEndDate"),
 		btnApply: $("#btnApplyFilters"),
 		btnReset: $("#btnResetFilters"),
 		btnProjectModal: $("#btnOpenProjectModal"),
 		btnAssigneeModal: $("#btnOpenAssigneeModal"),
-		btnCreatorModal: $("#btnOpenCreatorModal"),
 		projectModalEl: $("#projectSelectModal"),
 		assigneeModalEl: $("#assigneeSelectModal"),
-		creatorModalEl: $("#creatorSelectModal"),
 		projectModalList: $("#projectModalList"),
 		assigneeModalList: $("#assigneeModalList"),
-		creatorModalList: $("#creatorModalList"),
 		projectModalSearch: $("#projectModalSearch"),
 		assigneeModalSearch: $("#assigneeModalSearch"),
-		creatorModalSearch: $("#creatorModalSearch"),
 	};
 
 	let projectModal, assigneeModal, creatorModal;
@@ -38,7 +33,6 @@
 	window.addEventListener("load", () => {
 		if (ui.projectModalEl) projectModal = new bootstrap.Modal(ui.projectModalEl);
 		if (ui.assigneeModalEl) assigneeModal = new bootstrap.Modal(ui.assigneeModalEl);
-		if (ui.creatorModalEl) creatorModal = new bootstrap.Modal(ui.creatorModalEl);
 
 		bindEvents();
 	});
@@ -48,7 +42,6 @@
 		if (ui.btnReset) ui.btnReset.addEventListener("click", resetFilters);
 		if (ui.btnProjectModal) ui.btnProjectModal.addEventListener("click", openProjectModal);
 		if (ui.btnAssigneeModal) ui.btnAssigneeModal.addEventListener("click", openAssigneeModal);
-		if (ui.btnCreatorModal) ui.btnCreatorModal.addEventListener("click", openCreatorModal);
 
 		bindProjectModalSearch();
 		bindUserModalSearch();
@@ -175,21 +168,6 @@
 		assigneeModal.show();
 	}
 
-	async function openCreatorModal() {
-		if (ui.creatorModalSearch) ui.creatorModalSearch.value = "";
-
-		const ok = await ensureUserCache();
-		if (!ok) return;
-
-		renderUserModalList(ui.creatorModalList, userCache, (picked) => {
-			ui.creatorText.value = picked.name;
-			ui.creatorValue.value = picked.code;
-			creatorModal.hide();
-		});
-
-		creatorModal.show();
-	}
-
 	function bindUserModalSearch() {
 		if (ui.assigneeModalSearch) {
 			ui.assigneeModalSearch.addEventListener("input", async () => {
@@ -208,25 +186,24 @@
 				});
 			});
 		}
-
-		if (ui.creatorModalSearch) {
-			ui.creatorModalSearch.addEventListener("input", async () => {
-				const ok = await ensureUserCache();
-				if (!ok) return;
-
-				const q = ui.creatorModalSearch.value.trim().toLowerCase();
-				const filtered = userCache.filter((u) =>
-					String(u.name).toLowerCase().includes(q)
-				);
-
-				renderUserModalList(ui.creatorModalList, filtered, (picked) => {
-					ui.creatorText.value = picked.name;
-					ui.creatorValue.value = picked.code;
-					creatorModal.hide();
-				});
-			});
-		}
 	}
+
+	// 우선순위 코드 매핑
+	const priorityCodeMap = {
+		'OA1': '긴급',
+		'OA2': '높음',
+		'OA3': '보통',
+		'OA4': '낮음'
+	};
+
+	// 상태 코드 매핑
+	const statusCodeMap = {
+		'OB1': '신규',
+		'OB2': '진행',
+		'OB3': '해결',
+		'OB4': '반려',
+		'OB5': '완료'
+	};
 
 	// 필터 적용
 	function applyFilters() {
@@ -236,14 +213,26 @@
 			status: ui.status?.value || '',
 			priority: ui.priority?.value || '',
 			assigneeCode: ui.assigneeValue?.value || '',
-			creatorCode: ui.creatorValue?.value || '',
-			createdAt: ui.createdAt?.value || '',
-			dueAt: ui.dueAt?.value || '',
+			startDateFrom: ui.startDateFrom?.value || '',
+			startDateTo: ui.startDateTo?.value || '',
+			endDate: ui.endDate?.value || '',
 		};
 
-		// list.js의 fData 함수 호출
+		// 상태, 우선순위를 텍스트로 변환
+		const filterObj = {
+			projectCode: filters.projectCode,
+			title: filters.title,
+			status: filters.status ? statusCodeMap[filters.status] : '',
+			priority: filters.priority ? priorityCodeMap[filters.priority] : '',
+			assigneeCode: filters.assigneeCode,
+			startDateFrom: filters.startDateFrom,
+			startDateTo: filters.startDateTo,
+			endDate: filters.endDate,
+		};
+
+		// list.js의 ganttReload 함수 호출
 		if (typeof window.ganttReload === 'function') {
-			window.ganttReload(filters);
+			window.ganttReload(filterObj);
 		}
 	}
 
@@ -256,14 +245,28 @@
 		if (ui.priority) ui.priority.value = '';
 		if (ui.assigneeText) ui.assigneeText.value = '';
 		if (ui.assigneeValue) ui.assigneeValue.value = '';
-		if (ui.creatorText) ui.creatorText.value = '';
-		if (ui.creatorValue) ui.creatorValue.value = '';
-		if (ui.createdAt) ui.createdAt.value = '';
-		if (ui.dueAt) ui.dueAt.value = '';
+		if (ui.startDateFrom) ui.startDateFrom.value = '';
+		if (ui.startDateTo) ui.startDateTo.value = '';
+		if (ui.endDate) ui.endDate.value = '';
 
-		// list.js의 fData 함수 호출
+		// list.js의 ganttReload 함수 호출 (필터 없이)
 		if (typeof window.ganttReload === 'function') {
-			window.ganttReload();
+			window.ganttReload({});
 		}
 	}
+
+	document.addEventListener("DOMContentLoaded", () => {
+		const toggleBtn = document.getElementById("btnToggleSearch");
+		const wrapper = document.getElementById("searchConditionWrapper");
+
+		if (!toggleBtn || !wrapper) return;
+
+		toggleBtn.addEventListener("click", () => {
+			const isOpen = wrapper.style.display === "block";
+
+			wrapper.style.display = isOpen ? "none" : "block";
+			toggleBtn.textContent = isOpen ? "검색조건 열기" : "검색조건 닫기";
+		});
+	});
+
 })();
