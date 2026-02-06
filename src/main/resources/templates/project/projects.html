@@ -83,20 +83,21 @@
 			</div>
 			<div class="card-body">
 				<div class="table-responsive">
-					<table class="table table-hover align-middle" id="issueTable">
+					<table class="table table-hover align-middle" id="issueTable"
+						style="table-layout: fixed; width: 100%;">
 						<thead class="table-light">
 							<tr>
 
-								<th>번호</th>
-								<th>프로젝트명</th>
-								<th>등록일</th>
+								<th style="width: 50px;">번호</th>
+								<th style="width: 30px;">프로젝트명</th>
+								<th style="width: 40px;">등록일</th>
 								<th>관리자</th>
-								<th>관리자번호</th>
+								<th style="width: 130px;">관리자번호</th>
 								<th>관리자메일</th>
-								<th>진행 상태</th>
-								<th>진척률</th>
-								<th>종료</th>
-								<th>삭제</th>
+								<th style="width: 100px;">진행 상태</th>
+								<th style="width: 180px;">진척률</th>
+								<th style="width: 80px;">종료</th>
+								<th style="width: 80px;">삭제</th>
 							</tr>
 						</thead>
 
@@ -110,7 +111,23 @@
 								<td>[[ ${pro.phone} ]]</td>
 								<td>[[ ${pro.email} ]]</td>
 								<td>[[ ${pro.codeName} ]]</td>
-								<td><progress id="progress" value="50" min="0" max="100"></progress>100%</td>
+								<td><div class="progress-container"
+										style="position: relative;">
+										<div class="progress"
+											style="height: 25px; background-color: gray;">
+											<div class="progress-bar" role="progressbar"
+												style="width: 70%; background-color: yellow; opacity: 0.2px; position: absolute; height: 100%; z-index: 1;">
+												<span class="ms-auto me-2 text-dark"
+													style="font-size: 0.8rem;">70%</span>
+											</div>
+
+											<div
+												class="progress-bar progress-bar-striped progress-bar-animated"
+												role="progressbar"
+												style="width: 40%; background-color: red; z-index: 2;">
+												40%</div>
+										</div>
+									</div></td>
 								<td><button class="btn btn-success">
 										<i class="fa-regular fa-face-meh"></i> 종료
 									</button></td>
