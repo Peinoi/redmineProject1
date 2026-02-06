@@ -27,9 +27,10 @@ public class GanttVO {
 	private LocalDateTime completedOn; // 프로젝트 종료일
 	private String projectStatus; // 프로젝트 상태
 	
-	// 뷰에서 추가한 필드
+	// 타입 계층 정보
 	private Integer typeLevel; // 타입 레벨 
-	private Integer parentType; // 상위 타입 코드
+	private Integer parentTypeCode; // 부모 타입 코드
+	private String parentType; // 부모 타입 이름
 
 	// 간트 전용 필드
 	private Integer projectProgress; // 프로젝트 진척도

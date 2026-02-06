@@ -24,6 +24,7 @@
 			   , completed_on
 			   , project_status
 			   , type_level
+			   , parent_type_code
 			   , parent_type
 		FROM gantt_view
 		ORDER BY issue_code
