@@ -7,11 +7,11 @@ import org.apache.ibatis.annotations.Param;
 import com.yedam.app.issue.service.IssueVO;
 
 public interface IssueMapper {
-	// 전체조회
-	public List<IssueVO> selectAll();
-	// 프로젝트별 조회
-	public List<IssueVO> selectAllByProject(@Param("projectCode") Long projectCode);
-
+	// 로그인 유저의 프로젝트 일감 전체 목록
+	 List<IssueVO> selectVisibleIssues(
+		      @Param("userCode") Integer userCode,
+		      @Param("projectCode") Long projectCode
+		  );
 	// 단건조회
 	public IssueVO selectIssue(IssueVO issue);
 	// 등록

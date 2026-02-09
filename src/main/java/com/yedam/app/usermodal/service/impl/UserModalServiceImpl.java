@@ -13,12 +13,11 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class UserModalServiceImpl implements UserModalService {
-	
-	private final UserModalMapper userModalMapper;
-	
-	@Override
-	public List<UserModalVO> findUserModalList() {
-		return userModalMapper.selectUserModalList();
-	}
 
+  private final UserModalMapper userModalMapper;
+
+  @Override
+  public List<UserModalVO> findUserModalListByProject(Long projectCode) {
+    return userModalMapper.selectUserModalListByProject(projectCode);
+  }
 }

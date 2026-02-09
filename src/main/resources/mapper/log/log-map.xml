@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.log.mapper.LogMapper">
+<insert id="insertLog" parameterType="LogVO">
+    <selectKey keyProperty="logCode" resultType="long" order="BEFORE">
+      SELECT NVL(MAX(log_code), 0) + 1
+      FROM logs
+    </selectKey>
+
+    INSERT INTO logs (
+      log_code,
+      project_code,
+      user_code,
+      action_type,
+      target_type,
+      target_code,
+      created_at,
+      meta
+    ) VALUES (
+      #{logCode},
+      #{projectCode},
+      #{userCode},
+      #{actionType},
+      #{targetType},
+      #{targetCode},
+      SYSDATE,
+      #{meta, jdbcType=CLOB}
+    )
+  </insert>
+
+<select id="selectLogsByTarget" resultType="LogVO">
+  SELECT
+    l.log_code,
+    l.project_code,
+    l.user_code,
+    u.name AS user_name,
+    l.action_type,
+    l.target_type,
+    l.target_code,
+    l.created_at,
+    l.meta
+  FROM logs l
+  LEFT JOIN users u
+    ON u.user_code = l.user_code
+  WHERE l.target_type = #{targetType}
+    AND l.target_code = #{targetCode}
+  ORDER BY l.created_at DESC, l.log_code DESC
+</select>
+
+</mapper>

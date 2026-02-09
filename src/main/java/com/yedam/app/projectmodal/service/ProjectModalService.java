@@ -3,5 +3,6 @@ package com.yedam.app.projectmodal.service;
 import java.util.List;
 
 public interface ProjectModalService {
-	public List<ProjectModalVO> findProjectModalList();
+	List<ProjectModalVO> findProjectListForListPage(Integer userCode);
+	  List<ProjectModalVO> findProjectListForCreate(Integer userCode);
 }

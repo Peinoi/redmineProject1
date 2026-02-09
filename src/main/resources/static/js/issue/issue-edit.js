@@ -1,11 +1,10 @@
-// /js/issue/issue-edit.js
 (() => {
   const $ = (s) => document.querySelector(s);
 
   const form = $("#issueEditForm");
 
   const titleInp = $("#title");
-  const descInp = $("#description");
+  const descInp = $("#editor");
 
   const statusSel = $("#statusId");
   const progressInp = $("#progress");
@@ -25,10 +24,23 @@
   const btnBack = $("#btnBack");
   const btnReset = $("#btnReset");
 
-  // --- 상위일감(Parent issue) ---
+  // --- 일감/프로젝트 정보 ---
   const issueCodeEl = $("#issueCode");
-  const projectCodeEl = $("#projectCode");
 
+  // 기존 hidden 프로젝트 코드
+  const projectCodeEl = $("#projectCode");
+  const projectTextEl = $("#projectText");
+
+  // --- 프로젝트 모달 ---
+  const btnOpenProjectModal = $("#btnOpenProjectModal");
+  const projectModalEl = $("#projectSelectModal");
+  const projectModal = projectModalEl
+    ? new bootstrap.Modal(projectModalEl)
+    : null;
+  const projectListEl = $("#projectModalList");
+  const projectSearchEl = $("#projectModalSearch");
+
+  // --- 상위일감(Parent issue) ---
   const parIssueText = $("#parIssueText");
   const parIssueCode = $("#parIssueCode");
   const btnOpenParIssueModal = $("#btnOpenParIssueModal");
@@ -43,6 +55,28 @@
 
   const toDT = (d) => (d ? `${d}T00:00` : "");
 
+  // --- 유형(Type) 모달 (테이블) ---
+  const typeModalEl = $("#typeSelectModal");
+  const typeModal = typeModalEl ? new bootstrap.Modal(typeModalEl) : null;
+
+  const typeText = $("#typeText");
+
+  // id 중복 방지용: typeCode는 id로 하나만 잡히지만, 혹시 중복이면 name 기준으로 마지막 하나를 사용
+  const getTypeCodeInput = () => {
+    const list = document.querySelectorAll('input[name="typeCode"]');
+    if (list.length === 0) return $("#typeCode");
+    return list[list.length - 1];
+  };
+  const typeCode = getTypeCodeInput();
+
+  const btnOpenTypeModal = $("#btnOpenTypeModal");
+  const btnClearType = $("#btnClearType");
+
+  const typeTbody = $("#typeModalList");
+  const typeSearchEl = $("#typeModalSearch");
+
+  let typeCache = [];
+
   // --- 담당자 모달 ---
   const assigneeModalEl = $("#assigneeSelectModal");
   const assigneeModal = assigneeModalEl
@@ -54,7 +88,11 @@
   const assigneeListEl = $("#assigneeModalList");
   const assigneeSearchEl = $("#assigneeModalSearch");
 
+  // 프로젝트별 캐시
+  let projectCache = [];
   let userCache = [];
+  let userCacheProjectCode = "";
+
   const parentIssueCacheByProject = new Map();
 
   const initial = {
@@ -70,6 +108,10 @@
     parIssueText: parIssueText?.value || "",
     parIssueCode: parIssueCode?.value || "",
     parIssueNameEnabled: parIssueCode?.getAttribute("name") === "parIssueCode",
+    typeText: typeText?.value || "",
+    typeCode: typeCode?.value || "",
+    projectCode: projectCodeEl?.value || "",
+    projectText: projectTextEl?.value || "",
   };
 
   const syncHiddenDates = () => {
@@ -83,7 +125,6 @@
     }
   };
 
-  // 완료 상태일 때만 완료일 입력 가능
   const toggleResolvedByStatus = () => {
     if (!resolvedView) return;
     const isDone = statusSel?.value === "OB5";
@@ -171,59 +212,7 @@
   };
 
   // -------------------------
-  // 담당자 모달
-  // -------------------------
-  const ensureUserCache = async () => {
-    if (userCache.length) return true;
-    const res = await fetch("/api/users/modal", {
-      headers: { Accept: "application/json" },
-    });
-    if (!res.ok) {
-      alert("사용자 목록을 불러오지 못했습니다.");
-      return false;
-    }
-    const data = await res.json();
-    userCache = data.map((u) => ({
-      value: String(u.userCode),
-      label: u.userName,
-    }));
-    return true;
-  };
-
-  const renderUsers = (items) => {
-    if (!assigneeListEl) return;
-    assigneeListEl.innerHTML = "";
-    if (!items.length) {
-      assigneeListEl.innerHTML =
-        '<div class="text-muted">결과가 없습니다.</div>';
-      return;
-    }
-    items.forEach((u) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "list-group-item list-group-item-action";
-      b.textContent = u.label;
-      b.addEventListener("click", () => {
-        assigneeText.value = u.label;
-        assigneeCode.value = u.value;
-        assigneeSearchEl.value = "";
-        assigneeModal?.hide();
-      });
-      assigneeListEl.appendChild(b);
-    });
-  };
-
-  const openAssigneeModal = async () => {
-    if (!assigneeModal) return;
-    const ok = await ensureUserCache();
-    if (!ok) return;
-    assigneeSearchEl.value = "";
-    renderUsers(userCache);
-    assigneeModal.show();
-  };
-
-  // -------------------------
-  // 상위일감 모달(테이블)
+  // 공통 fetch
   // -------------------------
   const fetchJson = async (url, failMsg) => {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
@@ -234,6 +223,281 @@
     return res.json();
   };
 
+  // -------------------------
+  // 프로젝트 모달
+  // -------------------------
+  const ensureProjectCache = async () => {
+    if (projectCache.length) return true;
+
+    const data = await fetchJson(
+      "/api/projects/modal",
+      "프로젝트 목록을 불러오지 못했습니다.",
+    );
+    if (!data) return false;
+
+    projectCache = data.map((p) => ({
+      value: String(p.projectCode),
+      label: p.projectName,
+    }));
+    return true;
+  };
+
+  const renderProjectList = (items) => {
+    if (!projectListEl) return;
+    projectListEl.innerHTML = "";
+
+    if (!items.length) {
+      projectListEl.innerHTML =
+        '<div class="text-muted">결과가 없습니다.</div>';
+      return;
+    }
+
+    items.forEach((p) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "list-group-item list-group-item-action";
+      b.textContent = p.label;
+      b.addEventListener("click", async () => {
+        const prev = String(projectCodeEl?.value || "").trim();
+        const next = String(p.value || "").trim();
+
+        if (projectTextEl) projectTextEl.value = p.label;
+        if (projectCodeEl) projectCodeEl.value = p.value;
+
+        if (projectSearchEl) projectSearchEl.value = "";
+        projectModal?.hide();
+
+        // 프로젝트가 바뀌면: 담당자/상위일감 캐시 & 선택값 초기화
+        if (prev && prev !== next) {
+          // 담당자 초기화
+          if (assigneeText) assigneeText.value = "";
+          if (assigneeCode) assigneeCode.value = "";
+          if (assigneeSearchEl) assigneeSearchEl.value = "";
+          userCache = [];
+          userCacheProjectCode = "";
+
+          // 상위일감 초기화
+          if (parIssueText) parIssueText.value = "";
+          if (parIssueCode) parIssueCode.value = "";
+          if (parIssueSearchEl) parIssueSearchEl.value = "";
+          // parentIssueCacheByProject는 Map이라 굳이 전체 삭제까지는 안 해도 되지만,
+          // 수정 화면에서는 프로젝트 변경 자체가 드물어서 그냥 두어도 OK
+        }
+      });
+      projectListEl.appendChild(b);
+    });
+  };
+
+  const openProjectModal = async () => {
+    if (!projectModal) return;
+    if (!projectListEl) return;
+
+    const ok = await ensureProjectCache();
+    if (!ok) return;
+
+    if (projectSearchEl) projectSearchEl.value = "";
+    renderProjectList(projectCache);
+    projectModal.show();
+  };
+
+  const refreshProjectList = async () => {
+    if (!projectListEl) return;
+
+    const ok = await ensureProjectCache();
+    if (!ok) return;
+
+    const q = (projectSearchEl?.value || "").trim().toLowerCase();
+    const filtered = q
+      ? projectCache.filter((p) => (p.label || "").toLowerCase().includes(q))
+      : projectCache;
+
+    renderProjectList(filtered);
+  };
+
+  // -------------------------
+  // 유형 모달
+  // -------------------------
+  const ensureTypeCache = async () => {
+    if (typeCache.length) return true;
+
+    const res = await fetch("/api/types/modal", {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) {
+      alert("유형 목록을 불러오지 못했습니다.");
+      return false;
+    }
+
+    const data = await res.json();
+
+    typeCache = data.map((t) => {
+      const parent = (t.parTypeName ?? "").trim();
+      const child = (t.typeName ?? "").trim();
+      return {
+        value: String(t.typeCode),
+        parentName: parent,
+        childName: child,
+      };
+    });
+
+    return true;
+  };
+
+  const renderTypeTable = (items) => {
+    if (!typeTbody) return;
+    typeTbody.innerHTML = "";
+
+    if (!items.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 2;
+      td.className = "text-muted";
+      td.textContent = "결과가 없습니다.";
+      tr.appendChild(td);
+      typeTbody.appendChild(tr);
+      return;
+    }
+
+    items.forEach((t) => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+
+      const tdParent = document.createElement("td");
+      tdParent.textContent = t.parentName || "";
+
+      const tdChild = document.createElement("td");
+      tdChild.textContent = t.childName || "";
+
+      tr.appendChild(tdParent);
+      tr.appendChild(tdChild);
+
+      tr.addEventListener("click", () => {
+        if (typeText) typeText.value = t.childName;
+        if (typeCode) typeCode.value = t.value;
+
+        if (typeSearchEl) typeSearchEl.value = "";
+        typeModal?.hide();
+      });
+
+      typeTbody.appendChild(tr);
+    });
+  };
+
+  const openTypeModal = async () => {
+    if (!typeModal) return;
+    const ok = await ensureTypeCache();
+    if (!ok) return;
+
+    if (typeSearchEl) typeSearchEl.value = "";
+    renderTypeTable(typeCache);
+    typeModal.show();
+  };
+
+  const clearType = () => {
+    if (typeText) typeText.value = "";
+    if (typeCode) typeCode.value = "";
+  };
+
+  const filterTypes = (items, q) => {
+    const qq = (q || "").trim().toLowerCase();
+    if (!qq) return items;
+    return items.filter((t) => {
+      const p = (t.parentName || "").toLowerCase();
+      const c = (t.childName || "").toLowerCase();
+      return p.includes(qq) || c.includes(qq);
+    });
+  };
+
+  const hydrateTypeTextIfEmpty = async () => {
+    if (!typeCode || !typeText) return;
+    if (!typeCode.value || typeText.value) return;
+
+    const ok = await ensureTypeCache();
+    if (!ok) return;
+
+    const found = typeCache.find((t) => t.value === String(typeCode.value));
+    if (found) typeText.value = found.childName;
+  };
+
+  // -------------------------
+  // 담당자 모달(프로젝트 멤버만)
+  // -------------------------
+  const ensureUserCache = async () => {
+    const projCode = String(projectCodeEl?.value || "").trim();
+    if (!projCode) {
+      alert("프로젝트 정보가 없습니다.");
+      return false;
+    }
+
+    if (userCache.length && userCacheProjectCode === projCode) return true;
+
+    const res = await fetch(
+      `/api/users/modal?projectCode=${encodeURIComponent(projCode)}`,
+      { headers: { Accept: "application/json" } },
+    );
+
+    if (!res.ok) {
+      alert("사용자 목록을 불러오지 못했습니다.");
+      return false;
+    }
+
+    const data = await res.json();
+
+    userCache = data.map((u) => ({
+      value: String(u.userCode),
+      label: u.userName,
+    }));
+    userCacheProjectCode = projCode;
+
+    return true;
+  };
+
+  const renderUsers = (items) => {
+    if (!assigneeListEl) return;
+    assigneeListEl.innerHTML = "";
+
+    if (!items.length) {
+      assigneeListEl.innerHTML =
+        '<div class="text-muted">결과가 없습니다.</div>';
+      return;
+    }
+
+    items.forEach((u) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "list-group-item list-group-item-action";
+      b.textContent = u.label;
+      b.addEventListener("click", () => {
+        if (assigneeText) assigneeText.value = u.label;
+        if (assigneeCode) assigneeCode.value = u.value;
+        if (assigneeSearchEl) assigneeSearchEl.value = "";
+        assigneeModal?.hide();
+      });
+      assigneeListEl.appendChild(b);
+    });
+  };
+
+  const openAssigneeModal = async () => {
+    if (!assigneeModal) return;
+
+    const projCode = String(projectCodeEl?.value || "").trim();
+    if (!projCode) {
+      alert("프로젝트 정보가 없습니다.");
+      return;
+    }
+
+    const ok = await ensureUserCache();
+    if (!ok) return;
+
+    if (assigneeSearchEl) assigneeSearchEl.value = "";
+    renderUsers(userCache);
+    assigneeModal.show();
+  };
+
+  // -------------------------
+  // 상위일감 모달
+  // -------------------------
   const ensureParentIssues = async (projectCode) => {
     if (!projectCode) return false;
     if (parentIssueCacheByProject.has(projectCode)) return true;
@@ -244,7 +508,6 @@
     );
     if (!data) return false;
 
-    // 서버 응답: { issueCode, title, name }
     const list = data.map((i) => ({
       issueCode: Number(i.issueCode),
       title: i.title ?? "",
@@ -290,11 +553,10 @@
           return;
         }
 
-        // 선택 시 name 복구해서 서버로 전송되게 함
         if (parIssueCode) parIssueCode.setAttribute("name", "parIssueCode");
 
-        parIssueText.value = it.title;
-        parIssueCode.value = String(it.issueCode);
+        if (parIssueText) parIssueText.value = it.title;
+        if (parIssueCode) parIssueCode.value = String(it.issueCode);
 
         if (parIssueSearchEl) parIssueSearchEl.value = "";
         parIssueModal?.hide();
@@ -323,7 +585,7 @@
     if (!ok) return;
 
     const list = parentIssueCacheByProject.get(projectCode) || [];
-    parIssueSearchEl.value = "";
+    if (parIssueSearchEl) parIssueSearchEl.value = "";
     renderParIssueTable(list);
 
     parIssueModal.show();
@@ -335,7 +597,6 @@
     parIssueText.value = "";
     parIssueCode.value = "";
 
-    // 해제 시 name 제거 => 서버에 파라미터가 안 가서 parIssueCode = null
     parIssueCode.removeAttribute("name");
   };
 
@@ -344,6 +605,12 @@
   // -------------------------
   const validateBeforeSubmit = () => {
     const s = statusSel?.value || "";
+
+    if (!typeCode?.value) {
+      alert("유형을 선택해 주세요.");
+      btnOpenTypeModal?.focus();
+      return false;
+    }
 
     if (s && s !== "OB1" && !startedView?.value) {
       alert("신규가 아닌 상태로 저장하려면 시작일을 입력해야 합니다.");
@@ -399,6 +666,11 @@
 
   resolvedView?.addEventListener("change", syncHiddenDates);
 
+  // 프로젝트 모달 바인딩(요소가 있을 때만)
+  btnOpenProjectModal?.addEventListener("click", openProjectModal);
+  projectSearchEl?.addEventListener("input", refreshProjectList);
+
+  // 담당자 모달
   btnOpenAssigneeModal?.addEventListener("click", openAssigneeModal);
 
   assigneeSearchEl?.addEventListener("input", async () => {
@@ -412,6 +684,7 @@
     );
   });
 
+  // 상위일감 모달
   btnOpenParIssueModal?.addEventListener("click", openParIssueModal);
   btnClearParIssue?.addEventListener("click", clearParIssue);
 
@@ -425,6 +698,18 @@
     const list = parentIssueCacheByProject.get(projectCode) || [];
     const q = parIssueSearchEl.value || "";
     renderParIssueTable(filterParIssue(list, q));
+  });
+
+  // 유형 모달
+  btnOpenTypeModal?.addEventListener("click", openTypeModal);
+  btnClearType?.addEventListener("click", clearType);
+
+  typeSearchEl?.addEventListener("input", async () => {
+    const ok = await ensureTypeCache();
+    if (!ok) return;
+
+    const q = typeSearchEl.value || "";
+    renderTypeTable(filterTypes(typeCache, q));
   });
 
   btnBack?.addEventListener("click", () => history.back());
@@ -446,7 +731,16 @@
     if (parIssueText) parIssueText.value = initial.parIssueText;
     if (parIssueCode) parIssueCode.value = initial.parIssueCode;
 
-    // 초기 상태가 상위일감 있었다면 name 유지, 없었다면 제거
+    if (typeText) typeText.value = initial.typeText;
+    if (typeCode) typeCode.value = initial.typeCode;
+
+    if (projectTextEl) projectTextEl.value = initial.projectText;
+    if (projectCodeEl) projectCodeEl.value = initial.projectCode;
+
+    // 프로젝트가 초기값으로 바뀌었으니 담당자 캐시도 초기화
+    userCache = [];
+    userCacheProjectCode = "";
+
     if (parIssueCode) {
       if (initial.parIssueNameEnabled && initial.parIssueCode)
         parIssueCode.setAttribute("name", "parIssueCode");
@@ -465,9 +759,12 @@
   setProgressByStatus();
   toggleResolvedByStatus();
   syncHiddenDates();
+
   // 초기 상위일감 값이 비어있으면 name 제거
   if (parIssueCode) {
     const hasValue = String(parIssueCode.value || "").trim().length > 0;
     if (!hasValue) parIssueCode.removeAttribute("name");
   }
+
+  hydrateTypeTextIfEmpty();
 })();

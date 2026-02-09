@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.typemodal.mapper.TypeModalMapper">
+	<select id="selectTypeModalList" resultType="TypeModalVO">
+	SELECT
+  t.type_code       AS typeCode,
+  t.type_name       AS typeName,
+  t.par_type_code   AS parTypeCode,
+  p.type_name       AS parTypeName
+FROM types t
+LEFT JOIN types p
+  ON p.type_code = t.par_type_code
+ORDER BY
+  COALESCE(p.type_name, t.type_name),
+  t.type_name
+  </select>
+</mapper>

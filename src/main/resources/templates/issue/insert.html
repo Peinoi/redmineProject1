@@ -67,6 +67,27 @@
             </div>
 
             <div class="col-12 col-md-4">
+              <label class="form-label">유형</label>
+              <div class="input-group">
+                <input
+                  type="text"
+                  id="typeText"
+                  class="form-control"
+                  placeholder="유형 선택"
+                  readonly
+                />
+                <input type="hidden" name="typeCode" id="typeCode" />
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  id="btnOpenTypeModal"
+                >
+                  선택
+                </button>
+              </div>
+            </div>
+
+            <div class="col-12 col-md-4">
               <label class="form-label">상위일감</label>
               <div class="input-group">
                 <input
@@ -86,8 +107,10 @@
                 </button>
               </div>
             </div>
+          </div>
 
-            <div class="col-12 col-md-4">
+          <div class="row g-3 mt-1">
+            <div class="col-12">
               <label class="form-label">제목</label>
               <input
                 type="text"
@@ -270,6 +293,47 @@
               placeholder="프로젝트명 검색"
             />
             <div class="list-group" id="projectModalList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="typeSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">유형 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="typeModalSearch"
+              class="form-control mb-2"
+              placeholder="유형명/상위유형명 검색"
+            />
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style="width: 45%">상위유형</th>
+                    <th style="width: 55%">유형</th>
+                  </tr>
+                </thead>
+                <tbody id="typeModalList"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

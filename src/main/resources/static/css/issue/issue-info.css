@@ -10,16 +10,30 @@
   --radius: 14px;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
-html { font-size: 16px; }
-body { font-size: 16px; }
-input, select, textarea, button { font-size: 16px; }
+html {
+  font-size: 16px;
+}
+body {
+  font-size: 16px;
+}
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
 
 .issue-summary,
 .issue-desc,
-.issue-history { margin-top: 16px; }
+.issue-history {
+  margin-top: 16px;
+}
 
+/* ===== Page title ===== */
 .x-page-title {
   margin: 14px 0 12px;
   padding-bottom: 10px;
@@ -40,7 +54,7 @@ input, select, textarea, button { font-size: 16px; }
   color: #6b7280;
 }
 
-/* Summary */
+/* ===== Summary ===== */
 .issue-summary {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -90,10 +104,12 @@ input, select, textarea, button { font-size: 16px; }
 }
 
 @media (max-width: 860px) {
-  .issue-summary-title { font-size: 16px; }
+  .issue-summary-title {
+    font-size: 16px;
+  }
 }
 
-/* Meta table */
+/* ===== Meta table ===== */
 .issue-meta {
   width: 100%;
   border-collapse: collapse;
@@ -134,80 +150,25 @@ input, select, textarea, button { font-size: 16px; }
   font-weight: 600;
 }
 
-.issue-meta td span { font-weight: 700; }
-
-/* File row */
-.issue-meta tbody tr:last-child td:nth-child(4) {
-  padding: 0;
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split {
-  display: flex;
-  gap: 0;
-  width: 100%;
-  align-items: stretch;
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left,
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right {
-  flex: 1 1 0;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  align-items: stretch;
-  padding: 0;
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left {
-  border-right: 1px solid var(--border);
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right .text-muted {
-  display: none !important;
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before,
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before {
-  content: "";
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 14px 16px;
-  background: var(--subtle);
-  color: var(--muted);
+.issue-meta td span {
   font-weight: 700;
-  border-right: 1px solid var(--border);
-  white-space: nowrap;
 }
 
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before {
-  content: "파일명";
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before {
-  content: "파일 등록일";
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left > *,
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-right > * {
-  padding: 14px 16px;
-  min-width: 0;
-}
-
-.issue-meta tbody tr:last-child td:nth-child(4) .file-split-left a {
-  display: block;
-  width: 100%;
-  max-width: none !important;
+/* ===== File row (2열: 첨부파일 / 파일 등록일) ===== */
+.issue-meta td a {
+  display: inline-block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
-.issue-meta tbody tr:last-child td:nth-child(2) {
+.issue-meta td.file-date {
   white-space: nowrap;
 }
 
-/* Section title */
+/* ===== Section title ===== */
 .section-title {
   margin: 0 0 10px;
   font-size: 16px;
@@ -216,7 +177,7 @@ input, select, textarea, button { font-size: 16px; }
   letter-spacing: -0.2px;
 }
 
-/* Description */
+/* ===== Description ===== */
 .issue-desc {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -239,7 +200,7 @@ input, select, textarea, button { font-size: 16px; }
   min-height: 120px;
 }
 
-/* History */
+/* ===== History ===== */
 .issue-history {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -263,7 +224,7 @@ input, select, textarea, button { font-size: 16px; }
   line-height: 1.5;
 }
 
-/* Full width */
+/* ===== Full width ===== */
 .x-page-title,
 .issue-summary,
 .issue-desc,
@@ -272,7 +233,7 @@ input, select, textarea, button { font-size: 16px; }
   width: 100%;
 }
 
-/* Responsive */
+/* ===== Responsive ===== */
 @media (max-width: 860px) {
   .issue-meta,
   .issue-meta tbody,
@@ -304,24 +265,27 @@ input, select, textarea, button { font-size: 16px; }
     width: 100% !important;
   }
 
-  .issue-meta tbody tr:last-child td:nth-child(4) {
-    padding: 0 16px 12px;
+  .issue-meta td a {
+    max-width: 100%;
   }
+}
 
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split {
-    display: block;
-  }
+.history-item {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+}
 
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left,
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right {
-    border-right: 0;
-    grid-template-columns: 110px minmax(0, 1fr);
-  }
+.history-head .head-line {
+  font-weight: 700;
+  color: var(--text);
+}
 
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left::before,
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right::before,
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-left > *,
-  .issue-meta tbody tr:last-child td:nth-child(4) .file-split-right > * {
-    padding: 12px 0;
-  }
+.change-list {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.change-list li {
+  margin: 4px 0;
+  color: var(--muted);
 }

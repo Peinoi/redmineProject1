@@ -14,11 +14,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class ProjectModalServiceImpl implements ProjectModalService {
 
-	private final ProjectModalMapper projectModalMapper;
-	
-	@Override
-	public List<ProjectModalVO> findProjectModalList() {
-		return projectModalMapper.selectProjectModalList();
-	}
+  private final ProjectModalMapper projectModalMapper;
 
+  @Override
+  public List<ProjectModalVO> findProjectListForListPage(Integer userCode) {
+    return projectModalMapper.selectProjectModalListForListPage(userCode);
+  }
+
+  @Override
+  public List<ProjectModalVO> findProjectListForCreate(Integer userCode) {
+    return projectModalMapper.selectProjectModalListForCreate(userCode);
+  }
 }

@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ProjectModalVO {
-	private Long projectCode;
+	private Integer projectCode;
 	private String projectName;
 }
