@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <th:block th:replace="~{common/configs/default_configs :: BootStrap}"></th:block>
-<title>FindPw</title>
+<title>verify</title>
 </head>
 <body class="sb-nav-fixed d-flex flex-column min-vh-100">
 	<div id="layoutAuthentication_content" class="flex-grow-1">
@@ -136,13 +136,16 @@
 		});
 	</script>
 
-	<script th:if="${verifyErrorMsg != null}">
+	<script
+		th:if="${verifyErrorMsg != null and #strings.length(#strings.trim(verifyErrorMsg)) > 0}">
 		document.addEventListener("DOMContentLoaded", function() {
 			const modal = new bootstrap.Modal(document
 					.getElementById('verifyFailModal'));
 			modal.show();
 		});
 	</script>
+
+
 
 </body>
 </html>

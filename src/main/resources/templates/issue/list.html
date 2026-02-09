@@ -61,7 +61,34 @@
             />
           </div>
 
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
+            <label class="form-label">유형</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterTypeText"
+                class="form-control"
+                placeholder="유형 선택"
+                readonly
+                th:value="${typeLabel}"
+              />
+              <input
+                type="hidden"
+                id="filterTypeValue"
+                name="typeCode"
+                th:value="${param.typeCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenTypeModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-2">
             <label class="form-label">상태</label>
             <select id="filterStatus" name="statusId" class="form-select">
               <option
@@ -88,7 +115,7 @@
             </select>
           </div>
 
-          <div class="col-12 col-md-3">
+          <div class="col-12 col-md-2">
             <label class="form-label">우선순위</label>
             <select id="filterPriority" name="priority" class="form-select">
               <option
@@ -196,10 +223,6 @@
             <button type="button" class="btn btn-success" id="btnIssueCreate">
               일감등록
             </button>
-
-            <button type="button" class="btn btn-danger" id="btnIssueDelete">
-              일감삭제
-            </button>
           </div>
 
           <div class="d-flex gap-2">
@@ -219,13 +242,6 @@
       </div>
     </form>
 
-    <form
-      id="issueDeleteForm"
-      th:action="@{/issueDelete}"
-      method="post"
-      style="display: none"
-    ></form>
-
     <div class="card mb-4">
       <div
         class="card-header d-flex align-items-center justify-content-between"
@@ -239,11 +255,10 @@
           <table class="table table-hover align-middle" id="issueTable">
             <thead class="table-light">
               <tr>
-                <th style="width: 48px">
-                  <input class="form-check-input" type="checkbox" id="chkAll" />
-                </th>
+                <th style="width: 70px">번호</th>
                 <th>프로젝트명</th>
                 <th>일감명</th>
+                <th>유형</th>
                 <th>상태</th>
                 <th>우선순위</th>
                 <th>담당자</th>
@@ -261,6 +276,7 @@
                   data-project=${issue.projectName},
                   data-project-code=${issue.projectCode},
                   data-title=${issue.title},
+                  data-type-code=${issue.typeCode},
                   data-status=${issue.statusName},
                   data-priority=${issue.priorityName},
                   data-assignee-code=${issue.assigneeCode},
@@ -270,15 +286,12 @@
                   data-created=${issue.createdAt != null ? #temporals.format(issue.createdAt,'yyyy-MM-dd') : ''},
                   data-due=${issue.dueAt != null ? #temporals.format(issue.dueAt,'yyyy-MM-dd') : ''}"
               >
-                <td>
-                  <input
-                    class="form-check-input row-check"
-                    type="checkbox"
-                    th:value="${issue.issueCode}"
-                  />
-                </td>
+                <td class="col-no"></td>
                 <td th:text="${issue.projectName}"></td>
                 <td th:text="${issue.title}"></td>
+                <td
+                  th:text="${issue.typeName != null ? issue.typeName : '-'}"
+                ></td>
                 <td th:text="${issue.statusName}"></td>
                 <td th:text="${issue.priorityName}"></td>
                 <td
@@ -329,6 +342,47 @@
               placeholder="프로젝트명 검색"
             />
             <div class="list-group" id="projectModalList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="typeSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">유형 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="typeModalSearch"
+              class="form-control mb-2"
+              placeholder="유형명 검색"
+            />
+
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th style="width: 45%">상위유형</th>
+                    <th style="width: 55%">유형</th>
+                  </tr>
+                </thead>
+                <tbody id="typeModalTbody"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

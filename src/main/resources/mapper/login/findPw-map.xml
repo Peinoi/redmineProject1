@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.login.mapper.FindPwMapper">
+	<!-- 유저코드, 이메일, 사원번호, 이름, 전화번호 select -->
 	<select id="selectFindPwInfo" resultType="UserVO">
-		select employee_no
+		select 	user_code
+				,employee_no
 				,email
 				,name
 				,phone
@@ -11,4 +13,11 @@
 		and name = #{name}
 		and phone = #{phone}
 	</select>
+	
+	<!-- 비밀번호 재설정 -->
+	<update id="updatePwByUserCode" parameterType="UserVO">
+	update users
+	set password_hash = #{passwordHash}
+	where user_code = #{userCode}
+	</update>
 </mapper>

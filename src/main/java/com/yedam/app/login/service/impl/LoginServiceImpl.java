@@ -50,4 +50,12 @@ public class LoginServiceImpl implements LoginService {
 		return new LoginResultDTO(LoginResultType.OK, user);
 	}
 
+	@Override
+	public int modifyFirstLoginInfo(UserVO userVO) {
+		String hashPw = passwordEncoder.encode(userVO.getPassword());
+		userVO.setPasswordHash(hashPw);
+		
+		return loginMapper.updateFirstLoginInfo(userVO);
+	}
+
 }

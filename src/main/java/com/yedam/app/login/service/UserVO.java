@@ -13,4 +13,5 @@ public class UserVO {
 	private String phone;
 	private String rememberEmpNo;
 	private String isLock;
+	private String firstLoginYn;
 }

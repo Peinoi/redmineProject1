@@ -1,108 +1,137 @@
 html, body {
-  height: 100%;
-  overflow: auto;
+	height: 100%;
+	overflow: auto;
 }
 
 /* gantt 전체 */
-#gantt,
-.gantt_container,
-.gantt_container * {
-  font-size: 16px;
+#gantt, .gantt_container, .gantt_container * {
+	font-size: 16px;
 }
 
 /* 타이틀 */
 .x-page-title {
-  margin: 14px 0 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e5e7eb;
+	margin: 14px 0 12px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e5e7eb;
 }
 
 .x-page-title .page-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #111827;
-  letter-spacing: -0.2px;
+	margin: 0;
+	font-size: 20px;
+	font-weight: 800;
+	color: #111827;
+	letter-spacing: -0.2px;
 }
 
 .x-page-title .page-title-sub {
-  margin-top: 4px;
-  font-size: 12px;
-  color: #6b7280;
+	margin-top: 4px;
+	font-size: 12px;
+	color: #6b7280;
 }
 
 /* SB Admin 레이아웃 */
 #layoutSidenav_content {
-  min-height: calc(100vh - 56px); /* header */
-  display: flex;
-  flex-direction: column;
-  overflow: visible;
+	min-height: calc(100vh - 56px); /* header */
+	display: flex;
+	flex-direction: column;
+	overflow: visible;
 }
 
 #layoutSidenav_content main {
-  flex: 1;
-  display: block;
-  overflow: visible;
+	flex: 1;
+	display: block;
+	overflow: visible;
 }
 
-#layoutSidenav_content main > .container-fluid {
-  padding: 0;
+#layoutSidenav_content main>.container-fluid {
+	padding: 0;
 }
 
 #layoutSidenav_content footer {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* ===================== */
 /* list.html (gantt) 전용 */
 /* ===================== */
-
 .gantt-page {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
 }
 
 /* 🔥 핵심 */
 .gantt-wrapper {
-  flex: 1;          /* 남은 공간 전부 차지 */
-  min-height: 600px;
-  height: 800px; /* 고정 높이 추가 (필요시 조정) */
+	flex: 1; /* 남은 공간 전부 차지 */
+	min-height: 600px;
+	height: 800px; /* 고정 높이 추가 (필요시 조정) */
 }
 
 #e7eGantt {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 /* 프로그램 */
 .gantt_task_line.gantt_project {
-  background-color: #A2A2A2  !important; /* 회색 */
-  border-color: #A2A2A2  !important;
+	background-color: #A2A2A2 !important; /* 회색 */
+	border-color: #A2A2A2 !important;
+}
+
+.gantt_task_line.gantt_project:hover {
+	background-color: #8E8E8E !important;
 }
 
 /* 우선순위 - 긴급 */
 .gantt_task_line.priority-now {
-  background-color: #D97B7B  !important; /* 빨강 */
-  border-color: #D97B7B  !important;
+	background-color: #D97B7B !important; /* 빨강 */
+	border-color: #D97B7B !important;
+}
+
+.gantt_task_line.priority-now:hover {
+	background-color: #CC6666 !important;
 }
 
 /* 우선순위 - 높음 */
 .gantt_task_line.priority-high {
-  background-color: #FFB266 !important; /* 주황 */
-  border-color: #FFB266 !important;
+	background-color: #FFB266 !important; /* 주황 */
+	border-color: #FFB266 !important;
+}
+
+.gantt_task_line.priority-high:hover {
+	background-color: #FF9F4D !important;
 }
 
 /* 우선순위 - 보통 */
 .gantt_task_line.priority-medium {
-  background-color: #5AB2FF !important; /* 파랑 */
-  border-color: #5AB2FF !important;
+	background-color: #5AB2FF !important; /* 파랑 */
+	border-color: #5AB2FF !important;
+}
+
+.gantt_task_line.priority-medium:hover {
+	background-color: #3D9FFF !important;
 }
 
 /* 우선순위 - 낮음 */
 .gantt_task_line.priority-low {
-  background-color: #69B87C !important; /* 초록 */
-  border-color: #69B87C !important;
+	background-color: #69B87C !important; /* 초록 */
+	border-color: #69B87C !important;
 }
 
+.gantt_task_line.priority-low:hover {
+	background-color: #57A567 !important;
+}
 
+/* TYPE 노드 - 보라 */
+.gantt_task_line.type-node {
+	background-color: #B89FD9 !important; /* 부드러운 보라 */
+	border: 1px solid #9B7EC4 !important;
+}
+
+.gantt_task_line.type-node .gantt_task_progress {
+	background-color: #8B6DB3 !important; /* 진척도 바는 좀 더 진한 보라 */
+}
+
+.gantt_task_line.type-node:hover {
+	background-color: #A88DCB !important;
+}

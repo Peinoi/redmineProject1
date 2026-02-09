@@ -6,14 +6,12 @@ import java.util.Map;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface IssueService {
-	// 전체조회
-	public List<IssueVO> findAll();
-	// 프로젝트별 
-	public List<IssueVO> findAllByProject(Long projectCode);
+	// 목록
+	  List<IssueVO> findVisibleIssues(Integer userCode, Long projectCode);
 	// 단건조회
 	public IssueVO findByIssueCode(IssueVO issue);
 	// 등록
-	public long addIssue(IssueVO issue);
+	public Long addIssue(IssueVO issue);
 	// 일괄삭제
     public int removeIssues(List<Long> issueCodes);
     // 수정

@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.projectmodal.mapper.ProjectModalMapper">
-	<select id="selectProjectModalList" resultType="ProjectModalVO">
-    SELECT
-      project_code,
-      project_name
-    FROM projects
-    WHERE status = 'OD1'
-    ORDER BY project_code
+	<select id="selectProjectModalListForListPage"
+          parameterType="Integer"
+          resultType="ProjectModalVO">
+    SELECT DISTINCT
+           project_code AS projectCode,
+           project_name AS projectName
+      FROM vw_user_auth
+     WHERE user_code = #{userCode}
+       AND ( status = 'OD1'
+             OR (status = 'OD3' AND admin_ck = 'Y') )
+     ORDER BY project_name
+  </select>
+
+  <!-- 등록용: 무조건 진행중만 -->
+  <select id="selectProjectModalListForCreate"
+          parameterType="Integer"
+          resultType="ProjectModalVO">
+    SELECT DISTINCT
+           project_code AS projectCode,
+           project_name AS projectName
+      FROM vw_user_auth
+     WHERE user_code = #{userCode}
+       AND status = 'OD1'
+     ORDER BY project_name
   </select>
 </mapper>

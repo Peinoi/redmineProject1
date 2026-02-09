@@ -3,29 +3,45 @@
 <mapper namespace="com.yedam.app.gantt.mapper.GanttMapper">
 	<!-- 전체조회 -->
 	<select id="selectGanttList" resultType="GanttVO">
-		SELECT type_name
-		       , par_issue_code
-		       , issue_code
-			   , project_name
-			   , title
-			   , priority
-			   , priority_code
-			   , issue_status
-			   , progress
-			   , created_at
-			   , started_at    
-			   , due_at
-			   , resolved_at
-			   , assignee_code
-			   , assignee_name
-			   , duration
-			   , project_code
-			   , created_on
-			   , completed_on
-			   , project_status
-			   , type_level
-			   , parent_type
-		FROM gantt_view
-		ORDER BY issue_code
+	    SELECT
+	        gv.row_type,
+		    gv.node_id,
+		    gv.parent_id,
+		
+		    gv.project_code,
+		    gv.project_name,
+		    gv.created_on,
+		    gv.completed_on,
+		    gv.project_status,
+		
+		    gv.type_code,
+		    gv.type_name,
+		    gv.type_level,
+		    gv.par_type_code,
+		    gv.par_type_name,
+		
+		    gv.issue_code,
+		    gv.par_issue_code,
+		    gv.title,
+		    gv.priority,
+		    gv.issue_status,
+		    gv.progress,
+		    gv.assignee_code,
+		    gv.assignee_name,
+		    gv.created_at,
+		    gv.started_at,
+		    gv.due_at,
+		    gv.resolved_at,
+		    
+		    vpp.actual_prog,
+		    vpp.plan_prog
+		FROM gantt_view gv
+		LEFT JOIN VW_PROJECT_PROGRESS vpp 
+		    ON gv.project_code = vpp.project_code
+		ORDER BY
+		    gv.project_code,
+		    gv.row_type DESC,
+		    gv.type_level NULLS FIRST,
+		    gv.node_id
 	</select>
 </mapper>

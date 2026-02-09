@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+<meta charset="UTF-8">
+<th:block th:replace="~{common/configs/default_configs :: BootStrap}"></th:block>
+<title>pwReset</title>
+</head>
+<body class="sb-nav-fixed d-flex flex-column min-vh-100">
+	<div id="layoutAuthentication_content" class="flex-grow-1">
+		<main class="d-flex align-items-center justify-content-center h-100">
+			<div class="container">
+				<div class="row justify-content-center">
+					<div class="col-lg-5">
+						<div class="card shadow-lg border-0 rounded-lg">
+							<div class="card-header">
+								<h3 class="text-center font-weight-light my-4">비밀번호 재설정</h3>
+							</div>
+							<div class="card-body">
+								<form th:action="@{/findPw/pwReset}" method="post">
+									<div class="form-floating mb-3">
+										<input class="form-control" id="newPw" name="newPw"
+											type="text" placeholder="새 비밀번호" /> <label for="newPw">새
+											비밀번호</label>
+									</div>
+									<div class="form-floating mb-3">
+										<input class="form-control" id="newPwConfirm"
+											name="newPwConfirm" type="text" placeholder="새 비밀번호" /> <label
+											for="newPwConfirm">새 비밀번호 확인</label>
+									</div>
+									<div
+										class="d-flex align-items-center justify-content-center mt-4 mb-0">
+										<button type="submit" class="btn btn-primary">확인</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<!-- 비밀번호 재설정 실패 모달 -->
+	<div class="modal fade" id="pwResetFailModal" tabindex="-1"
+		aria-labelledby="pwResetFailModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+
+				<div class="modal-header">
+					<h5 class="modal-title" id="pwResetFailModalLabel">비밀번호 재설정 실패</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+
+				<div class="modal-body text-center">
+					<p th:text="${pwResetErrorMsg}">입력하신 정보가 올바르지 않습니다.</p>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary"
+						data-bs-dismiss="modal">확인</button>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<!-- 비밀번호 변경 성공 모달 -->
+	<div class="modal fade" id="pwResetSuccessModal" tabindex="-1"
+		aria-labelledby="pwResetSuccessModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-dialog-centered">
+			<div class="modal-content">
+
+				<div class="modal-header">
+					<h5 class="modal-title" id="pwResetSuccessModalLabel">안내</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+
+				<div class="modal-body text-center">
+					<p th:text="${pwResetSuccessMsg}">비밀번호가 변경되었습니다. 로그인 해주세요.</p>
+				</div>
+
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" id="goLoginBtn">
+						확인</button>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+	<footer class="py-4 bg-light mt-auto"
+		th:insert="~{common/fragments/default_footer :: DefaultFooter}"></footer>
+	<th:block
+		th:replace="~{common/configs/default_configs :: BottomScript}"></th:block>
+
+	<script
+		th:if="${pwResetErrorMsg != null and #strings.length(#strings.trim(pwResetErrorMsg)) > 0}">
+		document.addEventListener("DOMContentLoaded", function() {
+			const modal = new bootstrap.Modal(document
+					.getElementById('pwResetFailModal'));
+			modal.show();
+		});
+	</script>
+
+	<script
+		th:if="${pwResetSuccessMsg != null and #strings.length(#strings.trim(pwResetSuccessMsg)) > 0}">
+		document.addEventListener("DOMContentLoaded", function() {
+			const modalEl = document.getElementById('pwResetSuccessModal');
+			const modal = new bootstrap.Modal(modalEl);
+			modal.show();
+
+			// 확인 버튼 누르면 로그인으로 이동
+			const btn = document.getElementById('goLoginBtn');
+			if (btn) {
+				btn.addEventListener('click', function() {
+					window.location.replace('/login');
+				});
+			}
+
+			// X나 바깥 클릭으로 닫아도 로그인으로 이동
+			modalEl.addEventListener('hidden.bs.modal', function() {
+				window.location.replace('/login');
+			});
+		});
+	</script>
+
+
+</body>
+</html>

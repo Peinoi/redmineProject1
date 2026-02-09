@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import com.yedam.app.authority.service.AuthorityService;
 import com.yedam.app.issue.service.IssueService;
 import com.yedam.app.issue.service.IssueVO;
+import com.yedam.app.log.service.LogService;
 import com.yedam.app.login.service.UserVO;
 
 import jakarta.servlet.http.HttpSession;
@@ -25,8 +26,9 @@ public class IssueController {
 
   private final IssueService issueService;
   private final AuthorityService authorityService;
-
-  // 전체조회
+  private final LogService logService;
+  
+  // 목록조회
   @GetMapping("issueList")
   public String issueList(@RequestParam(required = false) Long projectCode,
                           Model model,
@@ -35,21 +37,21 @@ public class IssueController {
     UserVO user = (UserVO) session.getAttribute("user");
     if (user == null) return "redirect:/login";
 
-    if (projectCode != null) {
-      model.addAttribute("list", issueService.findAllByProject(projectCode));
-    } else {
-      model.addAttribute("list", issueService.findAll());
-    }
+    Integer userCode = user.getUserCode();
 
+    model.addAttribute("list", issueService.findVisibleIssues(userCode, projectCode));
     model.addAttribute("projectCode", projectCode);
+
     return "issue/list";
   }
+
 
   // 단건조회
   @GetMapping("issueInfo")
   public String issueInfo(IssueVO issue, Model model) {
     IssueVO findVO = issueService.findByIssueCode(issue);
     model.addAttribute("issue", findVO);
+    model.addAttribute("logs", logService.findLogsByTarget("ISSUE", issue.getIssueCode()));
     return "issue/info";
   }
 

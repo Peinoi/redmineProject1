@@ -50,4 +50,7 @@ public class IssueVO {
 	
 	private String statusName; // 신규...
 	private String priorityName;
+	
+	private Integer typeCode;
+	private String typeName;
 }

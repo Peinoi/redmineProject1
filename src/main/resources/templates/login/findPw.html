@@ -20,8 +20,10 @@
 								<form th:action="@{/findPw}" method="post">
 									<div class="form-floating mb-3">
 										<input class="form-control" id="empNo" name="employeeNo"
-											type="text" inputmode="numeric" pattern="[0-9]*" placeholder="사원번호" 
-											oninput="this.value = this.value.replace(/[^0-9]/g, '')"/> <label for="empNo">사원번호</label>
+											type="text" inputmode="numeric" pattern="[0-9]*"
+											placeholder="사원번호"
+											oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+										<label for="empNo">사원번호</label>
 									</div>
 									<div class="form-floating mb-3">
 										<input class="form-control" id="name" name="name" type="text"

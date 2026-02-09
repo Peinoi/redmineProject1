@@ -1,0 +1,9 @@
+package com.yedam.app.typemodal.mapper;
+
+import java.util.List;
+
+import com.yedam.app.typemodal.service.TypeModalVO;
+
+public interface TypeModalMapper {
+		  List<TypeModalVO> selectTypeModalList();
+}

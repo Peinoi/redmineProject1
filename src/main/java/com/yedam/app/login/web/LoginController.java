@@ -75,6 +75,9 @@ public class LoginController {
 		// 로그인 성공
 		UserVO user = result.getUser();
 		
+		// 첫 로그인 확인
+		boolean isFirstLogin = (user.getFirstLoginYn().equals("Y"));
+		
 		// 마지막 로그인 업데이트
 		loginService.modifyLastLoginAt(user.getUserCode());
 		
@@ -100,6 +103,73 @@ public class LoginController {
 	        response.addCookie(c);
 		}
 		
+		// 첫 로그인 필수정보 입력 페이지로 이동
+		if(isFirstLogin) {
+			return "redirect:/firstLogin";
+		}
+		
+		return "redirect:/empList";
+	}
+	
+	@GetMapping("/firstLogin")
+	public String firstLoginForm(HttpSession session) {
+		// 세션정보를 가져오고
+		UserVO user = (UserVO) session.getAttribute("user");
+		
+		// 세션정보가 없는 접근이면 막기
+		if(user == null) return "redirect:/login";
+		
+		// 첫 로그인이 아니면 막기
+		if(!user.getFirstLoginYn().equals("Y")) {
+			return "redirect:/empList";
+		}
+		
+		return "login/firstLogin";
+	}
+	
+	@PostMapping("/firstLogin")
+	public String firstLoginSubmit(UserVO userVO
+								  ,String passwordConfirm
+								  ,HttpSession session
+								  ,RedirectAttributes ra) {
+		// 세션에서 user 가져오고
+		UserVO sessionUser = (UserVO) session.getAttribute("user");
+		// 세션에 데이터가 없다면 막기
+		if(sessionUser == null) return "redirect:/login";
+		
+		// 세션에서 userCode 가져오기
+		userVO.setUserCode(sessionUser.getUserCode());
+		
+		// 빈칸 체크
+		if(isBlank(userVO.getPassword()) 
+		   || isBlank(passwordConfirm)
+		   || isBlank(userVO.getEmail())
+		   || isBlank(userVO.getPhone())) {
+			
+			ra.addFlashAttribute("requiredInfoErrorMsg", "모든 항목을 입력해 주세요.");
+			return "redirect:/firstLogin";
+		}
+		
+		// 비밀번호 불일치
+		if(!userVO.getPassword().equals(passwordConfirm)) {
+			ra.addFlashAttribute("requiredInfoErrorMsg", "비밀번호 확인이 일치하지 않습니다.");
+			return "redirect:/firstLogin";
+		}
+		
+		// 필수정보 업데이트 실행
+		int updated = loginService.modifyFirstLoginInfo(userVO);
+		// 업데이트 실패
+		if (updated == 0) {
+			ra.addFlashAttribute("requiredInfoErrorMsg", "저장에 실패했습니다. 다시 시도하세요.");
+			return "redirect:/firstLogin";
+		}
+		
+		// 세션 갱신
+		sessionUser.setFirstLoginYn("N");
+		sessionUser.setEmail(userVO.getEmail());
+		sessionUser.setPhone(userVO.getPhone());
+		session.setAttribute("user", sessionUser);
+		
 		return "redirect:/empList";
 	}
 	
@@ -108,5 +178,10 @@ public class LoginController {
 	public String logout(HttpSession session) {
 		session.invalidate(); // 세션 제거
 		return "redirect:/login";
+	}
+	
+	// 널이거나 공백을 체크하는 메서드
+	private boolean isBlank(String s) {
+	    return s == null || s.trim().isEmpty();
 	}
 }
