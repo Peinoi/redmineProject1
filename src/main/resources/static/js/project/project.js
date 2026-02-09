@@ -1,4 +1,5 @@
 (() => {
+
 	const $ = (sel) => document.querySelector(sel);
 	const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
@@ -321,7 +322,6 @@
 		// 상태가 '종료'인 경우 회색 스타일 적용 (이전 답변 코드 활용)
 		updateRowStyle(tr);
 	});
-
 	// 초기 렌더링 수행
 	renderPage();
 })();

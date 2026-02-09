@@ -141,13 +141,23 @@ function openMemberModal() {
 
 	const currentUserName = document.getElementById('filterWriter').value;
 
-	const availableUsers = users.filter(user =>
-		user.name !== currentUserName &&
-		!selectedUsers.some(selected => selected.userCode === user.userCode)
-	);
+	// 이미 추가된 사용자 제외 (userCode 비교 수정)
+	const availableUsers = users.filter(user => {
+		// 현재 로그인한 사용자 제외
+		if (user.name === currentUserName) {
+			return false;
+		}
+		// 이미 추가된 사용자 제외 (String 비교로 수정)
+		return !selectedUsers.some(selected => 
+			String(selected.userCode) === String(user.userCode)
+		);
+	});
 
-	const availableGroups = groups.filter(group =>
-		!selectedGroups.some(selected => selected.groupCode === group.groupCode)
+	// 이미 추가된 그룹 제외 (groupCode 비교 수정)
+	const availableGroups = groups.filter(group => 
+		!selectedGroups.some(selected => 
+			String(selected.groupCode) === String(group.groupCode)
+		)
 	);
 
 	displayUserList(availableUsers, roles);
@@ -159,7 +169,6 @@ function openMemberModal() {
 	const modal = new bootstrap.Modal(document.getElementById('creatorSelectModal'));
 	modal.show();
 }
-
 // ============================================
 // 7. 모달에 사용자 목록 표시
 // ============================================
@@ -477,16 +486,41 @@ function updateMemberTable() {
             <td>${icon} ${item.name}</td>
             <td>${item.roleName}</td>
             <td>
-                <button class="btn btn-success btn-sm" onclick="openEditModal(${actualIndex}, '${type}')">수정</button>
+                <button class="btn btn-success btn-sm btn-edit-member" data-index="${actualIndex}" data-type="${type}">수정</button>
             </td>
             <td>
-                <button class="btn btn-danger btn-sm" onclick="removeMember(${actualIndex}, '${type}')">삭제</button>
+                <button class="btn btn-danger btn-sm btn-remove-member" data-index="${actualIndex}" data-type="${type}">삭제</button>
             </td>
         `;
 		tbody.appendChild(row);
 	});
+
+	// 이벤트 리스너 등록
+	attachMemberTableEvents();
 }
 
+// ============================================
+// 9-1. 테이블 버튼 이벤트 리스너 등록
+// ============================================
+function attachMemberTableEvents() {
+	// 수정 버튼
+	document.querySelectorAll('.btn-edit-member').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const index = parseInt(this.dataset.index);
+			const type = this.dataset.type;
+			openEditModal(index, type);
+		});
+	});
+
+	// 삭제 버튼
+	document.querySelectorAll('.btn-remove-member').forEach(btn => {
+		btn.addEventListener('click', function() {
+			const index = parseInt(this.dataset.index);
+			const type = this.dataset.type;
+			removeMember(index, type);
+		});
+	});
+}
 // ============================================
 // 10. 구성원 수정 모달 열기
 // ============================================
@@ -613,7 +647,7 @@ function handleFormSubmit(event) {
 
 	const projectNameInput = document.querySelector('[name="projectName"]');
 	const projectName = projectNameInput.value.trim();
-
+	const userCode = document.querySelector('[name="userCode"]').value;
 	if (projectName === '') {
 		alert('프로젝트명을 입력해주세요.');
 		projectNameInput.focus();
@@ -664,6 +698,7 @@ function handleFormSubmit(event) {
 
 	const formData = {
 		projectName: projectName,
+		userCode: parseInt(userCode),  // Integer로 변환
 		description: description,
 		status: document.querySelector('input[name="inlineRadioOptions"]:checked').value,
 		projectUsers: selectedUsers.map(user => ({
@@ -676,7 +711,9 @@ function handleFormSubmit(event) {
 		}))
 	};
 
-	submitProject(formData);
+	submitProject(formData);  // 주석 제거
+
+	console.log(formData);
 }
 
 // ============================================
@@ -690,15 +727,14 @@ function submitProject(formData) {
 		},
 		body: JSON.stringify(formData)
 	})
-		.then(response => {
-			if (response.ok) {
-				return response.json();
-			}
-			throw new Error('프로젝트 등록 실패');
-		})
+		.then(response => response.json())
 		.then(data => {
-			alert('프로젝트가 정상적으로 등록되었습니다.');
-			window.location.href = `/projects/${data.identifier}/dashboard`;
+			if (data.success) {
+				alert(data.message);
+				window.location.href = '/projects';
+			} else {
+				alert(data.message);
+			}
 		})
 		.catch(error => {
 			console.error('프로젝트 등록 오류:', error);

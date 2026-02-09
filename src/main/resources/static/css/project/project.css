@@ -3,7 +3,6 @@ a, a:hover, a:visited, a:active {
 	text-decoration: none;
 }
 
-
 /* 역할 라디오 버튼 그룹 스타일 */
 .role-group {
 	display: flex;
@@ -50,30 +49,52 @@ a, a:hover, a:visited, a:active {
 
 /* 탭 메뉴 활성화 스타일 커스텀 */
 .tabnav .nav-item.active .nav-link {
-    background-color: #0d6efd !important; /* 부트스트랩 기본 파란색 */
-    color: white !important;               /* 글자색 흰색 */
-    border-color: #0d6efd !important;
-    font-weight: bold;
+	background-color: #0d6efd !important; /* 부트스트랩 기본 파란색 */
+	color: white !important; /* 글자색 흰색 */
+	border-color: #0d6efd !important;
+	font-weight: bold;
 }
 
 /* 마우스를 올렸을 때(Hover) 약간 더 진한 파란색 효과 (선택사항) */
 .tabnav .nav-link:hover {
-    background-color: #f8f9fa;
+	background-color: #f8f9fa;
 }
 
 /* 비활성 탭 스타일 정리 */
 .tabnav .nav-link {
-    color: #495057;
-    transition: all 0.2s ease; /* 부드러운 색상 전환 */
+	color: #495057;
+	transition: all 0.2s ease; /* 부드러운 색상 전환 */
 }
 
 /* 종료된 프로젝트 행 스타일 */
 .project-row-finished {
-    background-color: #f2f2f2 !important; /* 연한 회색 */
-    color: #888; /* 글자색도 약간 흐리게 */
+	background-color: #f2f2f2 !important; /* 연한 회색 */
+	color: #888; /* 글자색도 약간 흐리게 */
 }
 /* 종료 버튼 비활성화 시각화 (선택 사항) */
 .project-row-finished .btn-success {
-    pointer-events: none;
-    opacity: 0.5;
+	pointer-events: none;
+	opacity: 0.5;
+}
+
+thead th {
+	text-align: center;
+}
+
+tbody td:not(:nth-child(2)) {
+	text-align: center;
+}
+/* project.css에 추가 */
+.progress {
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* 진척률 라벨 스타일 */
+.small {
+    font-size: 0.875rem;
+    font-weight: 500;
 }

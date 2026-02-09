@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.project.mapper.ProjectMapper">
+	<!-- 프로젝트 목록 -->
 	<select id="selectAll" resultType="ProjectVO">
 		SELECT p.project_code
 		,p.project_name
@@ -15,9 +16,10 @@
 		JOIN common_code c ON p.status = c.code_id
 		JOIN users u
 		ON p.user_code = u.user_code
-		ORDER BY p.project_name
+		ORDER BY p.project_code
 	</select>
 
+	<!-- 역할 목록 -->
 	<select id="roleAll" resultType="RoleVO">
 		SELECT
 		role_code
@@ -25,6 +27,8 @@
 		,explanation
 		FROM role
 	</select>
+	
+	<!-- 유저 리스트 -->
 	<select id="userAll" resultType="PruserVO">
 		SELECT
 		user_code
@@ -34,9 +38,11 @@
 		,email
 		,created_at
 		,is_lock
-		FROM users
+		FROM users 
+		WHERE is_lock = 0
 	</select>
 	
+	<!-- 그룹 목록 -->
 	<select id="groupAll" resultType="GroupVO">
 		SELECT 
 		    group_code,
@@ -44,4 +50,93 @@
 		    description
 		FROM "GROUP"
 	</select>
+	
+	<!-- 프로젝트 진척도 -->
+	<select id="projPrAll" resultType="ProjectPrVO">
+	select 
+	    project_code
+	    ,project_name
+	    ,actual_prog
+	    ,plan_prog
+	    ,plan
+	    ,end_plan
+	from VW_PROJECT_PROGRESS
+	</select>
+	
+	<!-- 프로젝트 등록 -->
+	<insert id="projectInsert" parameterType="ProjectAddVO">
+	    <selectKey keyProperty="projectCode" resultType="Integer" order="BEFORE">
+	        SELECT NVL(MAX(project_code), 0) + 1 FROM projects
+	    </selectKey>
+	    INSERT INTO projects (
+	        project_code,
+	        project_name,
+	        description,
+	        created_on,
+	        status,
+	        user_code
+	    ) VALUES (
+	        #{projectCode},
+	        #{projectName},
+	        #{description},
+	        SYSDATE,
+	        #{status},
+	        #{userCode}
+	    )
+	</insert>
+	
+	<!-- 프로젝트 상태 등록 -->
+	<insert id="projectStatInsert" parameterType="ProjectAddStatusVO">
+	    <selectKey keyProperty="statusCode" resultType="Integer" order="BEFORE">
+	        SELECT NVL(MAX(status_code), 0) + 1 FROM status
+	    </selectKey>
+	    INSERT INTO status (
+	        status_code,
+	        project_code,
+	        code_id,
+	        sort_no
+	    ) VALUES (
+	        #{statusCode},
+	        #{projectCode},
+	        #{codeId},
+	        #{sortNo}
+	    )
+	</insert>
+	
+	<!-- 프로젝트 매퍼 등록 -->
+	<insert id="projectMapInsert" parameterType="ProjectAddMapVO">
+	    <selectKey keyProperty="mappCode" resultType="Integer" order="BEFORE">
+	        SELECT NVL(MAX(mapp_code), 0) + 1 FROM project_role_user
+	    </selectKey>
+	    INSERT INTO project_role_user (
+	        mapp_code,
+	        project_code,
+	        user_code,
+	        role_code
+	    ) VALUES (
+	        #{mappCode},
+	        #{projectCode},
+	        #{userCode},
+	        #{roleCode}
+	    )
+	</insert>
+	
+	<!-- 프로젝트 그룹 등록 -->
+	<insert id="projectGroupInsert" parameterType="ProjectAddGroupVO">
+	    <selectKey keyProperty="grProCode" resultType="Integer" order="BEFORE">
+	        SELECT NVL(MAX(gr_pro_code), 0) + 1 FROM gr_pro_role
+	    </selectKey>
+	    INSERT INTO gr_pro_role (
+	        gr_pro_code,
+	        gr_code,
+	        project_code,
+	        role_code
+	    ) VALUES (
+	        #{grProCode},
+	        #{grCode},
+	        #{projectCode},
+	        #{roleCode}
+	    )
+	</insert>
+	
 </mapper>
