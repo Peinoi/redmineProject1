@@ -7,13 +7,25 @@
 				,password_hash
 				,name
 				,is_lock
+				,first_login_yn
 		from users
 		where employee_no = #{employeeNo}
 	</select>
 	
+	<!-- 마지막 로그인 업데이트 -->
 	<update id="updateLastLoginAt" parameterType="int">
 		update users
 			set last_login_at = sysdate
+		where user_code = #{userCode}
+	</update>
+	
+	<!-- 첫 로그인 필수정보 업데이트 -->
+	<update id="updateFirstLoginInfo" parameterType="UserVO">
+		update users
+		set password_hash = #{passwordHash}
+		   ,email = #{email}
+		   ,phone = #{phone}
+		   ,first_login_yn = 'N'
 		where user_code = #{userCode}
 	</update>
 </mapper>

@@ -2,10 +2,10 @@ package com.yedam.app.login.service.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.yedam.app.login.mapper.FindPwMapper;
@@ -22,6 +22,7 @@ public class FindPwServiceImpl implements FindPwService {
 
 	private final FindPwMapper findPwMapper;
 	private final JavaMailSender mailSender;
+	private final PasswordEncoder passwordEncoder;
 
 	@Override
 	public UserVO FindPwInfo(UserVO userVO) {
@@ -36,7 +37,7 @@ public class FindPwServiceImpl implements FindPwService {
 			msg.setFrom("tjdcksgur.1@daum.net");
 			
 			msg.setSubject("[Together] 비밀번호 재설정 인증번호");
-			msg.setText("인증번호: " + otp + "\n10분 이내에 입력해주세요.");
+			msg.setText("인증번호: " + otp + "\n5분 이내에 입력해주세요.");
 
 			mailSender.send(msg);
 			log.info("OTP mail sent. to={}, otp={}", toEmail, otp);
@@ -45,5 +46,23 @@ public class FindPwServiceImpl implements FindPwService {
 			throw e;
 		}
 
+	}
+
+	@Override
+	public void modifyPwByUserCode(Integer userCode, String newPw) {
+		
+		// 해쉬처리한 비밀번호
+		String hashPw = passwordEncoder.encode(newPw);
+		
+		UserVO vo = new UserVO();
+		vo.setUserCode(userCode);
+		vo.setPasswordHash(hashPw);
+		
+		int updated = findPwMapper.updatePwByUserCode(vo);
+		if (updated != 1) {
+			// 정상 흐름에서 발생하면 안 되는 상태 → 로직 이상
+			throw new IllegalStateException("비밀번호 업데이트 실패: userCode=" + userCode);
+		}
+		
 	}
 }
