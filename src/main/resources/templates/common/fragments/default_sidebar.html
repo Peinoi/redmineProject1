@@ -4,44 +4,67 @@
 		<div class="nav">
 
 			<a class="nav-link" th:href="@{/projects}">
-				<div class="sb-nav-link-icon"></div> 프로젝트
-			</a> 
-			
-			<!-- 프로젝트 영역에서만 보이는 추가 메뉴 -->
-			<!-- com.yedam.app.common.advice.SidebarAdvice 여기서 프로젝트 관련 페이지 추가-->
-			<th:block th:if="${inProjectArea}">
-				<!-- 아래 링크는 임의의 링크 각자 페이지로 변경바람 -->
-				<a class="nav-link" th:href="@{/issueList}">
-				<div class="sb-nav-link-icon"></div>일감 목록</a>
-				
-				<a class="nav-link" th:href="@{/kanbanboard}">
-				<div class="sb-nav-link-icon"></div>나의 일정</a>
-				
-				<a class="nav-link" th:href="@{/ganttChart}">
-				<div class="sb-nav-link-icon"></div>일정 관리</a>
-				
-				<a class="nav-link" th:href="@{/calendar}">
-				<div class="sb-nav-link-icon"></div>일정 달력</a>
-				
-				<a class="nav-link" th:href="@{/noticeList}">
-				<div class="sb-nav-link-icon"></div>공지사항</a>
-				
-				<a class="nav-link" th:href="@{/docs}">
-				<div class="sb-nav-link-icon"></div>문서</a>
-				
-				<a class="nav-link" th:href="@{/projects}">
-				<div class="sb-nav-link-icon"></div>프로젝트 설정</a>
-			</th:block>
-			
-			<a class="nav-link" th:href="@{/projects}">
-				<div class="sb-nav-link-icon"></div> 내 페이지
-			</a> 
-			
-			<a class="nav-link" th:href="@{/projects}"> <!-- th:if="${role == 'ADMIN'} -->
-				<div class="sb-nav-link-icon"></div> 관리
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-diagram-project"></i>
+				</div> 프로젝트
 			</a>
 
-			
+			<!-- 프로젝트 영역에서만 보이는 추가 메뉴 -->
+			<th:block th:if="${inProjectArea}">
+
+				<a class="nav-link" th:href="@{/issueList}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-list-check"></i>
+					</div> 일감 목록
+				</a>
+
+				<a class="nav-link" th:href="@{/kanbanboard}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-table-columns"></i>
+					</div> 나의 일정
+				</a>
+
+				<a class="nav-link" th:href="@{/ganttChart}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-chart-gantt"></i>
+					</div> 일정 관리
+				</a>
+
+				<a class="nav-link" th:href="@{/calendar}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-calendar-days"></i>
+					</div> 일정 달력
+				</a>
+
+				<a class="nav-link" th:href="@{/noticeList}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-bullhorn"></i>
+					</div> 공지사항
+				</a>
+
+				<a class="nav-link" th:href="@{/docs}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-folder-open"></i>
+					</div> 문서
+				</a>
+
+				<a class="nav-link" th:href="@{/projects}">
+					<div class="sb-nav-link-icon">
+						<i class="fa-solid fa-sliders"></i>
+					</div> 프로젝트 설정
+				</a>
+			</th:block>
+
+			<a class="nav-link" th:href="@{/mypage}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-user"></i>
+				</div> 내 페이지
+			</a> <a class="nav-link" th:href="@{/admin}"> <!-- th:if="${role == 'ADMIN'} -->
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-gear"></i>
+				</div> 관리
+			</a>
+
 
 		</div>
 	</div>

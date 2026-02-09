@@ -1,12 +1,14 @@
 <nav th:fragment="DefaultHeader"
 	class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
 	<!-- Navbar Brand-->
-	<a class="navbar-brand ps-3" href="/">Together</a>
+	<a class="navbar-brand ps-3" href="/"><img
+		th:src="@{/images/LOGO.png}" style="width:200px" alt="로고 이미지"> </a>
 	<!-- 오른쪽 영역 -->
 	<div class="ms-auto d-flex align-items-center me-3 me-lg-4">
 
 		<!-- 로그인 사용자 표시 -->
-		<span class="text-white me-2"  th:text="${session.user != null ? session.user.name : ''}"></span>
+		<span class="text-white me-2"
+			th:text="${session.user != null ? session.user.name : ''}"></span>
 
 		<!-- User Dropdown -->
 		<ul class="navbar-nav">
