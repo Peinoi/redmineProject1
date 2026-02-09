@@ -613,7 +613,7 @@ function handleFormSubmit(event) {
 
 	const projectNameInput = document.querySelector('[name="projectName"]');
 	const projectName = projectNameInput.value.trim();
-
+	const userCode = document.querySelector('[name="userCode"]').value;
 	if (projectName === '') {
 		alert('프로젝트명을 입력해주세요.');
 		projectNameInput.focus();
@@ -664,6 +664,7 @@ function handleFormSubmit(event) {
 
 	const formData = {
 		projectName: projectName,
+		userCode: parseInt(userCode),  // Integer로 변환
 		description: description,
 		status: document.querySelector('input[name="inlineRadioOptions"]:checked').value,
 		projectUsers: selectedUsers.map(user => ({
@@ -676,7 +677,9 @@ function handleFormSubmit(event) {
 		}))
 	};
 
-	submitProject(formData);
+	submitProject(formData);  // 주석 제거
+
+	console.log(formData);
 }
 
 // ============================================
@@ -690,15 +693,14 @@ function submitProject(formData) {
 		},
 		body: JSON.stringify(formData)
 	})
-		.then(response => {
-			if (response.ok) {
-				return response.json();
-			}
-			throw new Error('프로젝트 등록 실패');
-		})
+		.then(response => response.json())
 		.then(data => {
-			alert('프로젝트가 정상적으로 등록되었습니다.');
-			window.location.href = `/projects/${data.identifier}/dashboard`;
+			if (data.success) {
+				alert(data.message);
+				window.location.href = '/projects';
+			} else {
+				alert(data.message);
+			}
 		})
 		.catch(error => {
 			console.error('프로젝트 등록 오류:', error);

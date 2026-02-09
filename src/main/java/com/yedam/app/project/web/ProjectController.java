@@ -7,9 +7,13 @@ import java.util.Map;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectPrVO;
+import com.yedam.app.project.service.ProjectRequestDTO;
 import com.yedam.app.project.service.ProjectService;
 import com.yedam.app.project.service.ProjectVO;
 import com.yedam.app.project.service.PruserVO;
@@ -52,4 +56,24 @@ public class ProjectController {
 
 	}
 
+	@PostMapping("projects")
+	@ResponseBody
+	public Map<String, Object> projectInsert(@RequestBody ProjectRequestDTO requestDTO) {
+		Map<String, Object> response = new HashMap<>();
+
+		try {
+			// 프로젝트 등록 처리
+			int projectCode = projectService.registerProject(requestDTO);
+
+			response.put("success", true);
+			response.put("projectCode", projectCode);
+			response.put("message", "프로젝트가 정상적으로 등록되었습니다.");
+
+		} catch (Exception e) {
+			response.put("success", false);
+			response.put("message", "프로젝트 등록 중 오류가 발생했습니다: " + e.getMessage());
+		}
+
+		return response;
+	}
 }
