@@ -289,3 +289,15 @@ button {
   margin: 4px 0;
   color: var(--muted);
 }
+
+#rejectHistoryModal .modal-body {
+  max-height: 60vh;
+  overflow: auto;
+}
+
+#rejectHistoryModal thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 1;
+}

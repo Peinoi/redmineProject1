@@ -105,7 +105,13 @@
   	at.uploaded_at,
   	
   	i.type_code,
-    t.type_name
+    t.type_name,
+    
+    i.reject_code,
+	ir.reason AS reject_reason,
+	ir.rejected_by,
+	ur.name AS rejected_by_name,
+	ir.rejected_at
 
   FROM issues i
   LEFT JOIN projects p
@@ -140,6 +146,12 @@
     
     LEFT JOIN types t
 	ON t.type_code = i.type_code
+	
+	LEFT JOIN issue_rejects ir
+  	ON ir.reject_code = i.reject_code
+
+	LEFT JOIN users ur
+  	ON ur.user_code = ir.rejected_by
 	
 	WHERE i.issue_code = #{issueCode}
 	</select>
@@ -325,6 +337,60 @@
 
 </update>
 
+<!-- 반려사유 등록 -->
+<insert id="insertIssueReject" parameterType="map">
+  <selectKey keyProperty="rejectCode" resultType="long" order="BEFORE">
+    SELECT NVL(MAX(reject_code), 0) + 1 FROM issue_rejects
+  </selectKey>
 
+  INSERT INTO issue_rejects (
+    reject_code, issue_code, rejected_by, rejected_at, reason
+  ) VALUES (
+    #{rejectCode}, #{issueCode}, #{rejectedBy}, SYSTIMESTAMP, #{reason}
+  )
+</insert>
+
+<!-- 일감과 연결 -->
+<update id="setIssueRejectCode">
+  UPDATE issues
+  SET reject_code = #{rejectCode},
+      updated_at = SYSTIMESTAMP
+  WHERE issue_code = #{issueCode}
+</update>
+
+<!-- 상태변경 -->
+<update id="updateIssueStatusByStatusId">
+  UPDATE issues
+  SET status_code = (
+        SELECT s.status_code
+        FROM status s
+        WHERE s.project_code = #{projectCode}
+          AND s.code_id = #{statusId}
+      ),
+      progress =
+        CASE
+          WHEN #{statusId} = 'OB4' THEN 50
+          WHEN #{statusId} = 'OB5' THEN 100
+          ELSE progress
+        END,
+      updated_at = SYSTIMESTAMP
+  WHERE issue_code = #{issueCode}
+</update>
+
+<!-- 반려이력 조회 -->
+ <select id="selectRejectHistory" resultType="IssueVO">
+  SELECT
+    ir.reject_code,
+    ir.issue_code,
+    ir.rejected_by,
+    ur.name AS rejected_by_name,
+    ir.rejected_at,
+    ir.reason AS reject_reason
+  FROM issue_rejects ir
+  LEFT JOIN users ur
+    ON ur.user_code = ir.rejected_by
+  WHERE ir.issue_code = #{issueCode}
+  ORDER BY ir.rejected_at DESC, ir.reject_code DESC
+</select>
  
 </mapper>

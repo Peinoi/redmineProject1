@@ -9,4 +9,10 @@ public class AuthorityVO {
 	  private String wrRol;
 	  private String moRol;
 	  private String delRol;
+	  
+	  private String adminCk;
+	  private String status;
+	  private String roleName;
+	  private Long projectCode;
+	  private Integer userCode;
 }

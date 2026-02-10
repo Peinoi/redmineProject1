@@ -7,6 +7,7 @@
   const descInp = $("#editor");
 
   const statusSel = $("#statusId");
+  const prioritySel = $("#priority");
   const progressInp = $("#progress");
 
   const uploadFileInp = $("#uploadFile");
@@ -31,7 +32,7 @@
   const projectCodeEl = $("#projectCode");
   const projectTextEl = $("#projectText");
 
-  // --- 프로젝트 모달 ---
+  // --- 프로젝트 모달(수정화면에서는 보통 없음: optional) ---
   const btnOpenProjectModal = $("#btnOpenProjectModal");
   const projectModalEl = $("#projectSelectModal");
   const projectModal = projectModalEl
@@ -61,7 +62,7 @@
 
   const typeText = $("#typeText");
 
-  // id 중복 방지용: typeCode는 id로 하나만 잡히지만, 혹시 중복이면 name 기준으로 마지막 하나를 사용
+  // id 중복 방지용: typeCode는 name 기준으로 마지막 하나를 사용
   const getTypeCodeInput = () => {
     const list = document.querySelectorAll('input[name="typeCode"]');
     if (list.length === 0) return $("#typeCode");
@@ -95,10 +96,117 @@
 
   const parentIssueCacheByProject = new Map();
 
+  // -------------------------
+  // Toast (등록 화면 스타일로 통일)
+  // -------------------------
+  const showToast = (message) => {
+    const toastId = "commonToast";
+    let toastEl = document.getElementById(toastId);
+
+    if (!toastEl) {
+      toastEl = document.createElement("div");
+      toastEl.id = toastId;
+      toastEl.className = "toast align-items-center text-bg-dark border-0";
+      toastEl.setAttribute("role", "alert");
+      toastEl.setAttribute("aria-live", "assertive");
+      toastEl.setAttribute("aria-atomic", "true");
+      toastEl.style.position = "fixed";
+      toastEl.style.right = "16px";
+      toastEl.style.bottom = "16px";
+      toastEl.style.zIndex = "1080";
+
+      toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body" id="commonToastBody"></div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+      document.body.appendChild(toastEl);
+    }
+
+    const bodyEl = document.getElementById("commonToastBody");
+    if (bodyEl) bodyEl.textContent = message;
+
+    const t = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 });
+    t.show();
+  };
+
+  // 마감기한 자동복구 토스트 중복 방지
+  let lastDueToastAt = 0;
+  const showDueAutoToast = () => {
+    const now = Date.now();
+    if (now - lastDueToastAt < 1200) return;
+    lastDueToastAt = now;
+    showToast(
+      "마감기한이 삭제되어 우선순위 기준으로 자동 설정되어 저장됩니다.",
+    );
+  };
+
+  // -------------------------
+  // 날짜/우선순위 유틸
+  // -------------------------
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const toDate = (d) =>
+    `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+
+  const addDays = (base, days) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const PRIORITY_DAYS = { OA1: 2, OA2: 7, OA3: 14, OA4: 21 };
+  const getPriorityDays = () => PRIORITY_DAYS[prioritySel?.value] ?? null;
+
+  const setDueByPriority = () => {
+    if (!dueView || !dueAt || !prioritySel) return;
+
+    const days = getPriorityDays();
+    if (!days) {
+      // 우선순위 없으면 자동셋 불가
+      return;
+    }
+
+    const dueStr = toDate(addDays(new Date(), days));
+    dueView.value = dueStr;
+    dueAt.value = toDT(dueStr);
+  };
+
+  // 마감기한 삭제 방지 + hidden 동기화
+  const syncDueWithPriority = () => {
+    if (!dueView || !dueAt) return;
+
+    // 비었으면(삭제 시도) 우선순위로 복구 (우선순위가 있을 때만)
+    if (!dueView.value) {
+      if (!prioritySel?.value) {
+        // 우선순위 없으면 여기서 토스트/복구하지 않고 submit에서 막힘
+        return;
+      }
+      showDueAutoToast();
+      setDueByPriority();
+      return;
+    }
+
+    dueAt.value = toDT(dueView.value);
+  };
+
+  // 날짜 비교 (yyyy-mm-dd)
+  const isBefore = (a, b) => {
+    if (!a || !b) return false;
+    // ISO 형식이라 문자열 비교로도 안전하지만, 명시적으로 Date로 비교
+    const da = new Date(`${a}T00:00:00`);
+    const db = new Date(`${b}T00:00:00`);
+    return da.getTime() < db.getTime();
+  };
+
+  // -------------------------
+  // 초기값 백업
+  // -------------------------
   const initial = {
     title: titleInp?.value || "",
     description: descInp?.value || "",
     statusId: statusSel?.value || "",
+    priority: prioritySel?.value || "",
     progress: progressInp?.value || "",
     due: dueView?.value || "",
     started: startedView?.value || "",
@@ -114,17 +222,27 @@
     projectText: projectTextEl?.value || "",
   };
 
+  // -------------------------
+  // hidden 날짜 동기화
+  // -------------------------
   const syncHiddenDates = () => {
     if (createdAt && createdView) createdAt.value = toDT(createdView.value);
-    if (dueAt && dueView) dueAt.value = toDT(dueView.value);
+
+    // due는 삭제방지 로직 포함해서 동기화
+    syncDueWithPriority();
+
     if (startedAt && startedView) startedAt.value = toDT(startedView.value);
 
     if (resolvedAt && resolvedView) {
+      // 완료(OB5)일 때만 완료일 저장, 아니면 비움
       resolvedAt.value =
         statusSel?.value === "OB5" ? toDT(resolvedView.value) : "";
     }
   };
 
+  // -------------------------
+  // 상태에 따른 UI 제어
+  // -------------------------
   const toggleResolvedByStatus = () => {
     if (!resolvedView) return;
     const isDone = statusSel?.value === "OB5";
@@ -201,8 +319,9 @@
   const onStatusChange = () => {
     const s = statusSel?.value || "";
 
+    // 신규가 아닌 상태로 바꾸려면 시작일 필요
     if (s && s !== "OB1" && !startedView?.value) {
-      alert("신규가 아닌 상태로 변경하려면 시작일을 먼저 등록해야 합니다.");
+      showToast("신규가 아닌 상태로 변경하려면 시작일을 먼저 등록해야 합니다.");
       statusSel.value = "OB1";
     }
 
@@ -217,7 +336,7 @@
   const fetchJson = async (url, failMsg) => {
     const res = await fetch(url, { headers: { Accept: "application/json" } });
     if (!res.ok) {
-      alert(failMsg);
+      showToast(failMsg);
       return null;
     }
     return res.json();
@@ -267,21 +386,17 @@
         if (projectSearchEl) projectSearchEl.value = "";
         projectModal?.hide();
 
-        // 프로젝트가 바뀌면: 담당자/상위일감 캐시 & 선택값 초기화
+        // 프로젝트가 바뀌면: 담당자/상위일감 초기화
         if (prev && prev !== next) {
-          // 담당자 초기화
           if (assigneeText) assigneeText.value = "";
           if (assigneeCode) assigneeCode.value = "";
           if (assigneeSearchEl) assigneeSearchEl.value = "";
           userCache = [];
           userCacheProjectCode = "";
 
-          // 상위일감 초기화
           if (parIssueText) parIssueText.value = "";
           if (parIssueCode) parIssueCode.value = "";
           if (parIssueSearchEl) parIssueSearchEl.value = "";
-          // parentIssueCacheByProject는 Map이라 굳이 전체 삭제까지는 안 해도 되지만,
-          // 수정 화면에서는 프로젝트 변경 자체가 드물어서 그냥 두어도 OK
         }
       });
       projectListEl.appendChild(b);
@@ -289,8 +404,7 @@
   };
 
   const openProjectModal = async () => {
-    if (!projectModal) return;
-    if (!projectListEl) return;
+    if (!projectModal || !projectListEl) return;
 
     const ok = await ensureProjectCache();
     if (!ok) return;
@@ -325,7 +439,7 @@
     });
 
     if (!res.ok) {
-      alert("유형 목록을 불러오지 못했습니다.");
+      showToast("유형 목록을 불러오지 못했습니다.");
       return false;
     }
 
@@ -426,7 +540,7 @@
   const ensureUserCache = async () => {
     const projCode = String(projectCodeEl?.value || "").trim();
     if (!projCode) {
-      alert("프로젝트 정보가 없습니다.");
+      showToast("프로젝트 정보가 없습니다.");
       return false;
     }
 
@@ -438,7 +552,7 @@
     );
 
     if (!res.ok) {
-      alert("사용자 목록을 불러오지 못했습니다.");
+      showToast("사용자 목록을 불러오지 못했습니다.");
       return false;
     }
 
@@ -483,7 +597,7 @@
 
     const projCode = String(projectCodeEl?.value || "").trim();
     if (!projCode) {
-      alert("프로젝트 정보가 없습니다.");
+      showToast("프로젝트 정보가 없습니다.");
       return;
     }
 
@@ -549,7 +663,7 @@
       tr.addEventListener("click", () => {
         const selfId = Number(issueCodeEl?.value);
         if (!Number.isNaN(selfId) && it.issueCode === selfId) {
-          alert("자기 자신을 상위일감으로 선택할 수 없습니다.");
+          showToast("자기 자신을 상위일감으로 선택할 수 없습니다.");
           return;
         }
 
@@ -577,7 +691,7 @@
 
     const projectCode = projectCodeEl?.value;
     if (!projectCode) {
-      alert("프로젝트 정보가 없습니다.");
+      showToast("프로젝트 정보가 없습니다.");
       return;
     }
 
@@ -607,32 +721,48 @@
     const s = statusSel?.value || "";
 
     if (!typeCode?.value) {
-      alert("유형을 선택해 주세요.");
+      showToast("유형을 선택해 주세요.");
       btnOpenTypeModal?.focus();
       return false;
     }
 
+    // 마감기한 삭제 방지 동기화(우선순위 있을 때 복구)
+    syncDueWithPriority();
+
+    // 신규가 아닌 상태는 시작일 필수
     if (s && s !== "OB1" && !startedView?.value) {
-      alert("신규가 아닌 상태로 저장하려면 시작일을 입력해야 합니다.");
+      showToast("신규가 아닌 상태로 저장하려면 시작일을 입력해야 합니다.");
       startedView?.focus();
       return false;
     }
 
+    // 완료(OB5)면 완료일 필수
     if (s === "OB5" && !resolvedView?.value) {
-      alert("완료로 저장하려면 완료일을 입력해야 합니다.");
+      showToast("완료로 저장하려면 완료일을 입력해야 합니다.");
       resolvedView?.focus();
       return false;
     }
 
-    if (s === "OB5") {
+    // 완료일은 시작일보다 빠를 수 없음
+    if (resolvedView?.value && startedView?.value) {
+      if (isBefore(resolvedView.value, startedView.value)) {
+        showToast("완료일은 시작일보다 빠를 수 없습니다.");
+        resolvedView?.focus();
+        return false;
+      }
+    }
+
+    // 첨부파일 필수 조건: 완료(OB5) -> 해결(OB3)로 변경
+    if (s === "OB3") {
       const hasFile = uploadFileInp?.files?.length > 0;
       if (!hasFile) {
-        alert("완료로 저장하려면 첨부파일을 등록해야 합니다.");
+        showToast("해결로 저장하려면 첨부파일을 등록해야 합니다.");
         uploadFileInp?.focus();
         return false;
       }
     }
 
+    // 완료가 아니면 완료일 비움
     if (s !== "OB5") {
       if (resolvedView) resolvedView.value = "";
       if (resolvedAt) resolvedAt.value = "";
@@ -649,16 +779,26 @@
   // -------------------------
   statusSel?.addEventListener("change", onStatusChange);
 
+  prioritySel?.addEventListener("change", () => {
+    // 우선순위 변경 시 마감기한 자동 재설정 + hidden 동기화
+    setDueByPriority();
+    syncHiddenDates();
+  });
+
   progressInp?.addEventListener("input", () => {
     clampProgress();
     syncHiddenDates();
   });
 
+  // 마감기한: 삭제 시도하면 우선순위로 복구 + 토스트
   dueView?.addEventListener("change", syncHiddenDates);
+  dueView?.addEventListener("input", () => {
+    if (!dueView.value) syncHiddenDates();
+  });
 
   startedView?.addEventListener("change", () => {
     if (statusSel?.value && statusSel.value !== "OB1" && !startedView.value) {
-      alert("신규가 아닌 상태에서는 시작일을 비울 수 없습니다.");
+      showToast("신규가 아닌 상태에서는 시작일을 비울 수 없습니다.");
       statusSel.value = "OB1";
     }
     onStatusChange();
@@ -719,6 +859,7 @@
     if (descInp) descInp.value = initial.description;
 
     if (statusSel) statusSel.value = initial.statusId;
+    if (prioritySel) prioritySel.value = initial.priority;
     if (progressInp) progressInp.value = initial.progress;
 
     if (dueView) dueView.value = initial.due;
@@ -737,7 +878,6 @@
     if (projectTextEl) projectTextEl.value = initial.projectText;
     if (projectCodeEl) projectCodeEl.value = initial.projectCode;
 
-    // 프로젝트가 초기값으로 바뀌었으니 담당자 캐시도 초기화
     userCache = [];
     userCacheProjectCode = "";
 

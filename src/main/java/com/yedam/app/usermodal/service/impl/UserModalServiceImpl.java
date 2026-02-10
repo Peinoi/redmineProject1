@@ -17,7 +17,12 @@ public class UserModalServiceImpl implements UserModalService {
   private final UserModalMapper userModalMapper;
 
   @Override
-  public List<UserModalVO> findUserModalListByProject(Long projectCode) {
-    return userModalMapper.selectUserModalListByProject(projectCode);
+  public List<UserModalVO> findUsersByProject(Long projectCode) {
+    return userModalMapper.selectUsersByProject(projectCode);
+  }
+
+  @Override
+  public List<UserModalVO> findUsersByMyProjects(Long loginUserCode) {
+    return userModalMapper.selectUsersByMyProjects(loginUserCode);
   }
 }

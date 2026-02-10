@@ -15,4 +15,16 @@
     AND pru.user_code = #{userCode}
     AND ra.category = #{category}
 </select>
+
+<select id="selectProjectAuth" resultType="AuthorityVO">
+  SELECT
+    #{userCode} AS user_code,
+    #{projectCode} AS project_code,
+    CASE WHEN MAX(admin_ck) = 'Y' THEN 'Y' ELSE 'N' END AS admin_ck,
+    MAX(status) KEEP (DENSE_RANK LAST ORDER BY CASE WHEN admin_ck='Y' THEN 2 ELSE 1 END, status) AS status,
+    MAX(role_name) KEEP (DENSE_RANK LAST ORDER BY CASE WHEN admin_ck='Y' THEN 2 ELSE 1 END, status) AS role_name
+  FROM vw_user_auth
+  WHERE user_code = #{userCode}
+    AND project_code = #{projectCode}
+</select>
 </mapper>

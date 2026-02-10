@@ -313,7 +313,7 @@
   const ensureUserCache = async () => {
     if (userCache.length > 0) return true;
 
-    const res = await fetch("/api/users/modal", {
+    const res = await fetch("/api/users/modal/my-projects", {
       headers: { Accept: "application/json" },
     });
     if (!res.ok) {
@@ -534,6 +534,7 @@
   ui.tbody.addEventListener("click", (e) => {
     if (e.target.closest("input, label, button, a")) return;
     const tr = e.target.closest("tr.issueRow");
+    console.log("clicked row dataset:", tr.dataset);
     if (tr && tr.style.display !== "none") goDetail(tr);
   });
 
