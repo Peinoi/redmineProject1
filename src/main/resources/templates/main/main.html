@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}">
+<head>
+<meta charset="UTF-8">
+<title>Main</title>
+</head>
+
+<body>
+	<!-- 화면에 보이는 영역 -->
+	<div layout:fragment="Content">
+		<!-- ✅ 상단 2컬럼: 왼쪽 차트 / 오른쪽 테이블 -->
+		<div class="row g-3">
+
+			<!-- 왼쪽 위: 파이(도넛) 차트 -->
+			<div class="col-12 col-lg-6">
+				<div class="card shadow-sm">
+					<div class="card-header fw-bold">프로젝트 현황</div>
+					<div class="card-body">
+						<div id="donutchart" style="width: 100%; height: 380px;"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 오른쪽 위: 작은 테이블 -->
+			<div class="col-12 col-lg-6">
+				<div class="card shadow-sm">
+					<div class="card-header fw-bold">일감현황</div>
+					<div class="card-body p-0">
+						<div class="table-responsive">
+							<table class="table table-sm table-striped mb-0 align-middle">
+								<thead class="table-light">
+									<tr>
+										<th style="min-width: 180px;">프로젝트</th>
+										<th class="text-end">신규</th>
+										<th class="text-end">진행</th>
+										<th class="text-end">해결</th>
+										<th class="text-end">반려</th>
+										<th class="text-end">완료</th>
+									</tr>
+								</thead>
+								<tbody>
+									<!-- ✅ projectStatusRows: 컨트롤러에서 내려준 리스트 -->
+									<tr th:each="list : ${ProIssStatusList}">
+										<td th:text="${}">프로젝트</td>
+										<td class="text-end" th:text="${}">0</td>
+										<td class="text-end" th:text="${}">0</td>
+										<td class="text-end" th:text="${}">0</td>
+										<td class="text-end" th:text="${}">0</td>
+										<td class="text-end" th:text="${}">0</td>
+									</tr>
+
+									<!-- 데이터 없을 때 -->
+									<tr th:if="${#lists.isEmpty(projectStatusRows)}">
+										<td colspan="6" class="text-center text-muted py-3">표시할
+											데이터가 없습니다.</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+	</div>
+
+	<!-- 페이지 전용 스크립트 -->
+	<th:block layout:fragment="pageScript">
+		<script src="https://www.gstatic.com/charts/loader.js"></script>
+
+		<script th:inline="javascript">
+    		google.charts.load("current", { packages: ["corechart"] });
+    		google.charts.setOnLoadCallback(drawChart);
+
+    		function drawChart() {
+      			const statusListCnt = /*[[${statusListCnt}]]*/ [];
+      			
+      			const reversed = [...statusListCnt].reverse();
+
+      			// ✅ 여기! [[ 로 시작하지 않게 변경
+      			const rows = [];
+      			rows.push(['상태', '개수']);
+
+      			for (const item of reversed) {
+        		rows.push([item.codeName, Number(item.codeNameCnt)]);
+      			}
+
+      			const data = google.visualization.arrayToDataTable(rows);
+
+      			const options = { 
+					title: '프로젝트 현황', 
+					pieHole: 0.4, 
+					
+					colors: ['#3b9ff6', '#a3a3a3']
+	  			};
+      		
+      			const chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+      			chart.draw(data, options);
+    		}
+  </script>
+	</th:block>
+
+</body>
+</html>

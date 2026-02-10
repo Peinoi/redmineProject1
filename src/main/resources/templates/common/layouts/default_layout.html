@@ -22,7 +22,7 @@
 		<div id="layoutSidenav_content">
 			<main style="margin:0 20px 0 20px;">
 				<div class="container-fluid px-0" layout:fragment="Content"
-					></div>
+					th:inline="none"></div>
 			</main>
 
 			<!--/* 푸터 */-->
@@ -33,5 +33,6 @@
 
 	<th:block
 		th:replace="~{common/configs/default_configs :: BottomScript}"></th:block>
+	<th:block layout:fragment="pageScript" th:inline="none"></th:block>
 </body>
 </html>
