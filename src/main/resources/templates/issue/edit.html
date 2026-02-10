@@ -171,19 +171,44 @@
                 required
               >
                 <option value="">선택</option>
-                <option value="OB1" th:selected="${issue.statusId == 'OB1'}">
+
+                <option
+                  value="OB1"
+                  th:if="${#lists.contains(allowedStatusIds, 'OB1')}"
+                  th:selected="${issue.statusId == 'OB1'}"
+                >
                   신규
                 </option>
-                <option value="OB2" th:selected="${issue.statusId == 'OB2'}">
+
+                <option
+                  value="OB2"
+                  th:if="${#lists.contains(allowedStatusIds, 'OB2')}"
+                  th:selected="${issue.statusId == 'OB2'}"
+                >
                   진행
                 </option>
-                <option value="OB3" th:selected="${issue.statusId == 'OB3'}">
+
+                <option
+                  value="OB3"
+                  th:if="${#lists.contains(allowedStatusIds, 'OB3')}"
+                  th:selected="${issue.statusId == 'OB3'}"
+                >
                   해결
                 </option>
-                <option value="OB4" th:selected="${issue.statusId == 'OB4'}">
+
+                <option
+                  value="OB4"
+                  th:if="${#lists.contains(allowedStatusIds, 'OB4')}"
+                  th:selected="${issue.statusId == 'OB4'}"
+                >
                   반려
                 </option>
-                <option value="OB5" th:selected="${issue.statusId == 'OB5'}">
+
+                <option
+                  value="OB5"
+                  th:if="${#lists.contains(allowedStatusIds, 'OB5')}"
+                  th:selected="${issue.statusId == 'OB5'}"
+                >
                   완료
                 </option>
               </select>
@@ -302,6 +327,10 @@
                 step="1"
                 th:value="${issue.progress}"
               />
+              <div class="form-text">
+                상태가 진행일 때 0 ~ 90 으로 선택 가능하고, 다른 상태에서는
+                자동지정 됩니다.
+              </div>
             </div>
 
             <div class="col-12 col-md-8">
@@ -312,21 +341,22 @@
                 name="uploadFile"
                 class="form-control"
               />
+              <div class="form-text">&nbsp;</div>
             </div>
           </div>
 
           <!-- 버튼 -->
           <div class="d-flex justify-content-between align-items-center mt-4">
             <button type="button" class="btn btn-secondary" id="btnBack">
-              돌아가기
+              <i class="fas fa-arrow-left me-1"></i>돌아가기
             </button>
 
             <div class="d-flex gap-2">
               <button type="button" class="btn btn-secondary" id="btnReset">
-                초기화
+                <i class="fas fa-redo me-1"></i>초기화
               </button>
               <button type="submit" class="btn btn-success" id="btnSubmit">
-                수정 저장
+                <i class="fas fa-save me-1"></i>수정 저장
               </button>
             </div>
           </div>

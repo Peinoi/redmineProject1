@@ -18,4 +18,10 @@ public interface IssueService {
     public Map<String, Object> modifyIssueInfo(IssueVO issue, MultipartFile uploadFile, Integer userCode);
  	// 첨부파일
  	void attachFileToIssue(Long issueCode, Integer userCode, MultipartFile uploadFile);
+ 	// 승인
+ 	Map<String, Object> approveIssue(Long issueCode, Integer userCode);
+ 	// 반려
+ 	Map<String, Object> rejectIssue(Long issueCode, Integer userCode, String reason);
+ 	// 반려이력 조회
+ 	List<IssueVO> findRejectHistory(Long issueCode);
 }

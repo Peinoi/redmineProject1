@@ -259,4 +259,129 @@ public class IssueServiceImpl implements IssueService {
 	          .replace("\t", "\\t");
 	}
 
+	// 승인
+	@Override
+	@Transactional
+	public Map<String, Object> approveIssue(Long issueCode, Integer userCode) {
+	  Map<String, Object> res = new java.util.HashMap<>();
+
+	  if (issueCode == null) {
+	    res.put("success", false);
+	    res.put("message", "issueCode가 없습니다.");
+	    return res;
+	  }
+
+	  IssueVO param = new IssueVO();
+	  param.setIssueCode(issueCode);
+
+	  IssueVO before = issueMapper.selectIssue(param);
+	  if (before == null) {
+	    res.put("success", false);
+	    res.put("message", "일감을 찾을 수 없습니다.");
+	    return res;
+	  }
+
+	  // 상태를 완료(OB5)로 변경
+	  int updated = issueMapper.updateIssueStatusByStatusId(
+	      issueCode, before.getProjectCode(), "OB5"
+	  );
+
+	  if (updated <= 0) {
+	    res.put("success", false);
+	    res.put("message", "승인 처리에 실패했습니다.");
+	    return res;
+	  }
+
+	  IssueVO after = issueMapper.selectIssue(param);
+
+	  // 로그
+	  logService.addActionLog(
+	      after.getProjectCode(),
+	      userCode,
+	      "APPROVE",
+	      "ISSUE",
+	      after.getIssueCode(),
+	      "{\"changes\":[{\"field\":\"status\",\"before\":\"" + before.getStatusName() + "\",\"after\":\"" + after.getStatusName() + "\"}]}"
+	  );
+
+	  res.put("success", true);
+	  res.put("message", "승인 처리되었습니다.");
+	  res.put("data", after);
+	  return res;
+	}
+
+	// 반려
+	@Override
+	@Transactional
+	public Map<String, Object> rejectIssue(Long issueCode, Integer userCode, String reason) {
+	  Map<String, Object> res = new java.util.HashMap<>();
+
+	  if (issueCode == null) {
+	    res.put("success", false);
+	    res.put("message", "issueCode가 없습니다.");
+	    return res;
+	  }
+	  if (reason == null || reason.trim().isEmpty()) {
+	    res.put("success", false);
+	    res.put("message", "반려 사유를 입력해 주세요.");
+	    return res;
+	  }
+
+	  IssueVO param = new IssueVO();
+	  param.setIssueCode(issueCode);
+
+	  IssueVO before = issueMapper.selectIssue(param);
+	  if (before == null) {
+	    res.put("success", false);
+	    res.put("message", "일감을 찾을 수 없습니다.");
+	    return res;
+	  }
+
+	  // 1) 반려 레코드 insert (Map으로 rejectCode 받아오기)
+	  java.util.Map<String, Object> p = new java.util.HashMap<>();
+	  p.put("issueCode", issueCode);
+	  p.put("rejectedBy", userCode);
+	  p.put("reason", reason.trim());
+
+	  int ins = issueMapper.insertIssueReject(p);
+	  if (ins <= 0) {
+	    res.put("success", false);
+	    res.put("message", "반려 사유 저장에 실패했습니다.");
+	    return res;
+	  }
+
+	  Long rejectCode = (Long) p.get("rejectCode");
+
+	  // 2) issues.reject_code 업데이트
+	  issueMapper.setIssueRejectCode(issueCode, rejectCode);
+
+	  // 3) 상태를 반려(OB4)로 변경
+	  issueMapper.updateIssueStatusByStatusId(
+	      issueCode, before.getProjectCode(), "OB4"
+	  );
+
+	  IssueVO after = issueMapper.selectIssue(param);
+
+	  // 로그
+	  logService.addActionLog(
+	      after.getProjectCode(),
+	      userCode,
+	      "REJECT",
+	      "ISSUE",
+	      after.getIssueCode(),
+	      "{\"changes\":[{\"field\":\"status\",\"before\":\"" + before.getStatusName() + "\",\"after\":\"" + after.getStatusName() + "\"},{\"field\":\"rejectReason\",\"before\":null,\"after\":\"" + reason.trim().replace("\"","\\\"") + "\"}]}"
+	  );
+
+	  res.put("success", true);
+	  res.put("message", "반려 처리되었습니다.");
+	  res.put("data", after);
+	  return res;
+	}
+
+	// 반려이력조회
+	@Override
+	public List<IssueVO> findRejectHistory(Long issueCode) {
+	  return issueMapper.selectRejectHistory(issueCode);
+	}
+
 }

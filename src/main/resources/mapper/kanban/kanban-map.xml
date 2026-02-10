@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yedam.app.kanban.mapper.KanbanMapper">
+
+  <select id="selectKanbanIssuesByProject"
+          parameterType="java.lang.Long"
+          resultType="IssueVO">
+    SELECT
+      i.issue_code     AS issueCode,
+      i.project_code   AS projectCode,
+
+      i.status_code     AS statusCode,
+
+      i.title          AS title,
+      i.priority       AS priority,
+
+      i.assignee_code  AS assigneeCode,
+      au.name          AS assigneeName,
+
+      i.created_by_code AS createdByCode,
+      cu.name           AS creatorName,
+
+      i.created_at     AS createdAt,
+      i.position       AS position
+    FROM issues i
+    LEFT JOIN users au ON au.user_code = i.assignee_code
+    LEFT JOIN users cu ON cu.user_code = i.created_by_code
+    WHERE i.project_code = #{projectCode}
+    ORDER BY
+      i.status_id,
+      COALESCE(i.position, 999999),
+      i.issue_code DESC
+  </select>
+
+  <update id="updateIssueStatusAndPosition">
+    UPDATE issues
+       SET status_code = #{toStatusCode},
+           position  = #{position},
+           updated_at = NOW()
+     WHERE issue_code = #{issueCode}
+  </update>
+
+  <update id="batchUpdatePositions">
+    <foreach collection="list" item="it" separator=";">
+      UPDATE issues
+         SET position  = #{it.position},
+             updated_at = NOW()
+       WHERE issue_code = #{it.issueCode}
+    </foreach>
+  </update>
+  
+  <select id="selectKanbanIssuesByUser"
+        parameterType="java.lang.Long"
+        resultType="IssueVO">
+  SELECT
+    i.issue_code     AS issueCode,
+    i.project_code   AS projectCode,
+
+    i.status_code      AS statusCode,
+    i.title          AS title,
+    i.priority       AS priority,
+
+    i.assignee_code  AS assigneeCode,
+    au.name          AS assigneeName,
+
+    i.created_by_code AS createdByCode,
+    cu.name           AS creatorName,
+
+    i.created_at     AS createdAt,
+    i.position       AS position,
+
+    p.project_name   AS projectName
+  FROM issues i
+  LEFT JOIN users au ON au.user_code = i.assignee_code
+  LEFT JOIN users cu ON cu.user_code = i.created_by_code
+  LEFT JOIN projects p ON p.project_code = i.project_code
+  WHERE
+    (
+      i.assignee_code = #{loginUserCode}
+      OR i.created_by_code = #{loginUserCode}
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM vw_user_auth v
+      WHERE v.user_code = #{loginUserCode}
+        AND v.project_code = i.project_code
+    )
+  ORDER BY
+    i.status_code,
+    COALESCE(i.position, 999999),
+    i.issue_code DESC
+</select>
+  
+
+</mapper>

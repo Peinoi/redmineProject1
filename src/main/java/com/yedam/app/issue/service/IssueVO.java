@@ -53,4 +53,13 @@ public class IssueVO {
 	
 	private Integer typeCode;
 	private String typeName;
+	
+	private Long rejectCode;
+
+	private String rejectReason;
+	private Integer rejectedBy;
+	private String rejectedByName;
+
+	@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
+	private LocalDateTime rejectedAt;
 }

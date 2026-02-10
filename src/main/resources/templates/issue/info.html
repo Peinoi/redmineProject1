@@ -16,17 +16,28 @@
       <h3 class="page-title">일감 상세</h3>
       <div class="page-title-sub">일감의 상세 정보를 확인할 수 있습니다.</div>
     </div>
+
     <div class="d-flex justify-content-between align-items-center mt-2">
       <button type="button" class="btn btn-secondary" id="btnBack">
-        돌아가기
+        <i class="fas fa-arrow-left me-1"></i>돌아가기
       </button>
 
       <div class="d-flex gap-2">
-        <button type="button" class="btn btn-success" id="btnEdit">
-          일감 수정
+        <button
+          type="button"
+          class="btn btn-success"
+          id="btnEdit"
+          th:attr="data-can-modify=${canModify}"
+        >
+          <i class="fas fa-edit me-1"></i>일감 수정
         </button>
-        <button type="button" class="btn btn-danger" id="btnDelete">
-          삭제
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="btnDelete"
+          th:attr="data-can-delete=${canDelete}"
+        >
+          <i class="fa-solid fa-minus me-1"></i>삭제
         </button>
       </div>
     </div>
@@ -43,6 +54,7 @@
           </th:block>
         </div>
       </div>
+
       <table class="issue-meta">
         <tbody>
           <tr>
@@ -105,16 +117,14 @@
             <th>첨부파일</th>
             <td>
               <span th:if="${issue.fileCode == null}">-</span>
-
               <a
                 th:if="${issue.fileCode != null}"
                 th:href="${issue.filePath}"
                 th:text="${issue.originalName}"
                 target="_blank"
                 rel="noopener"
+                >다운로드</a
               >
-                다운로드
-              </a>
             </td>
 
             <th>파일 등록일</th>
@@ -134,14 +144,127 @@
       <pre class="desc-box" th:utext="${issue.description}">설명 내용</pre>
     </section>
 
-    <div class="d-flex justify-content-center align-items-center mt-2">
+    <!-- 승인/반려 -->
+    <div
+      class="d-flex justify-content-center align-items-center mt-2"
+      th:if="${isAdmin and (issue.statusId == 'OB3')}"
+    >
       <div class="d-flex gap-2">
         <button type="button" class="btn btn-success" id="btnApprove">
-          승인
+          <i class="fas fa-check me-1"></i>승인
         </button>
         <button type="button" class="btn btn-danger" id="btnReject">
-          반려
+          <i class="fas fa-times me-1"></i>반려
         </button>
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          id="btnRejectHistory"
+        >
+          <i class="fa-regular fa-clock me-1"></i>반려이력
+        </button>
+      </div>
+    </div>
+
+    <!-- 반려 사유 입력 모달 -->
+    <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">반려 사유</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <textarea
+              class="form-control"
+              id="rejectReason"
+              rows="5"
+              placeholder="반려 사유를 입력하세요."
+            ></textarea>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              취소
+            </button>
+            <button type="button" class="btn btn-danger" id="btnRejectSubmit">
+              반려
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 반려 이력 모달 -->
+    <div
+      class="modal fade"
+      id="rejectHistoryModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">반려 이력</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+
+          <div class="modal-body">
+            <div class="table-responsive">
+              <table class="table table-sm align-middle text-center">
+                <thead>
+                  <tr>
+                    <th style="width: 50%">반려일시</th>
+                    <th style="width: 50%">반려자</th>
+                  </tr>
+                </thead>
+                <tbody id="rejectHistoryTbody">
+                  <tr>
+                    <td colspan="3" class="text-muted">이력이 없습니다.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <hr />
+
+            <div>
+              <div class="fw-bold mb-2">반려 사유</div>
+              <pre
+                id="rejectHistoryReason"
+                class="mb-0"
+                style="white-space: pre-wrap"
+              >
+행을 선택하면 사유가 표시됩니다.</pre
+              >
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -165,16 +288,13 @@
                     data-user=${log.userName != null ? log.userName : log.userCode},
                     data-time=${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm')}"
           >
-            <!--  날짜/시간 / 수정 또는 생성 / 등록자 -->
             <div class="history-head">
               <span
                 class="head-line"
                 th:text="|${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')} / ${log.actionType == 'CREATE' ? '생성' : (log.actionType == 'UPDATE' ? '수정' : log.actionType)} / ${log.userName != null ? log.userName : log.userCode}|"
-              >
-              </span>
+              ></span>
             </div>
 
-            <!-- 변경 내용 -->
             <div class="history-body">
               <div class="change-lines"></div>
             </div>

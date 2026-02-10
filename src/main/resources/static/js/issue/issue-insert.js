@@ -97,6 +97,15 @@
 
   const syncDueHidden = () => {
     if (!dueView || !dueAt) return;
+
+    if (!dueView.value) {
+      if (!priority?.value) return;
+
+      showDueAutoToast();
+      setDueByPriority();
+      return;
+    }
+
     dueAt.value = toDT(dueView.value);
   };
 
@@ -146,6 +155,16 @@
 
     const t = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 });
     t.show();
+  };
+
+  let lastDueToastAt = 0;
+  const showDueAutoToast = () => {
+    const now = Date.now();
+    if (now - lastDueToastAt < 1200) return; // 1.2초 이내 중복 방지
+    lastDueToastAt = now;
+    showToast(
+      "마감기한이 삭제되어 우선순위 기준으로 자동 설정되어 저장됩니다.",
+    );
   };
 
   /* ====== 권한 상태 ====== */
@@ -595,6 +614,9 @@
 
   priority?.addEventListener("change", setDueByPriority);
   dueView?.addEventListener("change", syncDueHidden);
+  dueView?.addEventListener("input", () => {
+    if (!dueView.value) syncDueHidden();
+  });
 
   fileInp?.addEventListener("change", renderSelectedFileName);
 
@@ -629,11 +651,6 @@
   form?.addEventListener("submit", (e) => {
     if (createdAt && !createdAt.value) setCreatedToday();
 
-    if (dueView && dueAt) {
-      if (dueView.value) syncDueHidden();
-      else setDueByPriority();
-    }
-
     if (!projectCode.value) {
       e.preventDefault();
       showToast("프로젝트를 선택해 주세요.");
@@ -654,6 +671,8 @@
       showToast("우선순위를 선택해 주세요.");
       return;
     }
+    syncDueHidden();
+
     if (!typeCode?.value) {
       e.preventDefault();
       showToast("유형을 선택해 주세요.");

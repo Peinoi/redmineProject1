@@ -221,7 +221,7 @@
         <div class="d-flex justify-content-between align-items-center mt-3">
           <div class="d-flex gap-2">
             <button type="button" class="btn btn-success" id="btnIssueCreate">
-              일감등록
+              <i class="fas fa-plus me-1"></i>일감등록
             </button>
           </div>
 
@@ -231,11 +231,11 @@
               class="btn btn-secondary"
               id="btnResetFilters"
             >
-              초기화
+              <i class="fas fa-redo me-1"></i>초기화
             </button>
 
             <button type="submit" class="btn btn-primary" id="btnApplyFilters">
-              조회
+              <i class="fa-solid fa-magnifying-glass"></i>조회
             </button>
           </div>
         </div>
@@ -252,7 +252,10 @@
 
       <div class="card-body">
         <div class="table-responsive">
-          <table class="table table-hover align-middle" id="issueTable">
+          <table
+            class="table table-hover align-middle text-center"
+            id="issueTable"
+          >
             <thead class="table-light">
               <tr>
                 <th style="width: 70px">번호</th>
@@ -273,6 +276,7 @@
                 class="issueRow"
                 th:each="issue : ${list}"
                 th:attr="
+                data-issue-code=${issue.issueCode},
                   data-project=${issue.projectName},
                   data-project-code=${issue.projectCode},
                   data-title=${issue.title},

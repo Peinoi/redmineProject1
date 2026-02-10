@@ -41,4 +41,9 @@ public class AuthorityServiceImpl implements AuthorityService {
     AuthorityVO ra = authorityMapper.selectAuthority(projectCode, userCode, category);
     return ra != null && isY(ra.getDelRol());
   }
+  
+  @Override
+  public AuthorityVO getProjectAuth(Integer userCode, Long projectCode) {
+    return authorityMapper.selectProjectAuth(userCode, projectCode);
+  }
 }
