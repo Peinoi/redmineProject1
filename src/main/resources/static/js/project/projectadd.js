@@ -148,14 +148,14 @@ function openMemberModal() {
 			return false;
 		}
 		// 이미 추가된 사용자 제외 (String 비교로 수정)
-		return !selectedUsers.some(selected => 
+		return !selectedUsers.some(selected =>
 			String(selected.userCode) === String(user.userCode)
 		);
 	});
 
 	// 이미 추가된 그룹 제외 (groupCode 비교 수정)
-	const availableGroups = groups.filter(group => 
-		!selectedGroups.some(selected => 
+	const availableGroups = groups.filter(group =>
+		!selectedGroups.some(selected =>
 			String(selected.groupCode) === String(group.groupCode)
 		)
 	);
@@ -695,6 +695,26 @@ function handleFormSubmit(event) {
 		alert('최소 1명 이상의 구성원 또는 1개 이상의 그룹을 추가해주세요.');
 		return false;
 	}
+
+	// 등록자 본인을 관리자로 추가 (중복 체크)
+	const creatorUserCode = parseInt(userCode);
+	const hasCreatorAsAdmin = selectedUsers.some(user =>
+		parseInt(user.userCode) === creatorUserCode && parseInt(user.roleCode) === 1
+	);
+
+	// 등록자가 관리자로 추가되지 않았다면 자동 추가
+	if (!hasCreatorAsAdmin) {
+		const currentUserName = document.getElementById('filterWriter').value;
+
+		selectedUsers.unshift({
+			type: 'user',
+			userCode: String(creatorUserCode),
+			name: currentUserName + ' (등록자)',
+			roleCode: '1',  // 관리자 role_code
+			roleName: '관리자'
+		});
+	}
+
 
 	const formData = {
 		projectName: projectName,

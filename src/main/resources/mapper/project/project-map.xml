@@ -3,22 +3,45 @@
 <mapper namespace="com.yedam.app.project.mapper.ProjectMapper">
 	<!-- 프로젝트 목록 -->
 	<select id="selectAll" resultType="ProjectVO">
-		SELECT p.project_code
-		,p.project_name
-		,p.description
-		,p.created_on
-		,c.code_name
-		,p.user_code
-		,u.name
-		,u.phone
-		,u.email
-		FROM projects p
-		JOIN common_code c ON p.status = c.code_id
-		JOIN users u
-		ON p.user_code = u.user_code
-		ORDER BY p.project_code
-	</select>
+        SELECT DISTINCT
+            p.project_code,
+            p.project_name,
+            p.description,
+            p.created_on,
+            p.status,
+            c.code_name,
+            p.user_code,
+            u.name,
+            u.phone,
+            u.email
+        FROM projects p
+        JOIN common_code c ON p.status = c.code_id
+        JOIN users u ON p.user_code = u.user_code
+        WHERE p.status IN ('OD1', 'OD3')  -- OD2(삭제) 제외
+    
+            AND (
+                p.user_code = #{userCode}  -- 자기가 관리자인 프로젝트
+                OR EXISTS (
+                    -- 프로젝트 구성원
+                    SELECT 1 FROM project_role_user pru
+                    WHERE pru.project_code = p.project_code
+                      AND pru.user_code = #{userCode}
+                )
+                OR EXISTS (
+                    -- 프로젝트 그룹 구성원
+                    SELECT 1 FROM gr_pro_role gpr
+                    JOIN group_member gm ON gpr.gr_code = gm.gr_code
+                    WHERE gpr.project_code = p.project_code
+                      AND gm.user_code = #{userCode}
+                )
+            )
+            -- OD3(종료)는 관리자만 조회 가능
+            AND (p.status != 'OD3' OR p.user_code = #{userCode})
+  
+        ORDER BY p.project_code DESC
+    </select>
 
+	
 	<!-- 역할 목록 -->
 	<select id="roleAll" resultType="RoleVO">
 		SELECT
@@ -52,7 +75,7 @@
 	</select>
 	
 	<!-- 프로젝트 진척도 -->
-	<select id="projPrAll" resultType="ProjectPrVO">
+	<select id="projPrAll" resultType="ProjectPrVO" useCache="true">
 	select 
 	    project_code
 	    ,project_name
@@ -139,4 +162,37 @@
 	    )
 	</insert>
 	
+	
+
+	<!-- 사용자 권한 조회 - 간단 버전 -->
+	<select id="selectUserProjectAuth" resultType="UserProjectAuthVO">
+	    SELECT 
+	        u.user_code,
+	        u.name,
+	        u.employee_no,
+	        u.phone,
+	        u.email,
+	        COALESCE(MAX(CASE WHEN r.role_code = 1 THEN 1 ELSE 0 END), 0) AS admin,
+	        MIN(r.role_code) AS role_code,
+	        MIN(r.role_name) AS role_name,
+	        #{category} AS category,
+	        COALESCE(MAX(ra.rd_rol), 'N') AS rd_rol,
+	        COALESCE(MAX(ra.wr_rol), 'N') AS wr_rol,
+	        COALESCE(MAX(ra.mo_rol), 'N') AS mo_rol,
+	        COALESCE(MAX(ra.del_rol), 'N') AS del_rol
+	    FROM users u
+	    LEFT JOIN project_role_user pru ON u.user_code = pru.user_code
+	    LEFT JOIN role r ON pru.role_code = r.role_code
+	    LEFT JOIN role_authority ra ON r.role_code = ra.role_code 
+	        AND ra.category = #{category}
+	    WHERE u.user_code = #{userCode}
+	    GROUP BY u.user_code, u.name, u.employee_no, u.phone, u.email
+	</select>
+
+    <!-- 프로젝트 상태 변경 -->
+    <update id="updateProjectStatus">
+        UPDATE projects 
+        SET status = #{status}
+        WHERE project_code = #{projectCode}
+    </update>
 </mapper>

@@ -244,67 +244,72 @@
 
 	// 초기 로드 시 모든 행에 스타일 적용
 	rowsAll().forEach(tr => updateRowStyle(tr));
-	// 삭제 및 종료 버튼 이벤트
-	$("#projectTbody").addEventListener("click", (e) => {
+
+	// 삭제 및 종료 버튼 이벤트 수정
+	$("#projectTbody").addEventListener("click", async (e) => {
 		const btn = e.target.closest("button");
 		if (!btn) return;
 
 		const row = btn.closest("tr");
+		const projectCode = row.dataset.projectCode; // HTML에 data-project-code 속성 필요
 		const projectName = rowData(row).projectName;
 
-		// 1. 삭제 버튼 클릭 시
+		// 1. 삭제 버튼 클릭
 		if (btn.classList.contains("btn-danger")) {
 			if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
 
-			// 화면에서 즉시 제외하기 위해 filtered 데이터셋 활용
-			row.dataset.filtered = "1"; // 필터링된 것으로 간주하여 숨김
-			row.style.display = "none";
+			try {
+				const response = await fetch(`/api/projects/${projectCode}/delete`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
 
-			// 서버 삭제 통신(fetch)은 이곳에서 수행
-			console.log("서버 삭제 요청 예정:", projectName);
+				const result = await response.json();
 
-			renderPage(); // 페이징 다시 계산
+				if (result.success) {
+					alert(result.message);
+					// 화면에서 제거
+					row.dataset.filtered = "1";
+					row.style.display = "none";
+					renderPage();
+				} else {
+					alert(result.message);
+				}
+			} catch (error) {
+				console.error('삭제 오류:', error);
+				alert('삭제 처리 중 오류가 발생했습니다.');
+			}
 		}
 
-		// 2. 종료 버튼 클릭 시
+		// 2. 종료 버튼 클릭
 		if (btn.classList.contains("btn-success")) {
 			if (!confirm(`"${projectName}" 프로젝트를 종료 처리하시겠습니까?`)) return;
 
-			// 상태 열(td)의 텍스트를 '종료'로 변경 (6번째 TD가 상태라고 가정)
-			const statusCell = row.querySelectorAll("td")[6];
-			if (statusCell) statusCell.textContent = "종료";
+			try {
+				const response = await fetch(`/api/projects/${projectCode}/terminate`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
 
-			updateRowStyle(row); // 회색 배경 적용
+				const result = await response.json();
 
-			// 서버 업데이트 통신(fetch)은 이곳에서 수행
-			console.log("서버 종료 상태 업데이트 예정:", projectName);
-		}
-	});
-	// 엔터키로 검색
-	["#filterTitle", "#filterAssigneeText"].forEach((sel) => {
-		const el = $(sel);
-		if (!el) return;
-		el.addEventListener("keydown", (e) => {
-			if (e.key === "Enter") {
-				e.preventDefault();
-				applyFilters();
+				if (result.success) {
+					alert(result.message);
+					// 상태 열 업데이트
+					const statusCell = row.querySelectorAll("td")[6];
+					if (statusCell) statusCell.textContent = "종료";
+					updateRowStyle(row);
+				} else {
+					alert(result.message);
+				}
+			} catch (error) {
+				console.error('종료 오류:', error);
+				alert('종료 처리 중 오류가 발생했습니다.');
 			}
-		});
-	});
-
-	// 삭제 버튼 이벤트
-	$("#projectTbody").addEventListener("click", (e) => {
-		if (e.target && e.target.classList.contains("btn-danger")) {
-			const row = e.target.closest("tr");
-			const projectName = rowData(row).projectName;
-
-			if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
-
-			// 여기에 삭제 로직 추가
-			// 예: fetch로 서버에 삭제 요청 후 성공시 row.remove()
-			console.log("삭제 요청:", projectName);
-			// row.remove();
-			// renderPage();
 		}
 	});
 

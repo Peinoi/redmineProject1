@@ -86,15 +86,22 @@ tbody td:not(:nth-child(2)) {
 }
 /* project.css에 추가 */
 .progress {
-    background-color: #e9ecef;
+	background-color: #b9fff2;
+	border:solid 1px #00ffff;
 }
 
 .progress-bar {
-    transition: width 0.6s ease;
+	transition: width 0.6s ease;
 }
 
 /* 진척률 라벨 스타일 */
 .small {
-    font-size: 0.875rem;
-    font-weight: 500;
+	font-size: 0.875rem;
+	font-weight: 500;
 }
+
+/* 등록 페이지 구성원/그룹 테이블 정렬 */
+#projectTbody {
+	text-align: center;
+}
+

@@ -9,6 +9,7 @@
 <title>projects</title>
 <link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
 <link rel="stylesheet" th:href="@{/css/project/project.css}">
+
 </head>
 <body>
 	<div id="container">
@@ -25,7 +26,7 @@
 						id="filterTitle" class="form-control" placeholder="프로젝트명 입력">
 				</div>
 
-
+			
 				<!-- 셀렉트 옵션 검색 -->
 				<div class="col-12 col-md-2">
 					<label class="form-label">상태</label> <select id="filterPriority"
@@ -50,13 +51,16 @@
 					</div>
 				</div>
 			</div>
+			<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
 			<div class="d-flex justify-content-between align-items-center mt-3">
-				<div class="d-flex gap-2">
+				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'}">
 					<button type="button" class="btn btn-success">
-						<a th:href="@{/projectadd}"><i class="fas fa-check me-1"></i>프로젝트
-							등록</a>
+						<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
+							프로젝트 등록
+						</a>
 					</button>
 				</div>
+
 				<div class="col-auto d-flex gap-2 ms-auto">
 					<button type="button" class="btn btn-secondary"
 						id="btnResetFilters">
@@ -95,14 +99,15 @@
 								<th style="width: 100px;">관리자번호</th>
 								<th>관리자메일</th>
 								<th style="width: 80px;">진행 상태</th>
-								<th style="width: 150px;">진척률</th>
+								<th style="width: 150px;">진척률(예상, 실제)</th>
 								<th style="width: 80px;">종료</th>
 								<th style="width: 80px;">삭제</th>
 							</tr>
 						</thead>
 
 						<tbody id="projectTbody">
-							<tr class="projectRow" th:each="pro, status : ${list}">
+							<tr class="projectRow" th:each="pro, status : ${list}"
+								th:data-project-code="${pro.projectCode}">
 								<td>[[ ${status.index+1} ]]</td>
 								<td>[[ ${pro.projectName} ]]</td>
 								<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
@@ -114,9 +119,9 @@
 									<!-- 진척률이 있는 경우 -->
 									<div th:if="${progMap.containsKey(pro.projectCode)}"
 										class="text-start">
-										<label class="small">예상 진척률:
-											[[${progMap.get(pro.projectCode).planProg}]]%</label>
-										<div class="progress mb-2" role="progressbar"
+								<!-- 		<label class="small">예상 진척률:
+											[[${progMap.get(pro.projectCode).planProg}]]%</label> -->
+										<div class="progress mb-1" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).planProg}"
 											aria-valuemin="0" aria-valuemax="100" style="height: 20px;">
 											<div class="progress-bar progress-bar-striped bg-secondary"
@@ -125,8 +130,8 @@
 											</div>
 										</div>
 
-										<label class="small">실제 진척률:
-											[[${progMap.get(pro.projectCode).actualProg}]]%</label>
+								<!-- 		<label class="small">실제 진척률:
+											[[${progMap.get(pro.projectCode).actualProg}]]%</label> -->
 										<div class="progress" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).actualProg}"
 											aria-valuemin="0" aria-valuemax="100" style="height: 20px;">
@@ -146,12 +151,16 @@
 									</div>
 								</td>
 								<td>
-									<button class="btn btn-success btn-sm">
+									<!-- 종료 버튼: 관리자이거나 수정 권한이 있을 때만 활성화 -->
+									<button class="btn btn-success btn-sm"
+										th:disabled="${auth.admin != 1 and auth.moRol != 'Y'}">
 										<i class="fa-regular fa-face-meh"></i> 종료
 									</button>
 								</td>
 								<td>
-									<button class="btn btn-danger btn-sm">
+									<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
+									<button class="btn btn-danger btn-sm"
+										th:disabled="${auth.admin != 1 and auth.delRol != 'Y'}">
 										<i class="fa-solid fa-face-dizzy"></i> 삭제
 									</button>
 								</td>
