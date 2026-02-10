@@ -34,10 +34,39 @@
 		    gv.resolved_at,
 		    
 		    vpp.actual_prog,
-		    vpp.plan_prog
+		    vpp.plan_prog,
+		    
+		    vtp.type_actual_prog,
+		    vtp.type_plan_prog
+		    
 		FROM gantt_view gv
 		LEFT JOIN VW_PROJECT_PROGRESS vpp 
 		    ON gv.project_code = vpp.project_code
+		LEFT JOIN VW_TYPE_PROGRESS vtp
+		    ON gv.type_code = vtp.type_code
+		
+		WHERE EXISTS (
+		    <!-- 로그인 유저 각 프로젝트 참여 여부 확인 -->
+		    SELECT 1
+		    FROM ( 
+		    	SELECT DISTINCT user_code, project_code
+        		FROM VW_USER_PROJECT_AUTH
+		    ) vupa
+		    WHERE vupa.user_code = #{userCode}
+		      AND vupa.project_code = gv.project_code
+		)
+		AND EXISTS (
+			<!-- 권한 / 프로젝트 상태 -->
+		    SELECT 1
+		    FROM VW_USER_AUTH vua
+		    WHERE vua.user_code = #{userCode}
+		      AND vua.project_code = gv.project_code
+		      AND (
+		            (vua.admin_ck = 'Y' AND vua.status IN ('OD1','OD3'))
+		         OR (NVL(vua.admin_ck,'N') = 'N' AND vua.status = 'OD1')
+		      )
+		)
+		
 		ORDER BY
 		    gv.project_code,
 		    gv.row_type DESC,

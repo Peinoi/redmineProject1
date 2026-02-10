@@ -113,7 +113,7 @@
 	async function ensureUserCache() {
 		if (userCache.length > 0) return true;
 
-		const res = await fetch("/api/users/modal", {
+		const res = await fetch("/api/users/modal/my-projects", {
 			headers: { Accept: "application/json" },
 		});
 
@@ -257,14 +257,14 @@
 
 	document.addEventListener("DOMContentLoaded", () => {
 		const toggleBtn = document.getElementById("btnToggleSearch");
-		const wrapper = document.getElementById("searchConditionWrapper");
+		const searchWrapper = document.getElementById("searchConditionWrapper");
 
-		if (!toggleBtn || !wrapper) return;
+		if (!toggleBtn || !searchWrapper) return;
 
 		toggleBtn.addEventListener("click", () => {
-			const isOpen = wrapper.style.display === "block";
+			const isOpen = searchWrapper.style.display === "block";
 
-			wrapper.style.display = isOpen ? "none" : "block";
+			searchWrapper.style.display = isOpen ? "none" : "block";
 			toggleBtn.textContent = isOpen ? "검색조건 열기" : "검색조건 닫기";
 		});
 	});

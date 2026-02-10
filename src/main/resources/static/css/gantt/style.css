@@ -135,3 +135,7 @@ html, body {
 .gantt_task_line.type-node:hover {
 	background-color: #A88DCB !important;
 }
+
+.issue-clickable {
+  cursor: pointer;
+}

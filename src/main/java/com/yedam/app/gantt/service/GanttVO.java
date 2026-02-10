@@ -47,4 +47,6 @@ public class GanttVO {
 	private LocalDateTime issueEndDate; // 일감 종료일
 	private LocalDateTime typeStartDate; // 타입 시작일
 	private LocalDateTime typeEndDate; // 타입 종료일
+	private Integer typeActualProg; // 타입 진척도
+	private Integer typePlanProg; // 타입 예상 진척도
 }

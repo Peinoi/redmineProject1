@@ -22,8 +22,8 @@ public class GanttServiceImpl implements GanttService {
 
 	// 전체조회
 	@Override
-	public List<GanttVO> getGanttList(GanttVO ganttVO) {
-		List<GanttVO> list = ganttMapper.selectGanttList(ganttVO);
+	public List<GanttVO> getGanttList(Integer userCode, GanttVO ganttVO) {
+		List<GanttVO> list = ganttMapper.selectGanttList(userCode, ganttVO);
 
 		Map<Integer, Integer> issueCountMap = new HashMap<>();
 		Map<Integer, LocalDateTime> projectEndDateMap = new HashMap<>();
