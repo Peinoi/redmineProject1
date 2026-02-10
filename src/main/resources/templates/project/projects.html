@@ -25,7 +25,7 @@
 						id="filterTitle" class="form-control" placeholder="프로젝트명 입력">
 				</div>
 
-
+			
 				<!-- 셀렉트 옵션 검색 -->
 				<div class="col-12 col-md-2">
 					<label class="form-label">상태</label> <select id="filterPriority"
@@ -50,13 +50,16 @@
 					</div>
 				</div>
 			</div>
+			<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
 			<div class="d-flex justify-content-between align-items-center mt-3">
-				<div class="d-flex gap-2">
+				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'}">
 					<button type="button" class="btn btn-success">
-						<a th:href="@{/projectadd}"><i class="fas fa-check me-1"></i>프로젝트
-							등록</a>
+						<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
+							프로젝트 등록
+						</a>
 					</button>
 				</div>
+
 				<div class="col-auto d-flex gap-2 ms-auto">
 					<button type="button" class="btn btn-secondary"
 						id="btnResetFilters">
@@ -102,7 +105,8 @@
 						</thead>
 
 						<tbody id="projectTbody">
-							<tr class="projectRow" th:each="pro, status : ${list}" th:data-project-code="${pro.projectCode}">
+							<tr class="projectRow" th:each="pro, status : ${list}"
+								th:data-project-code="${pro.projectCode}">
 								<td>[[ ${status.index+1} ]]</td>
 								<td>[[ ${pro.projectName} ]]</td>
 								<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
