@@ -9,6 +9,7 @@
 <title>projects</title>
 <link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
 <link rel="stylesheet" th:href="@{/css/project/project.css}">
+
 </head>
 <body>
 	<div id="container">
@@ -98,7 +99,7 @@
 								<th style="width: 100px;">관리자번호</th>
 								<th>관리자메일</th>
 								<th style="width: 80px;">진행 상태</th>
-								<th style="width: 150px;">진척률</th>
+								<th style="width: 150px;">진척률(예상, 실제)</th>
 								<th style="width: 80px;">종료</th>
 								<th style="width: 80px;">삭제</th>
 							</tr>
@@ -118,9 +119,9 @@
 									<!-- 진척률이 있는 경우 -->
 									<div th:if="${progMap.containsKey(pro.projectCode)}"
 										class="text-start">
-										<label class="small">예상 진척률:
-											[[${progMap.get(pro.projectCode).planProg}]]%</label>
-										<div class="progress mb-2" role="progressbar"
+								<!-- 		<label class="small">예상 진척률:
+											[[${progMap.get(pro.projectCode).planProg}]]%</label> -->
+										<div class="progress mb-1" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).planProg}"
 											aria-valuemin="0" aria-valuemax="100" style="height: 20px;">
 											<div class="progress-bar progress-bar-striped bg-secondary"
@@ -129,8 +130,8 @@
 											</div>
 										</div>
 
-										<label class="small">실제 진척률:
-											[[${progMap.get(pro.projectCode).actualProg}]]%</label>
+								<!-- 		<label class="small">실제 진척률:
+											[[${progMap.get(pro.projectCode).actualProg}]]%</label> -->
 										<div class="progress" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).actualProg}"
 											aria-valuemin="0" aria-valuemax="100" style="height: 20px;">
