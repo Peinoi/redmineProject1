@@ -2,6 +2,8 @@ package com.yedam.app.gantt.service;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import lombok.Data;
 
 @Data
@@ -13,7 +15,9 @@ public class GanttVO {
 
 	private Integer projectCode; // 프로젝트 코드
 	private String projectName; // 프로젝트명
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime createdOn; // 프로젝트 등록일 - 간트 시작일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime completedOn; // 프로젝트 종료일 - 종료
 	private String projectStatus; // 프로젝트 상태
 
@@ -33,19 +37,28 @@ public class GanttVO {
 	private Integer progress; // 진척도
 	private Integer assigneeCode; // 작업자 코드
 	private String assigneeName; // 작업자명
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime createdAt; // 일감 등록일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime startedAt; // 일감 시작일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime dueAt; // 일감 마감기한
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime resolvedAt; // 일감 완료일
 	
 	// 간트 전용 필드
 	private Integer actualProg; // 프로젝트 진척도
 	private Integer planProg; // 프로젝트 예상 진척도
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime projectEndDate; // 프로젝트 종료일
 	private Integer duration; // 작업기간
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime issueStartDate; // 일감 시작일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime issueEndDate; // 일감 종료일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime typeStartDate; // 타입 시작일
+	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime typeEndDate; // 타입 종료일
 	private Integer typeActualProg; // 타입 진척도
 	private Integer typePlanProg; // 타입 예상 진척도

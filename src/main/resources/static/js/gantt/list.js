@@ -1,3 +1,4 @@
+// list.js
 /**
  * Gantt Chart Module
  * 담당 기능: 데이터 필터링, 트리 구조 변환, 컬러 피커 에디터, 차트 렌더링
@@ -31,7 +32,16 @@
 					return `${Math.round((t.progress || 0) * 100)}%`;
 				}
 			},
-			{ name: "start_date", label: "시작일", align: "center", width: 110 },
+			{
+				name: "start_date", label: "시작일", align: "center", width: 110,
+				template: (t) => {
+					// 일감 상태가 "신규"일때 빈칸으로 표시
+					if (t.status === "신규") {
+						return "";
+					}
+					return DateUtils.getYYYYMMDD(t.start_date);
+				}
+			},
 			{ name: "end_date", label: "종료일", align: "center", width: 110 },
 			{ name: "assigneeName", label: "작업자", align: "center", width: 80 },
 			{ name: "add", width: 44 }
@@ -109,20 +119,11 @@
 	gantt.templates.tooltip_text = function(start, end, task) {
 		// ISSUE만 툴팁 표시
 		if (task.rowType === "ISSUE") {
-			const formatDate = (d) => {
-				if (!d) return "-";
-				const dateObj = new Date(d);
-				const yyyy = dateObj.getFullYear();
-				const mm = String(dateObj.getMonth() + 1).padStart(2, "0");
-				const dd = String(dateObj.getDate()).padStart(2, "0");
-				return `${yyyy}-${mm}-${dd}`;
-			};
-
 			return `
 					작업번호 : ${task.issueCode}<br>
 					작업명 : ${task.title}<br>
-					시작일 : ${formatDate(task.start_date)}<br>
-					종료일 : ${formatDate(task.end_date)}<br>
+					시작일 : ${task.status === "신규" ? "" : DateUtils.getYYYYMMDD(task.start_date)}<br>
+					종료일 : ${DateUtils.getYYYYMMDD(task.end_date)}<br>
 					진행률 : ${Math.round((task.progress || 0) * 100)}%<br>
 					우선순위 : ${task.priority || "-"}<br>
 					상태 : ${task.status || "-"}
@@ -138,40 +139,92 @@
 	/* ========================================================================
 	   2. 유틸리티 및 필터 로직 (Business Logic)
 	   ======================================================================== */
-	const getFilteredData = (data, filters) => {
-		return data.filter(item => {
-			const { projectCode, title, status, priority, assigneeCode, issueStartDateFrom, issueStartDateTo, issueEndDate } = filters;
+	// data: 전체 Gantt 데이터
+	// filters: { title, type, projectCode, status, priority }
+	const getFilteredDataWithHierarchy = (data, filters) => {
+		const title = filters.title?.trim()?.toLowerCase();
+		const tCode = filters.type?.trim() || "";
+		const pCode = filters.projectCode?.trim() || "";
 
-			if (projectCode && String(item.projectCode) !== String(projectCode)) return false;
-			if (title && !item.title.toLowerCase().includes(title.toLowerCase())) return false;
-			if (status) {
-				// 프로젝트
-				if (item.rowType === "PROJECT") {
-					if (item.projectStatus !== status) return false;
-				}
-
-				// 일감
-				if (item.rowType === "ISSUE") {
-					if (item.issueStatus !== status) return false;
-				}
-			}
-			if (priority && item.priority !== priority) return false;
-			if (assigneeCode && String(item.assigneeCode) !== String(assigneeCode)) return false;
-
-			// 기간 필터
-			if (issueStartDateFrom || issueStartDateTo) {
-				if (!DateUtils.isDateInRange(item.issueStartDate, issueStartDateFrom, issueStartDateTo)) return false;
-			}
-			// 마감일 필터
-			if (issueEndDate && DateUtils.getYYYYMMDD(item.issueEndDate) > issueEndDate) return false;
-
-			return true;
+		// 1. ISSUE 필터링
+		const filteredIssues = data.filter(item => {
+			if (item.rowType !== "ISSUE") return false;
+			let ok = true;
+			if (pCode && String(item.projectCode) !== String(pCode)) ok = false;
+			if (filters.status && item.issueStatus !== filters.status) ok = false;
+			if (filters.priority && item.priority !== filters.priority) ok = false;
+			if (title && !(item.title || "").toLowerCase().includes(title)) ok = false;
+			if (tCode && String(item.typeCode) !== tCode) ok = false;
+			return ok;
 		});
+
+		// ISSUE map
+		const issueMap = {};
+		filteredIssues.forEach(i => issueMap[i.issueCode] = i);
+
+		// 2. TYPE/PROJECT map
+		const typeMap = {};
+		data.filter(d => d.rowType === "TYPE").forEach(t => typeMap[t.typeCode] = t);
+
+		// 3. 하위 ISSUE 있는 TYPE 찾기
+		const validTypes = new Set();
+		filteredIssues.forEach(issue => {
+			let type = typeMap[issue.typeCode];
+			while (type) {
+				validTypes.add(type.typeCode);
+				if (!type.parTypeCode) break;
+				type = typeMap[type.parTypeCode];
+			}
+		});
+
+		// 4. PROJECT 체크
+		const validProjects = new Set();
+		data.filter(d => d.rowType === "PROJECT").forEach(p => {
+			const hasChild = data.some(item =>
+				(item.rowType === "TYPE" && validTypes.has(item.typeCode) && item.projectCode === p.projectCode) ||
+				(item.rowType === "ISSUE" && issueMap[item.issueCode] && item.projectCode === p.projectCode)
+			);
+			if (hasChild) validProjects.add(p.projectCode);
+		});
+
+		// 5. 최종 필터링
+		const filteredData = data.filter(item => {
+			if (item.rowType === "ISSUE") return !!issueMap[item.issueCode];
+			if (item.rowType === "TYPE") return validTypes.has(item.typeCode);
+			if (item.rowType === "PROJECT") return validProjects.has(item.projectCode);
+			return false;
+		});
+
+		return filteredData;
 	};
 
 	/* ========================================================================
 	   3. 데이터 변환 로직 (Data Transformation)
 	   ======================================================================== */
+	/* ========================================================================
+	   날짜 선택 유틸 (rowType 기준)
+	   ======================================================================== */
+	function getStartDate(item) {
+		if (item.rowType === "ISSUE") return item.issueStartDate;
+		if (item.rowType === "TYPE") return item.typeStartDate;
+		if (item.rowType === "PROJECT") return item.createdOn;
+		return null;
+	}
+
+	function getEndDate(item) {
+		if (item.rowType === "ISSUE") return item.issueEndDate;
+		if (item.rowType === "TYPE") return item.typeEndDate;
+		if (item.rowType === "PROJECT") return item.projectEndDate;
+		return null;
+	}
+
+	function toValidDate(value) {
+		if (!value) return null;
+		const d = new Date(value);
+		return isNaN(d.getTime()) ? null : d;
+	}
+
+
 	const transformToGanttFormat = (data) => {
 		const tasks = [];
 		const links = [];
@@ -194,10 +247,10 @@
 
 				const projectRow = issues.find(r => r.rowType === "PROJECT");
 
-				const projectStart = DateUtils.getYYYYMMDD(projectRow?.createdOn);
+				const projectStart = toValidDate(projectRow?.createdOn);
 				const projectEnd =
-					DateUtils.getYYYYMMDD(projectRow?.projectEndDate)
-					|| DateUtils.getYYYYMMDD(projectRow?.completedOn)
+					toValidDate(projectRow?.projectEndDate)
+					|| toValidDate(projectRow?.completedOn)
 					|| projectStart;
 
 				// start_date 없으면 gantt 전체가 죽으니 방어
@@ -216,7 +269,9 @@
 					open: true,
 					progress: (projectRow?.actualProg || 0) / 100,  // 프로젝트는 actualProg 사용
 					actualProg: projectRow?.actualProg || 0,        // 그리드 표시용
-					planProg: projectRow?.planProg || 0
+					planProg: projectRow?.planProg || 0,
+					rowType: "PROJECT",
+					projectCode: projectCode
 				});
 			}
 
@@ -227,8 +282,8 @@
 			issues.forEach(item => {
 				if (item.rowType !== "TYPE") return;
 
-				const start = DateUtils.getYYYYMMDD(item.typeStartDate);
-				const end = DateUtils.getYYYYMMDD(item.typeEndDate);
+				const start = toValidDate(item.typeStartDate);
+				const end = toValidDate(item.typeEndDate);
 
 				// TYPE 날짜가 없으면 skip
 				if (!start || !end) {
@@ -277,8 +332,8 @@
 			issues.forEach(item => {
 				if (item.rowType !== "ISSUE") return;
 
-				const start = DateUtils.getYYYYMMDD(item.issueStartDate);
-				const end = DateUtils.getYYYYMMDD(item.issueEndDate);
+				const start = toValidDate(item.issueStartDate);
+				const end = toValidDate(item.issueEndDate);
 
 				// 종료일 < 시작일 → skip
 				if (!start || !end || new Date(end) < new Date(start)) return;
@@ -373,7 +428,7 @@
 			const response = await fetch("/ganttData");
 			const rawData = await response.json();
 
-			const filtered = getFilteredData(rawData, filters);
+			const filtered = getFilteredDataWithHierarchy(rawData, filters);
 			const ganttData = transformToGanttFormat(filtered);
 
 			gantt.clearAll();
@@ -400,7 +455,17 @@
 
 			gantt.init("e7eGantt");
 
-			// ISSUE 클릭 시 상세페이지 이동
+			// 간트 기간 필터링
+			gantt.attachEvent("onBeforeTaskDisplay", function(id, task) {
+				if (!window.ganttRange) return true;
+
+				return (
+					task.end_date >= window.ganttRange.start &&
+					task.start_date <= window.ganttRange.end
+				);
+			});
+
+			// PROJECT/ISSUE 클릭 시 상세페이지 이동
 			gantt.attachEvent("onTaskClick", function(id, e) {
 				const task = gantt.getTask(id);
 
@@ -409,8 +474,14 @@
 					return true; // 기본 트리 동작 허용
 				}
 
+				// 프로젝트 클릭
+				if (task.rowType === "PROJECT" && task.projectCode) {
+					// 상세페이지 이동
+					window.location.href = `/projectInfo?projectCode=${task.projectCode}`;
+					return false; // 기본 클릭 동작 차단
+				}
 				// 일감만 이동 (rowType 기준)
-				if (task.rowType === "ISSUE" && task.issueCode) {
+				else if (task.rowType === "ISSUE" && task.issueCode) {
 					// 상세페이지 이동
 					window.location.href = `/issueInfo?issueCode=${task.issueCode}`;
 					return false; // 기본 클릭 동작 차단

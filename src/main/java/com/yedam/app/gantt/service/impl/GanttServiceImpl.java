@@ -23,10 +23,14 @@ public class GanttServiceImpl implements GanttService {
 	// 전체조회
 	@Override
 	public List<GanttVO> getGanttList(Integer userCode, GanttVO ganttVO) {
+
 		List<GanttVO> list = ganttMapper.selectGanttList(userCode, ganttVO);
 
 		Map<Integer, Integer> issueCountMap = new HashMap<>();
 		Map<Integer, LocalDateTime> projectEndDateMap = new HashMap<>();
+
+		// TYPE 날짜 계산용 캐시 (요청 단위)
+		Map<String, LocalDateTime[]> typeDateCache = new HashMap<>();
 
 		calculateProjectEndDates(list, projectEndDateMap);
 
@@ -41,7 +45,7 @@ public class GanttServiceImpl implements GanttService {
 		// 2단계: TYPE 날짜 계산 (이제 child의 issueStartDate/issueEndDate가 설정됨)
 		for (GanttVO vo : list) {
 			if ("TYPE".equals(vo.getRowType())) {
-				calculateTypeDate(vo, list);
+				calculateTypeDate(vo, list, typeDateCache);
 			}
 		}
 
@@ -54,6 +58,11 @@ public class GanttServiceImpl implements GanttService {
 	// 프로젝트 종료일 계산
 	private void calculateProjectEndDates(List<GanttVO> list, Map<Integer, LocalDateTime> projectEndDateMap) {
 		for (GanttVO vo : list) {
+			// 핵심: ISSUE만
+			if (!"ISSUE".equals(vo.getRowType())) {
+				continue;
+			}
+
 			Integer projectCode = vo.getProjectCode();
 			if (projectCode == null)
 				continue;
@@ -68,7 +77,11 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// 하위 TYPE과 ISSUE까지 포함해서 TYPE 시작일/종료일 계산
-	private LocalDateTime[] calculateTypeDate(GanttVO vo, List<GanttVO> list) {
+	private LocalDateTime[] calculateTypeDate(GanttVO vo, List<GanttVO> list, Map<String, LocalDateTime[]> cache) {
+		// 이미 계산된 TYPE면 재계산 금지
+		if (cache.containsKey(vo.getNodeId())) {
+			return cache.get(vo.getNodeId());
+		}
 
 		LocalDateTime minStart = null;
 		LocalDateTime maxEnd = null;
@@ -82,15 +95,20 @@ public class GanttServiceImpl implements GanttService {
 
 				if ("ISSUE".equals(child.getRowType())) {
 					LocalDateTime start = child.getIssueStartDate();
-					LocalDateTime end = child.getIssueEndDate();
-					if (start != null && (minStart == null || start.isBefore(minStart)))
+					LocalDateTime end = child.getIssueEndDate();;
+
+					// 시작일
+					if (start != null && (minStart == null || start.isBefore(minStart))) {
 						minStart = start;
-					if (end != null && (maxEnd == null || end.isAfter(maxEnd)))
-						maxEnd = end;
+					}
+					// 종료일
+					if (end != null && (maxEnd == null || end.isAfter(maxEnd))) {
+		                maxEnd = end;
+		            }
 
 				} else if ("TYPE".equals(child.getRowType())) {
 					// 하위 TYPE 재귀 호출 → 하위 TYPE 안의 ISSUE까지 포함
-					LocalDateTime[] childDates = calculateTypeDate(child, list);
+					LocalDateTime[] childDates = calculateTypeDate(child, list, cache);
 					LocalDateTime childStart = childDates[0];
 					LocalDateTime childEnd = childDates[1];
 
@@ -106,7 +124,10 @@ public class GanttServiceImpl implements GanttService {
 		vo.setTypeStartDate(minStart);
 		vo.setTypeEndDate(maxEnd);
 
-		return new LocalDateTime[] { minStart, maxEnd };
+		LocalDateTime[] result = new LocalDateTime[] { minStart, maxEnd };
+		cache.put(vo.getNodeId(), result);
+
+		return result;
 	}
 
 	// 작업 기간 계산
@@ -146,19 +167,17 @@ public class GanttServiceImpl implements GanttService {
 		for (GanttVO vo : list) {
 			Integer projectCode = vo.getProjectCode();
 
-			// 프로젝트 종료일
+			// 1. 프로젝트 종료일 (PROJECT / TYPE / ISSUE 공통)
 			if ("완료".equals(vo.getProjectStatus())) {
 				vo.setProjectEndDate(vo.getCompletedOn());
 			} else {
 				vo.setProjectEndDate(projectEndDateMap.get(projectCode));
 			}
 
-			// 일감 날짜
-			vo.setIssueStartDate(issueStartDate(vo));
-			vo.setIssueEndDate(issueEndDate(vo));
-
-			// 작업기간
-			vo.setDuration(calculateDuration(vo));
+			// 2️. ISSUE만 날짜 계산
+			if ("ISSUE".equals(vo.getRowType())) {
+				vo.setDuration(calculateDuration(vo));
+			}
 		}
 	}
 
@@ -166,9 +185,9 @@ public class GanttServiceImpl implements GanttService {
 	private LocalDateTime issueStartDate(GanttVO vo) {
 		String status = vo.getIssueStatus();
 
-		// 신규 → createdAt
+		// 신규 → 마감기한
 		if (status == null || "신규".equals(status)) {
-			return vo.getCreatedAt();
+			return vo.getDueAt();
 		}
 
 		// 진행 / 해결 / 반려 / 완료 → startedAt
@@ -177,7 +196,7 @@ public class GanttServiceImpl implements GanttService {
 		}
 
 		// fallback
-		return vo.getCreatedAt();
+		return vo.getDueAt();
 	}
 
 	// ===== 일감 종료일 규칙 =====

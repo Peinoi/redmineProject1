@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/">
+
+<!-- 기간 필터 fragment -->
+<div th:fragment="searchDuration" class="gantt-duration-filter">
+	<div class="duration-inner">
+		<!-- 기간 -->
+		<div class="duration-group">
+			<input type="number" id="rangeMonths" value="6" min="1"
+				class="form-control month-input"> <span
+				class="duration-text">개월 동안</span> <span class="separator"></span>
+		</div>
+
+		<!-- 기준 월/년도 -->
+		<div class="duration-group">
+			<span class="duration-text">다음부터</span> <select id="baseMonth"
+				class="form-select">
+				<option value="1">1월</option>
+				<option value="2" selected>2월</option>
+				<option value="3">3월</option>
+				<option value="4">4월</option>
+				<option value="5">5월</option>
+				<option value="6">6월</option>
+				<option value="7">7월</option>
+				<option value="8">8월</option>
+				<option value="9">9월</option>
+				<option value="10">10월</option>
+				<option value="11">11월</option>
+				<option value="12">12월</option>
+			</select> <select id="baseYear" class="form-select">
+				<option value="2025">2025</option>
+				<option value="2026" selected>2026</option>
+				<option value="2027">2027</option>
+			</select>
+		</div>
+
+		<!-- 버튼 영역 -->
+		<div class="duration-actions">
+			<button type="button" class="btn btn-secondary" id="btnResetDuration">
+				<i class="fas fa-redo me-1"></i>초기화
+			</button>
+			<button type="button" class="btn btn-primary" id="btnApplyDuration">
+				<i class="fa-solid fa-magnifying-glass me-1"></i>조회
+			</button>
+		</div>
+	</div>
+</div>
+
+<!-- 간트차트 네비게이션 fragment -->
+<div th:fragment="ganttNavigation" class="gantt-navigation">
+	<button type="button" class="btn btn-outline-secondary"
+		id="btnGanttPrev">
+		<i class="fas fa-chevron-left me-1"></i>이전
+	</button>
+	<button type="button" class="btn btn-outline-secondary"
+		id="btnGanttNext">
+		다음<i class="fas fa-chevron-right ms-1"></i>
+	</button>
+</div>
+
+</html>

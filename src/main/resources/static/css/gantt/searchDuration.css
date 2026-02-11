@@ -1,0 +1,65 @@
+/* gantt 기간 검색 필터 */
+.gantt-duration-filter {
+	margin-top: 12px;
+	padding: 12px 16px;
+	border: 1px solid #dee2e6;
+	border-radius: 6px;
+	background: #f8f9fa;
+}
+
+.duration-inner {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+/* 입력 그룹 */
+.duration-group, .duration-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.duration-actions {
+	margin-top: 0; /* 버튼이 아래로 내려가지 않도록 */
+}
+
+.duration-group {
+	white-space: nowrap;
+}
+
+.month-input, .duration-group .form-select {
+	height: 38px;
+	min-width: 90px;
+	width: auto;
+	min-width: 90px;
+}
+
+.duration-text {
+	font-size: 15px;
+}
+
+.month-input {
+	width: 72px;
+}
+
+.separator {
+	display: inline-block;
+	width: 1px; /* 선 두께 */
+	height: 38px; /* input/select 높이에 맞춤 */
+	background-color: #ccc; /* 선 색상 */
+	margin: 0 0.5em; /* 좌우 간격 */
+	vertical-align: middle;
+}
+
+/* 간트차트 네비게이션 */
+.gantt-navigation {
+	display: flex;
+	gap: 10px;
+	margin-top: 15px; /* 간트차트와의 간격만 추가 */
+}
+
+.gantt-navigation .btn {
+	min-width: 100px;
+}

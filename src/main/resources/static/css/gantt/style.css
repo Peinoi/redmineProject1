@@ -60,7 +60,7 @@ html, body {
 	flex-direction: column;
 }
 
-/* 🔥 핵심 */
+/* 핵심 */
 .gantt-wrapper {
 	flex: 1; /* 남은 공간 전부 차지 */
 	min-height: 600px;
@@ -72,6 +72,22 @@ html, body {
 	height: 100%;
 }
 
+/* ===================== */
+/* 커서 스타일 */
+/* ===================== */
+/* ISSUE 행과 막대에만 포인터 커서 */
+.gantt_row[data-task-id^="ISSUE_"], .gantt_task_line.issue-clickable {
+	cursor: pointer;
+}
+
+/* 프로젝트 행과 막대에도 포인터 커서 */
+.gantt_row[data-task-id^="project_"], .gantt_task_line.gantt_project {
+	cursor: pointer;
+}
+
+/* ===================== */
+/* 색상 스타일 */
+/* ===================== */
 /* 프로그램 */
 .gantt_task_line.gantt_project {
 	background-color: #A2A2A2 !important; /* 회색 */
@@ -137,5 +153,5 @@ html, body {
 }
 
 .issue-clickable {
-  cursor: pointer;
+	cursor: pointer;
 }
