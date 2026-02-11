@@ -94,17 +94,23 @@ public class GanttServiceImpl implements GanttService {
 			if (currentNodeId.equals(child.getParentId())) {
 
 				if ("ISSUE".equals(child.getRowType())) {
+					String status = child.getIssueStatus();
 					LocalDateTime start = child.getIssueStartDate();
-					LocalDateTime end = child.getIssueEndDate();;
+					LocalDateTime end = child.getIssueEndDate();
 
-					// 시작일
+					// 시작일: 신규이면 null 처리
+					if ("신규".equals(status)) {
+						start = null; // 시작일 계산에서 제외
+					}
+
 					if (start != null && (minStart == null || start.isBefore(minStart))) {
 						minStart = start;
 					}
-					// 종료일
+
+					// 종료일: 신규 ISSUE도 포함, dueAt 그대로
 					if (end != null && (maxEnd == null || end.isAfter(maxEnd))) {
-		                maxEnd = end;
-		            }
+						maxEnd = end;
+					}
 
 				} else if ("TYPE".equals(child.getRowType())) {
 					// 하위 TYPE 재귀 호출 → 하위 TYPE 안의 ISSUE까지 포함
@@ -187,7 +193,11 @@ public class GanttServiceImpl implements GanttService {
 
 		// 신규 → 마감기한
 		if (status == null || "신규".equals(status)) {
-			return vo.getDueAt();
+			if (vo.getDueAt() != null) {
+				return vo.getDueAt().minusDays(1);
+			} else {
+				return null; // DueAt가 없으면 null 반환
+			}
 		}
 
 		// 진행 / 해결 / 반려 / 완료 → startedAt
