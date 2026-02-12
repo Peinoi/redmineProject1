@@ -50,7 +50,7 @@
 	        explanation,
 	        admin_ck
 	    FROM role
-	    WHERE role_name NOT LIKE '%[-delete]'
+	    WHERE role_name NOT LIKE '%-delete'
 	    ORDER BY role_code
 	</select>
 	

@@ -38,4 +38,10 @@ public class AuthServiceImpl implements AuthService {
 		return result;
 	}
 
+	@Override
+	public int adminModifyRole(String adminCk, Integer roleCode) {
+		int result = authMapper.updateAdminRole(adminCk, roleCode);
+		return result;
+	}
+
 }

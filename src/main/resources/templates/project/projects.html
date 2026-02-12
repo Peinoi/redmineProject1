@@ -117,10 +117,15 @@
 								<td>[[ ${pro.email} ]]</td>
 								<td>[[ ${pro.codeName} ]]</td>
 								<td>
-									<!-- 진척률이 있는 경우 -->
-									<div th:if="${progMap.containsKey(pro.projectCode)}"
+									<!-- 종료된 프로젝트일 경우 -->
+									<div th:if="${pro.codeName == '종료'}"
+										class="text-center text-muted">
+										<i class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.
+									</div> <!-- 진척률이 있는 경우 -->
+									<div
+										th:if="${progMap.containsKey(pro.projectCode) and pro.codeName != '종료'}"
 										class="text-start">
-								<!-- 		<label class="small">예상 진척률:
+										<!-- 		<label class="small">예상 진척률:
 											[[${progMap.get(pro.projectCode).planProg}]]%</label> -->
 										<div class="progress mb-1" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).planProg}"
@@ -131,7 +136,7 @@
 											</div>
 										</div>
 
-								<!-- 		<label class="small">실제 진척률:
+										<!-- 		<label class="small">실제 진척률:
 											[[${progMap.get(pro.projectCode).actualProg}]]%</label> -->
 										<div class="progress" role="progressbar"
 											th:attr="aria-valuenow=${progMap.get(pro.projectCode).actualProg}"
@@ -145,7 +150,8 @@
 												th:text="${progMap.get(pro.projectCode).actualProg} + '%'">
 											</div>
 										</div>
-									</div> <!-- 진척률이 없는 경우 -->
+									</div> 
+									<!-- 진척률이 없는 경우 -->
 									<div th:unless="${progMap.containsKey(pro.projectCode)}"
 										class="text-center text-muted">
 										<i class="fas fa-info-circle me-1"></i> 프로젝트 개발이 진행 전입니다.

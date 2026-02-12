@@ -8,8 +8,14 @@
 	<!-- 역할 삭제 (이름에 [-delete] 추가) -->
 	<update id="deleteAuth">
 		UPDATE role
-		SET role_name = role_name || '[-delete]'
+		SET role_name = role_name || '-delete'
 		WHERE role_code = #{roleCode}
-		AND role_name NOT LIKE '%[-delete]'
+		AND role_name NOT LIKE '%-delete'
+	</update>
+	
+	<update id="updateAdminRole">
+	    UPDATE role 
+	    SET admin_ck = #{adminCk} 
+	    WHERE role_code = #{roleCode}
 	</update>
 </mapper>
