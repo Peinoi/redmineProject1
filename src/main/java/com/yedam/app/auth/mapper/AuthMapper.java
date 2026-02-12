@@ -1,5 +1,7 @@
 package com.yedam.app.auth.mapper;
 
+import java.util.List;
+
 import org.apache.ibatis.annotations.Param;
 
 import com.yedam.app.auth.service.RoleAuthVO;
@@ -13,6 +15,12 @@ public interface AuthMapper {
 	// 역할 권한 등록
 	public int addRoleAuth(RoleAuthVO roleAuthVO);
 	
+	// 역할 단건 조회
+	public RoleVO selectRole(Integer roleCode);
+	// 역할 권한 단건 조회
+	public List<RoleAuthVO> selectAuthList(Integer roleCode);
+	
+	
 	// 역할 수정
 	public int updateAuth(@Param("roleCode") int roleCode);
 
@@ -20,4 +28,6 @@ public interface AuthMapper {
 
 	// 역할 삭제
 	public int deleteAuth(@Param("roleCode") int roleCode);
+
+
 }

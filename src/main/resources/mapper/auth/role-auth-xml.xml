@@ -2,6 +2,31 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.auth.mapper.AuthMapper">
 
+	<!-- 역할 단건 조회 -->
+	<select id="selectRole" resultType="RoleVO">
+		SELECT 
+		    role_code
+		    ,role_name
+		    ,explanation
+		    ,admin_ck
+		FROM role
+		WHERE role_code = #{roleCode}
+	</select>
+	<!-- 역할 권한 조회 -->
+	<select id="selectAuthList" resultType="RoleAuthVO">
+		SELECT
+		    ra_code
+		    ,category
+		    ,rd_rol
+		    ,wr_rol
+		    ,mo_rol
+		    ,del_rol
+		FROM role_authority
+		WHERE role_code = #{roleCode}
+		ORDER BY ra_code
+	</select>
+
+
 	<!-- 역할 등록 -->
 	<insert id="addAuth" parameterType="RoleVO">
 	    <selectKey keyProperty="roleCode" resultType="int" order="BEFORE">

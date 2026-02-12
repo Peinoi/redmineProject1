@@ -206,6 +206,8 @@
 		tr.dataset.filtered = "0";
 	});
 
+
+
 	// 초기 렌더링
 	renderPage();
 })();

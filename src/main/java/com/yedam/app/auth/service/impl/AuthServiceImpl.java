@@ -79,7 +79,7 @@ public class AuthServiceImpl implements AuthService {
 			if (permissionsList != null && !permissionsList.isEmpty()) {
 				for (Map<String, Object> permission : permissionsList) {
 					RoleAuthVO roleAuth = new RoleAuthVO();
-					roleAuth.setRoleCode(generatedRoleCode); 
+					roleAuth.setRoleCode(generatedRoleCode);
 					roleAuth.setCategory((String) permission.get("category"));
 					roleAuth.setRdRol((String) permission.get("rdRol"));
 					roleAuth.setWrRol((String) permission.get("wrRol"));
@@ -101,6 +101,17 @@ public class AuthServiceImpl implements AuthService {
 		}
 
 		return result;
+	}
+
+	@Override
+	public RoleVO findRoleInfo(Integer roleCode) {
+		return authMapper.selectRole(roleCode);
+	}
+
+	@Override
+	public List<RoleAuthVO> findAuthInfo(Integer roleCode) {
+		// TODO Auto-generated method stub
+		return authMapper.selectAuthList(roleCode);
 	}
 
 }

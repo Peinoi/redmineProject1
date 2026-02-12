@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+
+<head>
+<meta charset="UTF-8">
+<title>projects</title>
+<link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
+<link rel="stylesheet" th:href="@{/css/project/project.css}">
+
+</head>
+<body>
+	<div id="container">
+		<div class="x-page-title">
+			<h3 class="page-title">역할 등록</h3>
+			<div class="page-title-sub">신규 역할을 등록가능합니다.</div>
+		</div>
+		<div class="issue-filters mb-3 mt-3">
+			<div class="row g-3 align-items-start mb-4">
+				<div class="col-12 col-md-5">
+					<div class="mb-2">
+						<label class="form-label fw-bold">역할명</label> <input type="text"
+							id="roleName" class="form-control" placeholder="역할명 입력" th:value="${role.roleName}">
+					</div>
+					<div>
+						<label class="form-label fw-bold">설명</label>
+						<textarea id="explanation" class="form-control" rows="2"
+							placeholder="역할에 대한 설명을 입력하세요" th:text="${role.explanation}"></textarea>
+					</div>
+				</div>
+
+				<div class="col-12 col-md-3 d-flex align-items-center"
+					style="padding-top: 32px;">
+					<div class="form-check form-check-reverse">
+						<label class="form-check-label fw-bold" for="adminCheck">
+							관리자 </label> <input class="form-check-input" type="checkbox"
+							id="adminCheck" th:checked="${role.adminCk == 'Y'}">
+					</div>
+				</div>
+
+				<div
+					class="col-12 col-md-4 d-flex justify-content-end align-items-end"
+					style="height: 100%;">
+					<button type="button" class="btn btn-success"
+						id="registerRoleBtn">
+						<i class="fas fa-check me-1"></i> 저장
+					</button>
+
+				</div>
+
+			</div>
+			<form id="issueDeleteForm" th:action="@{/issueDelete}" method="post"
+				style="display: none;"></form>
+			<div class="card mb-4">
+
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
+					<div>
+						<i class="fas fa-table me-1"></i> 권한
+
+					</div>
+					<div class="text-muted small" id="projectPageInfo"></div>
+				</div>
+				<div class="card-body">
+					<div class="table-responsive">
+						<table class="table table-hover align-middle" id="issueTable"
+							style="table-layout: fixed; width: 100%;">
+							<thead class="table-light">
+								<tr>
+
+									<th style="width: 100px;">권한</th>
+									<th style="width: 80px;"><input id="readSelectAll"
+										type="checkbox"> 읽기</th>
+									<th style="width: 80px;"><input id="writeSelectAll"
+										type="checkbox"> 등록</th>
+									<th style="width: 80px;"><input id="modifySelectAll"
+										type="checkbox"> 수정</th>
+									<th style="width: 80px;"><input id="deleteSelectAll"
+										type="checkbox"> 삭제</th>
+								</tr>
+							</thead>
+
+							<tbody id="projectTbody">
+								<tr class="projectRow" th:each="auth : ${auths}">
+									<td th:text="${auth.category}">카테고리명</td>
+									<td><input type="checkbox" class="rd_rol" th:checked="${auth.rdRol == 'Y'}"></td>
+									<td><input type="checkbox" class="wr_rol" th:checked="${auth.wrRol == 'Y'}"></td>
+									<td><input type="checkbox" class="md_rol" th:checked="${auth.moRol == 'Y'}"></td>
+									<td><input type="checkbox" class="del_rol" th:checked="${auth.delRol == 'Y'}"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<!-- 페이징 -->
+					<nav class="d-flex justify-content-center mt-3 mb-3">
+						<ul class="pagination mb-0" id="projectPagination"></ul>
+					</nav>
+				</div>
+
+			</div>
+
+			<a th:href="@{/auth}" class="btn btn-secondary"
+				style="width: 150px; margin-left: 10px;"> <i
+				class="fas fa-arrow-left me-2"></i>돌아가기
+			</a>
+
+			<script th:src="@{/js/auth/authinfo.js}"></script>
+</body>
+</html>

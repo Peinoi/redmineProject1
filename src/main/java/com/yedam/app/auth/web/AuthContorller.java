@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.yedam.app.auth.service.AuthService;
@@ -28,6 +29,7 @@ public class AuthContorller {
 	private final ProjectService projectService;
 	private final AuthService authService;
 
+	// 역할 전체 조회
 	@GetMapping("auth")
 	public String projectList(Model model) {
 
@@ -36,13 +38,24 @@ public class AuthContorller {
 		model.addAttribute("auths", auth);
 		return "auth/auth";
 	}
+	// 역할 단건 조회
+	@GetMapping("authInfo")
+	public String authInfo(@RequestParam Integer roleCode,Model model, HttpSession session) {
+		RoleVO findRol = authService.findRoleInfo(roleCode);
+		List<RoleAuthVO> findAuth = authService.findAuthInfo(roleCode);
+		model.addAttribute("role",findRol);
+		model.addAttribute("auths",findAuth);
+		return "auth/authinfo";
+	}
 
+	// 역할 등록
 	@GetMapping("authadd")
 	public String projectAdd(Model model) {
 
 		return "auth/authadd";
 	}
 
+	// 역할 등록 기능
 	@ResponseBody
 	@PostMapping("/api/auth/register")
 	public Map<String, Object> registerRole(@RequestBody Map<String, Object> requestData, HttpSession session) {

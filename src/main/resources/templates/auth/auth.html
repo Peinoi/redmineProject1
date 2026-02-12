@@ -77,7 +77,10 @@
 							</thead>
 
 							<tbody id="projectTbody">
-								<tr class="projectRow" th:each="info, status : ${auths}">
+								<tr class="projectRow" th:each="info, status : ${auths}"
+							
+									th:onclick="|location.href='@{/authInfo(roleCode=${info.roleCode})}'|"
+									style="cursor: pointer;">
 									<td>[[ ${status.index+1} ]]</td>
 									<td style="display: none;">[[ ${info.roleCode} ]]</td>
 									<td>[[ ${info.roleName} ]]</td>
