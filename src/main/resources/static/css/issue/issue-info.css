@@ -77,17 +77,23 @@ button {
   font-weight: 800;
   color: var(--text);
   letter-spacing: -0.2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+
+  min-width: 0; /* flex ellipsis 안정화 */
 }
 
 .issue-summary-title .project {
   color: var(--muted);
   font-weight: 800;
   flex: 0 1 auto;
+
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .issue-summary-title .sep {
@@ -99,8 +105,19 @@ button {
   color: var(--text);
   font-weight: 900;
   flex: 1 1 auto;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.issue-summary-title .issue > span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 860px) {
@@ -300,4 +317,24 @@ button {
   top: 0;
   background: #fff;
   z-index: 1;
+}
+
+/* ===== Overdue (마감) ===== */
+.due-over {
+  color: #cf2222 !important;
+  font-weight: 800;
+}
+
+.due-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #b91c1c;
+  background-color: #fee2e2;
+  border-radius: 9999px;
+  border: 1px solid #fecaca;
+
+  white-space: nowrap;
+  flex: 0 0 auto;
 }

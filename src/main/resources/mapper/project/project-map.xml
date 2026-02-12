@@ -50,7 +50,7 @@
 	        explanation,
 	        admin_ck
 	    FROM role
-	    WHERE role_name NOT LIKE '%[-delete]'
+	    WHERE role_name NOT LIKE '%-delete'
 	    ORDER BY role_code
 	</select>
 	
@@ -237,7 +237,7 @@
 		        u.name,
 		        ra.category,
 		        CASE WHEN r.admin_ck = 'Y' THEN 1 ELSE 0 END AS admin,
-		        ra.rd_rol, ra.wr_rol, ra.mo_rol, ra.del_rol
+		        ra.rd_rol, ra.wr_rol, ra.mo_rol, ra.del_rol,ra.ra_code
 		    FROM users u
 		    LEFT JOIN project_role_user pru ON u.user_code = pru.user_code
 		    LEFT JOIN role r ON pru.role_code = r.role_code
@@ -252,7 +252,7 @@
 		        u.name,
 		        ra.category,
 		        CASE WHEN r.admin_ck = 'Y' THEN 1 ELSE 0 END AS admin,
-		        ra.rd_rol, ra.wr_rol, ra.mo_rol, ra.del_rol
+		        ra.rd_rol, ra.wr_rol, ra.mo_rol, ra.del_rol,ra.ra_code
 		    FROM users u
 		    JOIN group_member gm ON u.user_code = gm.user_code
 		    JOIN gr_pro_role gpr ON gm.gr_code = gpr.gr_code
@@ -261,7 +261,7 @@
 		    WHERE u.user_code = #{userCode} AND ra.category IS NOT NULL
 		) combined_auth
 		GROUP BY user_code, name, category
-		ORDER BY category ASC
+		ORDER BY max(ra_code) asc 
     </select>
     
     

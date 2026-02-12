@@ -27,4 +27,11 @@ public interface KanbanMapper {
 
   // position 일괄 업데이트
   int batchUpdatePositions(@Param("list") List<IssuePosUpdate> list);
+  
+  // 진행 진척도 업데이트
+  int updateIssueProgress(
+	      @Param("projectCode") Long projectCode,
+	      @Param("issueCode") Long issueCode,
+	      @Param("progress") Integer progress
+	  );
 }

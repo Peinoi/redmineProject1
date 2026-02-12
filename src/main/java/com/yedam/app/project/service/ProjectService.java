@@ -22,7 +22,7 @@ public interface ProjectService {
 
 	public int projectGroupAdd(ProjectAddGroupVO projectAddGroupVO); // 프로젝트 그룹 매퍼 등록
 	
-	// 프로젝트 등록 통합 메서드 추가
+	// 프로젝트 등록 
 	public int registerProject(ProjectRequestDTO requestDTO);
 
     // 권한조회

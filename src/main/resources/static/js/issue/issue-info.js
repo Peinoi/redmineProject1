@@ -13,10 +13,51 @@ document.addEventListener("DOMContentLoaded", () => {
   const canModify = (btnEdit?.dataset?.canModify || "false") === "true";
   const canDelete = (btnDelete?.dataset?.canDelete || "false") === "true";
 
+  const ANCHOR_KEY = "issue_back_anchor";
+
+  // referrer가 목록/칸반/간트 페이지면 저장
+  (function saveBackAnchor() {
+    const ref = document.referrer || "";
+    if (!ref) return;
+
+    const isEditLike =
+      ref.includes("/issueEdit") || ref.includes("/issueInsert");
+
+    if (isEditLike) return;
+
+    sessionStorage.setItem(ANCHOR_KEY, ref);
+  })();
+
   btnBack?.addEventListener("click", () => {
-    if (!document.referrer) return (location.href = "/issueList");
-    if (document.referrer.includes("/issueEdit")) return history.go(-2);
-    history.back();
+    const ref = document.referrer || "";
+    const anchor = sessionStorage.getItem("issue_back_anchor") || "";
+
+    // 직전이 수정페이지면 저장된 전전페이지
+    if (ref.includes("/issueEdit")) {
+      if (anchor) {
+        const url = new URL(anchor);
+        url.searchParams.set("_ts", String(Date.now()));
+        location.replace(url.toString());
+        return;
+      }
+      // 앵커가 없으면 안전 fallback
+      location.replace(`/issueList?_ts=${Date.now()}`);
+      return;
+    }
+    // 직전이 목록/칸반/간트 페이지면 그 페이지로
+    if (ref.includes("/kanbanboard")) {
+      const url = new URL(ref);
+      url.searchParams.set("_ts", String(Date.now()));
+      location.replace(url.toString());
+      return;
+    }
+
+    if (ref.includes("/ganttChart")) {
+      location.replace(ref || "/ganttChart");
+      return;
+    }
+
+    location.replace(`/issueList?_ts=${Date.now()}`);
   });
 
   btnEdit?.addEventListener("click", () => {
@@ -257,7 +298,6 @@ function renderRejectHistory(list) {
 
 function formatDateTime(v) {
   if (!v) return "";
-  // 서버가 ISO(LocalDateTime)로 내려주면 대개 "2026-02-10T12:34:56" 또는 유사
   const s = String(v);
   if (s.includes("T")) {
     const [d, t] = s.split("T");
@@ -276,12 +316,12 @@ function escapeHtml(s) {
     .replaceAll("'", "&#039;");
 }
 
-/* ====== 아래는 네 기존 renderHistory 그대로 ====== */
 function renderHistory() {
   const actionLabelMap = {
     CREATE: "생성",
     UPDATE: "수정",
-    DELETE: "삭제",
+    REJECT: "반려",
+    APPROVE: "승인",
   };
 
   const fieldLabelMap = {

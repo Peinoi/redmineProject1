@@ -47,7 +47,17 @@
         <div class="issue-summary-title">
           <span class="project" th:text="${issue.projectName}">프로젝트명</span>
           <span class="sep">:</span>
-          <span class="issue" th:text="${issue.title}">일감명</span>
+          <span class="issue">
+            <span th:text="${issue.title}">일감명</span>
+
+            <span
+              class="badge due-badge"
+              th:if="${issue.dueAt != null and issue.dueAt.toLocalDate().isBefore(T(java.time.LocalDate).now())}"
+            >
+              마감
+            </span>
+          </span>
+
           <th:block th:if="${issue.parIssueTitle != null}">
             <span class="sep">상위일감 :</span>
             <span class="issue" th:text="${issue.parIssueTitle}"></span>
@@ -91,6 +101,7 @@
 
             <th>마감기한</th>
             <td
+              th:classappend="${issue.dueAt != null and issue.dueAt.toLocalDate().isBefore(T(java.time.LocalDate).now())} ? 'due-over' : ''"
               th:text="${issue.dueAt != null ? #temporals.format(issue.dueAt, 'yyyy-MM-dd') : '-'}"
             >
               -

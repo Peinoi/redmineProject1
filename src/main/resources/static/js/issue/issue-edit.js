@@ -32,16 +32,7 @@
   const projectCodeEl = $("#projectCode");
   const projectTextEl = $("#projectText");
 
-  // --- 프로젝트 모달(수정화면에서는 보통 없음: optional) ---
-  const btnOpenProjectModal = $("#btnOpenProjectModal");
-  const projectModalEl = $("#projectSelectModal");
-  const projectModal = projectModalEl
-    ? new bootstrap.Modal(projectModalEl)
-    : null;
-  const projectListEl = $("#projectModalList");
-  const projectSearchEl = $("#projectModalSearch");
-
-  // --- 상위일감(Parent issue) ---
+  // --- 상위일감 ---
   const parIssueText = $("#parIssueText");
   const parIssueCode = $("#parIssueCode");
   const btnOpenParIssueModal = $("#btnOpenParIssueModal");
@@ -56,7 +47,7 @@
 
   const toDT = (d) => (d ? `${d}T00:00` : "");
 
-  // --- 유형(Type) 모달 (테이블) ---
+  // --- 유형 모달 ---
   const typeModalEl = $("#typeSelectModal");
   const typeModal = typeModalEl ? new bootstrap.Modal(typeModalEl) : null;
 
@@ -90,14 +81,13 @@
   const assigneeSearchEl = $("#assigneeModalSearch");
 
   // 프로젝트별 캐시
-  let projectCache = [];
   let userCache = [];
   let userCacheProjectCode = "";
 
   const parentIssueCacheByProject = new Map();
 
   // -------------------------
-  // Toast (등록 화면 스타일로 통일)
+  // Toast 유틸
   // -------------------------
   const showToast = (message) => {
     const toastId = "commonToast";
@@ -162,10 +152,7 @@
     if (!dueView || !dueAt || !prioritySel) return;
 
     const days = getPriorityDays();
-    if (!days) {
-      // 우선순위 없으면 자동셋 불가
-      return;
-    }
+    if (!days) return;
 
     const dueStr = toDate(addDays(new Date(), days));
     dueView.value = dueStr;
@@ -176,12 +163,8 @@
   const syncDueWithPriority = () => {
     if (!dueView || !dueAt) return;
 
-    // 비었으면(삭제 시도) 우선순위로 복구 (우선순위가 있을 때만)
     if (!dueView.value) {
-      if (!prioritySel?.value) {
-        // 우선순위 없으면 여기서 토스트/복구하지 않고 submit에서 막힘
-        return;
-      }
+      if (!prioritySel?.value) return;
       showDueAutoToast();
       setDueByPriority();
       return;
@@ -190,13 +173,24 @@
     dueAt.value = toDT(dueView.value);
   };
 
-  // 날짜 비교 (yyyy-mm-dd)
+  // 날짜 비교
   const isBefore = (a, b) => {
     if (!a || !b) return false;
-    // ISO 형식이라 문자열 비교로도 안전하지만, 명시적으로 Date로 비교
     const da = new Date(`${a}T00:00:00`);
     const db = new Date(`${b}T00:00:00`);
     return da.getTime() < db.getTime();
+  };
+
+  const todayYmd = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
+  };
+
+  // 마감기한 지난지 체크 (due < today)
+  const isOverdue = () => {
+    const due = (dueView?.value || "").trim();
+    if (!due) return false;
+    return isBefore(due, todayYmd());
   };
 
   // -------------------------
@@ -228,13 +222,11 @@
   const syncHiddenDates = () => {
     if (createdAt && createdView) createdAt.value = toDT(createdView.value);
 
-    // due는 삭제방지 로직 포함해서 동기화
     syncDueWithPriority();
 
     if (startedAt && startedView) startedAt.value = toDT(startedView.value);
 
     if (resolvedAt && resolvedView) {
-      // 완료(OB5)일 때만 완료일 저장, 아니면 비움
       resolvedAt.value =
         statusSel?.value === "OB5" ? toDT(resolvedView.value) : "";
     }
@@ -252,8 +244,33 @@
     if (!isDone && resolvedAt) resolvedAt.value = "";
   };
 
+  // 마감기한 지난 진척도 잠금
+  let lastOverdueToastAt = 0;
+  const blockProgressIfOverdue = (withToast = false) => {
+    if (!progressInp) return false;
+    if (!isOverdue()) return false;
+
+    progressInp.value = "100";
+    progressInp.min = "100";
+    progressInp.max = "100";
+    progressInp.readOnly = true;
+
+    if (withToast) {
+      const now = Date.now();
+      if (now - lastOverdueToastAt >= 900) {
+        lastOverdueToastAt = now;
+        showToast("마감기한이 지나 진척도를 수정할 수 없습니다.");
+      }
+    }
+    return true;
+  };
+
   const setProgressByStatus = () => {
     if (!statusSel || !progressInp) return;
+
+    // 초기/상태변경 시에는 토스트 없이 잠금만
+    if (blockProgressIfOverdue(false)) return;
+
     const s = statusSel.value;
 
     progressInp.readOnly = false;
@@ -319,7 +336,6 @@
   const onStatusChange = () => {
     const s = statusSel?.value || "";
 
-    // 신규가 아닌 상태로 바꾸려면 시작일 필요
     if (s && s !== "OB1" && !startedView?.value) {
       showToast("신규가 아닌 상태로 변경하려면 시작일을 먼저 등록해야 합니다.");
       statusSel.value = "OB1";
@@ -340,92 +356,6 @@
       return null;
     }
     return res.json();
-  };
-
-  // -------------------------
-  // 프로젝트 모달
-  // -------------------------
-  const ensureProjectCache = async () => {
-    if (projectCache.length) return true;
-
-    const data = await fetchJson(
-      "/api/projects/modal",
-      "프로젝트 목록을 불러오지 못했습니다.",
-    );
-    if (!data) return false;
-
-    projectCache = data.map((p) => ({
-      value: String(p.projectCode),
-      label: p.projectName,
-    }));
-    return true;
-  };
-
-  const renderProjectList = (items) => {
-    if (!projectListEl) return;
-    projectListEl.innerHTML = "";
-
-    if (!items.length) {
-      projectListEl.innerHTML =
-        '<div class="text-muted">결과가 없습니다.</div>';
-      return;
-    }
-
-    items.forEach((p) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "list-group-item list-group-item-action";
-      b.textContent = p.label;
-      b.addEventListener("click", async () => {
-        const prev = String(projectCodeEl?.value || "").trim();
-        const next = String(p.value || "").trim();
-
-        if (projectTextEl) projectTextEl.value = p.label;
-        if (projectCodeEl) projectCodeEl.value = p.value;
-
-        if (projectSearchEl) projectSearchEl.value = "";
-        projectModal?.hide();
-
-        // 프로젝트가 바뀌면: 담당자/상위일감 초기화
-        if (prev && prev !== next) {
-          if (assigneeText) assigneeText.value = "";
-          if (assigneeCode) assigneeCode.value = "";
-          if (assigneeSearchEl) assigneeSearchEl.value = "";
-          userCache = [];
-          userCacheProjectCode = "";
-
-          if (parIssueText) parIssueText.value = "";
-          if (parIssueCode) parIssueCode.value = "";
-          if (parIssueSearchEl) parIssueSearchEl.value = "";
-        }
-      });
-      projectListEl.appendChild(b);
-    });
-  };
-
-  const openProjectModal = async () => {
-    if (!projectModal || !projectListEl) return;
-
-    const ok = await ensureProjectCache();
-    if (!ok) return;
-
-    if (projectSearchEl) projectSearchEl.value = "";
-    renderProjectList(projectCache);
-    projectModal.show();
-  };
-
-  const refreshProjectList = async () => {
-    if (!projectListEl) return;
-
-    const ok = await ensureProjectCache();
-    if (!ok) return;
-
-    const q = (projectSearchEl?.value || "").trim().toLowerCase();
-    const filtered = q
-      ? projectCache.filter((p) => (p.label || "").toLowerCase().includes(q))
-      : projectCache;
-
-    renderProjectList(filtered);
   };
 
   // -------------------------
@@ -548,7 +478,9 @@
 
     const res = await fetch(
       `/api/users/modal?projectCode=${encodeURIComponent(projCode)}`,
-      { headers: { Accept: "application/json" } },
+      {
+        headers: { Accept: "application/json" },
+      },
     );
 
     if (!res.ok) {
@@ -710,7 +642,6 @@
 
     parIssueText.value = "";
     parIssueCode.value = "";
-
     parIssueCode.removeAttribute("name");
   };
 
@@ -726,24 +657,20 @@
       return false;
     }
 
-    // 마감기한 삭제 방지 동기화(우선순위 있을 때 복구)
     syncDueWithPriority();
 
-    // 신규가 아닌 상태는 시작일 필수
     if (s && s !== "OB1" && !startedView?.value) {
       showToast("신규가 아닌 상태로 저장하려면 시작일을 입력해야 합니다.");
       startedView?.focus();
       return false;
     }
 
-    // 완료(OB5)면 완료일 필수
     if (s === "OB5" && !resolvedView?.value) {
       showToast("완료로 저장하려면 완료일을 입력해야 합니다.");
       resolvedView?.focus();
       return false;
     }
 
-    // 완료일은 시작일보다 빠를 수 없음
     if (resolvedView?.value && startedView?.value) {
       if (isBefore(resolvedView.value, startedView.value)) {
         showToast("완료일은 시작일보다 빠를 수 없습니다.");
@@ -752,7 +679,6 @@
       }
     }
 
-    // 첨부파일 필수 조건: 완료(OB5) -> 해결(OB3)로 변경
     if (s === "OB3") {
       const hasFile = uploadFileInp?.files?.length > 0;
       if (!hasFile) {
@@ -762,10 +688,14 @@
       }
     }
 
-    // 완료가 아니면 완료일 비움
     if (s !== "OB5") {
       if (resolvedView) resolvedView.value = "";
       if (resolvedAt) resolvedAt.value = "";
+    }
+
+    // 저장 직전 마감기한 지난 진척도 강제 100%
+    if (isOverdue()) {
+      if (progressInp) progressInp.value = "100";
     }
 
     if (s === "OB2") clampProgress();
@@ -780,20 +710,35 @@
   statusSel?.addEventListener("change", onStatusChange);
 
   prioritySel?.addEventListener("change", () => {
-    // 우선순위 변경 시 마감기한 자동 재설정 + hidden 동기화
     setDueByPriority();
     syncHiddenDates();
+    setProgressByStatus(); // 마감기한 변경에 따른 잠금상태 반영
   });
 
+  // 진척도 수정시도 때 토스트
   progressInp?.addEventListener("input", () => {
+    if (blockProgressIfOverdue(true)) return;
+
     clampProgress();
     syncHiddenDates();
   });
 
-  // 마감기한: 삭제 시도하면 우선순위로 복구 + 토스트
-  dueView?.addEventListener("change", syncHiddenDates);
+  // 클릭 시 토스트
+  progressInp?.addEventListener("focus", () => {
+    blockProgressIfOverdue(true);
+  });
+
+  // 마감기한 변경 시 잠금상태 갱신
+  dueView?.addEventListener("change", () => {
+    syncHiddenDates();
+    setProgressByStatus();
+  });
+
   dueView?.addEventListener("input", () => {
-    if (!dueView.value) syncHiddenDates();
+    if (!dueView.value) {
+      syncHiddenDates();
+      setProgressByStatus();
+    }
   });
 
   startedView?.addEventListener("change", () => {
@@ -806,11 +751,6 @@
 
   resolvedView?.addEventListener("change", syncHiddenDates);
 
-  // 프로젝트 모달 바인딩(요소가 있을 때만)
-  btnOpenProjectModal?.addEventListener("click", openProjectModal);
-  projectSearchEl?.addEventListener("input", refreshProjectList);
-
-  // 담당자 모달
   btnOpenAssigneeModal?.addEventListener("click", openAssigneeModal);
 
   assigneeSearchEl?.addEventListener("input", async () => {
@@ -824,7 +764,6 @@
     );
   });
 
-  // 상위일감 모달
   btnOpenParIssueModal?.addEventListener("click", openParIssueModal);
   btnClearParIssue?.addEventListener("click", clearParIssue);
 
@@ -840,7 +779,6 @@
     renderParIssueTable(filterParIssue(list, q));
   });
 
-  // 유형 모달
   btnOpenTypeModal?.addEventListener("click", openTypeModal);
   btnClearType?.addEventListener("click", clearType);
 
@@ -900,7 +838,6 @@
   toggleResolvedByStatus();
   syncHiddenDates();
 
-  // 초기 상위일감 값이 비어있으면 name 제거
   if (parIssueCode) {
     const hasValue = String(parIssueCode.value || "").trim().length > 0;
     if (!hasValue) parIssueCode.removeAttribute("name");

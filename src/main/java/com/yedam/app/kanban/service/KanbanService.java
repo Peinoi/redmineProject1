@@ -12,4 +12,7 @@ public interface KanbanService {
   Map<String, List<IssueVO>> getBoardColumns(Integer userCode, Long projectCode, String viewScope);
 
   void moveCard(Integer userCode, KanbanMoveRequest req);
+  
+  // 진척도 업데이트
+  void updateProgress(Integer userCode, Long projectCode, Long issueCode, Integer progress);
 }

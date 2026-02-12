@@ -2,14 +2,82 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.auth.mapper.AuthMapper">
 
-	<!-- 역할 수정 -->
-	<!-- <update id="deleteRole"> UPDATE role SET role_name = role_name || '[-delete]' 
-		WHERE role_code = #{roleCode} AND role_name NOT LIKE '%[-delete]' </update> -->
+	<!-- 역할 단건 조회 -->
+	<select id="selectRole" resultType="RoleVO">
+		SELECT 
+		    role_code
+		    ,role_name
+		    ,explanation
+		    ,admin_ck
+		FROM role
+		WHERE role_code = #{roleCode}
+	</select>
+	<!-- 역할 권한 조회 -->
+	<select id="selectAuthList" resultType="RoleAuthVO">
+		SELECT
+		    ra_code
+		    ,category
+		    ,rd_rol
+		    ,wr_rol
+		    ,mo_rol
+		    ,del_rol
+		FROM role_authority
+		WHERE role_code = #{roleCode}
+		ORDER BY ra_code
+	</select>
+
+
+	<!-- 역할 등록 -->
+	<insert id="addAuth" parameterType="RoleVO">
+	    <selectKey keyProperty="roleCode" resultType="int" order="BEFORE">
+	        SELECT NVL(MAX(role_code), 0) + 1 FROM role
+	    </selectKey>
+	    INSERT INTO role (role_code, role_name, explanation, admin_ck)
+	    VALUES (#{roleCode}, #{roleName}, #{explanation}, #{adminCk})
+	</insert>
+
+	<!-- 역할 권한 등록 -->
+    <insert id="addRoleAuth" parameterType="RoleAuthVO">
+    	<selectKey keyProperty="raCode" resultType="int" order="BEFORE">
+	        SELECT NVL(MAX(ra_code), 0) + 1 FROM role_authority
+	    </selectKey>
+        INSERT INTO role_authority (ra_code, role_code, category, rd_rol, wr_rol, mo_rol, del_rol)
+        VALUES (#{raCode},#{roleCode}, #{category}, #{rdRol}, #{wrRol}, #{moRol}, #{delRol})
+    </insert>
+
+
 	<!-- 역할 삭제 (이름에 [-delete] 추가) -->
 	<update id="deleteAuth">
 		UPDATE role
-		SET role_name = role_name || '[-delete]'
+		SET role_name = role_name || '-delete'
 		WHERE role_code = #{roleCode}
-		AND role_name NOT LIKE '%[-delete]'
+		AND role_name NOT LIKE '%-delete'
+	</update>
+	
+	<update id="updateAdminRole">
+	    UPDATE role 
+	    SET admin_ck = #{adminCk} 
+	    WHERE role_code = #{roleCode}
+	</update>
+	
+	<!-- 역할 수정 -->
+	<update id="updateRole">
+		UPDATE role 
+		SET 
+		    role_name = #{roleName}
+		    ,explanation = #{explanation}
+		    ,admin_ck = #{adminCk}
+		WHERE role_code = #{roleCode}
+	</update>
+	
+	<!-- 역할 권한 수정 -->
+	<update id="updateRoleAuth">
+		UPDATE role_authority 
+		SET 
+		    rd_rol = #{rdRol}
+		    ,wr_rol = #{wrRol}
+		    ,mo_rol = #{moRol}
+		    ,del_rol = #{delRol}
+		WHERE ra_code = #{raCode} AND category = #{category}
 	</update>
 </mapper>

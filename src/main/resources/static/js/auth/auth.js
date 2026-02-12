@@ -22,8 +22,9 @@
 		const cells = tr.querySelectorAll("td");
 		return {
 			number: cells[0]?.textContent.trim() || "",
-			roleName: cells[1]?.textContent.trim() || "",
-			explanation: cells[2]?.textContent.trim() || "",
+			code: cells[1]?.textContent.trim() || "",
+			roleName: cells[2]?.textContent.trim() || "",
+			explanation: cells[3]?.textContent.trim() || "",
 		};
 	}
 
@@ -121,46 +122,80 @@
 	}
 	// 삭제 버튼 이벤트
 	$("#projectTbody").addEventListener("click", async (e) => {
-	    const btn = e.target.closest("button");
-	    if (!btn || !btn.classList.contains("delete-btn")) return;
+		const btn = e.target.closest("button");
+		if (!btn || !btn.classList.contains("delete-btn")) return;
 
-	    const row = btn.closest("tr");
-	    const roleCode = row.dataset.roleCode;
-	    const roleName = rowData(row).roleName;
+		const row = btn.closest("tr");
+		const roleCode = rowData(row).code;
+		const roleName = rowData(row).roleName;
 
-	    if (!confirm(`"${roleName}" 역할을 삭제하시겠습니까?`)) return;
+		if (!confirm(`"${roleName}" 역할을 삭제하시겠습니까?`)) return;
 
-	    try {
-	        const response = await fetch(`/api/auth/${roleCode}/delete`, {
-	            method: 'POST',
-	            headers: {
-	                'Content-Type': 'application/json'
-	            }
-	        });
+		try {
+			const response = await fetch(`/api/auth/${roleCode}/delete`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
 
-	        const result = await response.json();
+			const result = await response.json();
 
-	        if (result.success) {
-	            alert(result.message);
-	            // 화면에서 제거
-	            row.dataset.filtered = "1";
-	            row.style.display = "none";
-	            renderPage();
-	        } else {
-	            alert(result.message); // "삭제 권한이 없습니다." 메시지 표시
-	        }
-	    } catch (error) {
-	        console.error('삭제 오류:', error);
-	        alert('삭제 처리 중 오류가 발생했습니다.');
-	    }
+			if (result.success) {
+				alert(result.message);
+				// 화면에서 제거
+				row.dataset.filtered = "1";
+				row.style.display = "none";
+				renderPage();
+			} else {
+				alert(result.message); // "삭제 권한이 없습니다." 메시지 표시
+			}
+		} catch (error) {
+			console.error('삭제 오류:', error);
+			alert('삭제 처리 중 오류가 발생했습니다.');
+		}
 	});
 
-	// 체크박스는 읽기 전용으로 설정 (클릭 방지)
-	$$("input[name='adminck']").forEach((checkbox) => {
-		checkbox.addEventListener("click", (e) => {
-			e.preventDefault(); // 클릭 방지
-		});
+
+	// 저장 버튼 이벤트
+	document.querySelector("#projectTbody").addEventListener("click", async (e) => {
+		const btn = e.target.closest("button");
+		if (!btn || !btn.classList.contains("save-btn")) return;
+
+		const row = btn.closest("tr");
+
+		const roleCode = row.cells[1].innerText;
+		const roleName = row.cells[2].innerText;
+
+		// 체크박스 상태 확인 (Y/N 결정)
+		const adminCkBox = row.querySelector('input[name="adminck"]');
+		const adminCk = adminCkBox.checked ? 'Y' : 'N';
+
+		if (!confirm(`"${roleName}"의 관리자 권한을 변경하시겠습니까?`)) return;
+
+		try {
+			const response = await fetch(`/api/auth/${adminCk}/${roleCode}/adminmodify`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
+
+			const result = await response.json();
+
+			// 컨트롤러가 int(성공 시 1)를 반환하므로 숫자로 체크
+			if (result > 0) {
+				alert("권한 수정이 완료되었습니다.");
+				// 성공 후 별도의 페이지 이동이 없다면 현재 상태 유지
+			} else {
+				alert("권한 수정에 실패했습니다.");
+			}
+		} catch (error) {
+			console.error('수정 오류:', error);
+			alert('처리 중 오류가 발생했습니다.');
+		}
 	});
+
 
 	// 이벤트 바인딩
 	ui.btnApply.addEventListener("click", applyFilters);
@@ -170,6 +205,8 @@
 	rowsAll().forEach((tr) => {
 		tr.dataset.filtered = "0";
 	});
+
+
 
 	// 초기 렌더링
 	renderPage();

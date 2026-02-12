@@ -14,37 +14,40 @@
 <body>
 	<div id="container">
 		<div class="x-page-title">
-			<h3 class="page-title">역할 목록</h3>
-			<div class="page-title-sub">역할기본 정보를 조회할 수 있습니다.</div>
+			<h3 class="page-title">역할 등록</h3>
+			<div class="page-title-sub">신규 역할을 등록가능합니다.</div>
 		</div>
 		<div class="issue-filters mb-3 mt-3">
-			<div class="row g-2 align-items-end mb-4">
-
-				<!--입력 검색 -->
-				<div class="col-12 col-md-3">
-					<label class="form-label">역할명</label> <input type="text"
-						id="filterTitle" class="form-control" placeholder="역할명 입력">
+			<div class="row g-3 align-items-start mb-4">
+				<div class="col-12 col-md-5">
+					<div class="mb-2">
+						<label class="form-label fw-bold">역할명</label> <input type="text"
+							id="roleName" class="form-control" placeholder="역할명 입력">
+					</div>
+					<div>
+						<label class="form-label fw-bold">설명</label>
+						<textarea id="explanation" class="form-control" rows="2"
+							placeholder="역할에 대한 설명을 입력하세요"></textarea>
+					</div>
 				</div>
 
-				<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
-				<div class="d-flex justify-content-between align-items-center mt-3">
-					<div class="d-flex gap-2">
-						<button type="button" class="btn btn-success">
-							<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
-								역할 등록
-							</a>
-						</button>
+				<div class="col-12 col-md-3 d-flex align-items-center"
+					style="padding-top: 32px;">
+					<div class="form-check form-check-reverse">
+						<label class="form-check-label fw-bold" for="adminCheck">
+							관리자 </label> <input class="form-check-input" type="checkbox"
+							id="adminCheck">
 					</div>
+				</div>
 
-					<div class="col-auto d-flex gap-2 ms-auto">
-						<button type="button" class="btn btn-secondary"
-							id="btnResetFilters">
-							<i class="fas fa-redo me-1"></i>초기화
-						</button>
-						<button type="button" class="btn btn-primary" id="btnApplyFilters">
-							<i class="fa-solid fa-magnifying-glass"></i> 조회
-						</button>
-					</div>
+				<div
+					class="col-12 col-md-4 d-flex justify-content-end align-items-end"
+					style="height: 100%;">
+					<button type="button" class="btn btn-success"
+						id="registerRoleBtn">
+						<i class="fas fa-check me-1"></i> 권한 등록
+					</button>
+
 				</div>
 
 			</div>
@@ -55,7 +58,7 @@
 				<div
 					class="card-header d-flex align-items-center justify-content-between">
 					<div>
-						<i class="fas fa-table me-1"></i> 역할 목록
+						<i class="fas fa-table me-1"></i> 권한
 
 					</div>
 					<div class="text-muted small" id="projectPageInfo"></div>
@@ -67,28 +70,25 @@
 							<thead class="table-light">
 								<tr>
 
-									<th style="width: 50px;">번호</th>
-									<th style="width: 100px;">역할명</th>
-									<th style="width: 80px;">설명</th>
-									<th style="width: 80px;">관리자</th>
-									<th style="width: 80px;">삭제</th>
+									<th style="width: 100px;">권한</th>
+									<th style="width: 80px;"><input id="readSelectAll"
+										type="checkbox"> 읽기</th>
+									<th style="width: 80px;"><input id="writeSelectAll"
+										type="checkbox"> 등록</th>
+									<th style="width: 80px;"><input id="modifySelectAll"
+										type="checkbox"> 수정</th>
+									<th style="width: 80px;"><input id="deleteSelectAll"
+										type="checkbox"> 삭제</th>
 								</tr>
 							</thead>
 
 							<tbody id="projectTbody">
-								<tr class="projectRow" th:each="info, status : ${auths}">
-									<td>[[ ${status.index+1} ]]</td>
-									<td>[[ ${info.roleName} ]]</td>
-									<td>[[ ${info.explanation} ]]</td>
-
-									<td><input type="checkbox" name="adminck" value="true">
-									</td>
-									<td>
-										<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
-										<button class="btn btn-danger btn-sm">
-											<i class="fa-solid fa-face-dizzy"></i> 삭제
-										</button>
-									</td>
+								<tr class="projectRow" th:each="auth : ${session.userAuth}">
+									<td th:text="${auth.category}">카테고리명</td>
+									<td><input type="checkbox" class="rd_rol"></td>
+									<td><input type="checkbox" class="wr_rol"></td>
+									<td><input type="checkbox" class="md_rol"></td>
+									<td><input type="checkbox" class="del_rol"></td>
 								</tr>
 							</tbody>
 						</table>
@@ -102,9 +102,11 @@
 
 			</div>
 
+			<a th:href="@{/auth}" class="btn btn-secondary"
+				style="width: 150px; margin-left: 10px;"> <i
+				class="fas fa-arrow-left me-2"></i>돌아가기
+			</a>
 
-
-
-			<!-- 		<script th:src="@{/js/project/project.js}"></script> -->
+			<script th:src="@{/js/auth/authadd.js}"></script>
 </body>
 </html>

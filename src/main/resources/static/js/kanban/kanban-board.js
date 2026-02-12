@@ -1,4 +1,7 @@
 (() => {
+  if (window.__KANBAN_BOARD_INITED__) return;
+  window.__KANBAN_BOARD_INITED__ = true;
+
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -45,6 +48,19 @@
 
     boardMeta: $("#kanbanBoard"),
     wrap: $("#kanbanWrap"),
+
+    rejectModalEl: $("#rejectModal"),
+    rejectReason: $("#rejectReason"),
+    btnRejectSubmit: $("#btnRejectSubmit"),
+
+    resolveModalEl: $("#resolveModal"),
+    resolveFile: $("#resolveFile"),
+    btnResolveSubmit: $("#btnResolveSubmit"),
+
+    progressModalEl: $("#progressModal"),
+    progressModalTitle: $("#progressModalTitle"),
+    progressInput: $("#progressInput"),
+    btnProgressSubmit: $("#btnProgressSubmit"),
   };
 
   if (!ui.form) return;
@@ -90,11 +106,18 @@
   const creatorModal = getModal(ui.creatorModalEl);
   const typeModal = getModal(ui.typeModalEl);
 
+  const rejectModal = getModal(ui.rejectModalEl);
+  const resolveModal = getModal(ui.resolveModalEl);
+  const progressModal = getModal(ui.progressModalEl);
+
   [
     ui.projectModalEl,
     ui.assigneeModalEl,
     ui.creatorModalEl,
     ui.typeModalEl,
+    ui.rejectModalEl,
+    ui.resolveModalEl,
+    ui.progressModalEl,
   ].forEach(bindModalCleanup);
 
   const cards = () => $$(".kan-card[data-issue-code]");
@@ -186,6 +209,15 @@
     });
   };
 
+  const isOverdueCard = (card) => {
+    const dueStr = (card?.dataset?.due || "").trim();
+    const dueDate = parseYmdLocal(dueStr);
+    if (!dueDate) return false;
+
+    const today = startOfToday();
+    return dueDate.getTime() < today.getTime();
+  };
+
   const applyFiltersClient = () => {
     const scope = getScope();
     const myUserCode = String(ui.boardMeta?.dataset?.userCode || "").trim();
@@ -234,7 +266,7 @@
           ok =
             ok && (assigneeCode === myUserCode || creatorCode === myUserCode);
         } else {
-          // ALL: 클라이언트 필터에서 추가 조건 없음(서버가 이미 권한범위로 내려줌)
+          // ALL: 서버 권한 범위 내에서만 내려옴
         }
       }
 
@@ -263,7 +295,6 @@
     if (ui.createdAt) ui.createdAt.value = "";
     if (ui.dueAt) ui.dueAt.value = "";
 
-    // 라디오를 확실히 ME로
     ui.scopeRadios.forEach((r) => {
       r.checked = false;
     });
@@ -292,7 +323,7 @@
   });
 
   // ------------------------------
-  // 4) 모달 데이터 로드/렌더
+  // 모달 데이터 로드/렌더
   // ------------------------------
   let projectCache = [];
   let userCache = [];
@@ -540,7 +571,7 @@
   });
 
   // ------------------------------
-  // 5) 칸반 드래그
+  // 칸반 드래그 + 클릭 기능
   // ------------------------------
   if (!ui.boardMeta || !ui.wrap) return;
 
@@ -550,33 +581,6 @@
     Array.from(colBody.querySelectorAll(".kan-card"))
       .filter(isVisible)
       .map((c) => Number(c.dataset.issueCode));
-
-  ui.wrap.addEventListener("dblclick", (e) => {
-    const card = e.target.closest(".kan-card");
-    if (!card) return;
-
-    const issueCode = card.dataset.issueCode;
-    if (!issueCode) return;
-
-    location.href = `/issueInfo?issueCode=${encodeURIComponent(issueCode)}`;
-  });
-
-  const saveMove = async (payload) => {
-    const res = await fetch("/api/issues/board/move", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.success === false) {
-      throw new Error(data?.message || "저장에 실패했습니다.");
-    }
-    return data;
-  };
 
   const resolveProjectCode = (itemEl) => {
     const raw = itemEl?.dataset?.projectCode || "";
@@ -603,40 +607,21 @@
     return ok;
   };
 
-  const isAdminCache = new Map();
-
-  const fetchIsAdmin = async (projectCode) => {
-    if (!projectCode) return false;
-    if (isAdminCache.has(projectCode)) return isAdminCache.get(projectCode);
-
-    const res = await fetch(
-      `/api/authority/project/isAdmin?projectCode=${encodeURIComponent(projectCode)}`,
-      { headers: { Accept: "application/json" } },
-    );
-
-    const data = await res.json().catch(() => ({}));
-    const ok = !!(res.ok && data?.success && data?.isAdmin);
-
-    isAdminCache.set(projectCode, ok);
-    return ok;
-  };
-
   // 드래그 원복
   const revertToOrigin = (itemEl, fromCol, oldIndex) => {
     if (!itemEl || !fromCol || typeof oldIndex !== "number") return;
 
-    const children = Array.from(fromCol.children).filter((el) =>
-      el.classList?.contains("kan-card"),
-    );
-
+    const children = Array.from(fromCol.querySelectorAll(":scope > .kan-card"));
     const ref = children[oldIndex] || null;
-    fromCol.insertBefore(itemEl, ref);
+
+    if (ref) fromCol.insertBefore(itemEl, ref);
+    else fromCol.appendChild(itemEl);
 
     updateCounts();
     updateCardStates();
   };
 
-  // 토스트 중복 방지(연속 호출 방지용)
+  // 토스트 중복 방지
   let lastNoAuthToastAt = 0;
   const toastNoAuthOnce = () => {
     const now = Date.now();
@@ -645,27 +630,406 @@
     showToast("권한이 없습니다.");
   };
 
+  // ------------------------------
+  // (추가) 카드 UI 즉시 반영 유틸
+  // ------------------------------
+  const setProgressUI = (card, v) => {
+    if (!card) return;
+
+    const n = Number(v);
+    if (Number.isNaN(n)) return;
+
+    card.dataset.progress = String(n);
+
+    const bar = card.querySelector(".progress-bar");
+    if (bar) {
+      bar.style.width = `${n}%`;
+      bar.setAttribute("aria-valuenow", String(n));
+    }
+
+    const badge = card.querySelector(".kb-progress");
+    if (badge) badge.textContent = `진척도 ${n}%`;
+
+    // 너 마크업이 ".small.text-muted"였는데 혹시 구조가 다를 수도 있어서 후보를 넓힘
+    const pct =
+      card.querySelector(".kb-progress-text") ||
+      card.querySelector(".progress-text") ||
+      card.querySelector(".small.text-muted");
+    if (pct) pct.textContent = `${n}%`;
+  };
+
+  const setStatusUI = (card, statusId) => {
+    if (!card || !statusId) return;
+    card.dataset.statusId = String(statusId);
+  };
+
+  const applyMoveResultToCard = (card, data, toStatusCode) => {
+    // 1) 신규로 돌아오면 progress는 무조건 0으로 즉시 보정
+    if (toStatusCode === "OB1") {
+      setProgressUI(card, 0);
+      setStatusUI(card, "OB1");
+      return;
+    }
+
+    // 2) 서버가 내려준 값이 있으면 그걸로 반영
+    if (data && typeof data === "object") {
+      if (data.statusId) setStatusUI(card, data.statusId);
+      if (data.progress != null) setProgressUI(card, data.progress);
+    }
+  };
+
+  const saveMove = async (payload) => {
+    const res = await fetch("/api/issues/board/move", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      throw new Error(data?.message || "저장에 실패했습니다.");
+    }
+    return data;
+  };
+
+  // ------------------------------
+  // 클릭 / 더블클릭
+  // ------------------------------
+  let clickTimer = null;
+
+  ui.wrap.addEventListener("dblclick", (e) => {
+    if (clickTimer) {
+      clearTimeout(clickTimer);
+      clickTimer = null;
+    }
+
+    const card = e.target.closest(".kan-card");
+    if (!card) return;
+
+    const issueCode = card.dataset.issueCode;
+    if (!issueCode) return;
+
+    location.href = `/issueInfo?issueCode=${encodeURIComponent(issueCode)}`;
+  });
+
+  ui.wrap.addEventListener("click", (e) => {
+    if (e.target.closest("a, button, input, textarea, select, label")) return;
+
+    const card = e.target.closest(".kan-card");
+    if (!card) return;
+
+    if (clickTimer) clearTimeout(clickTimer);
+
+    clickTimer = setTimeout(() => {
+      clickTimer = null;
+
+      const col = card.closest(".kan-col-body[data-status]");
+      const status = col?.dataset?.status || "";
+      if (status !== "OB2") return;
+
+      openProgressModal(card);
+    }, 220);
+  });
+
+  // ------------------------------
+  // 진행(OB2) 진척도 모달 + 저장
+  // ------------------------------
+  let pendingProgress = null; // { issueCode, projectCode, card }
+
+  const openProgressModal = async (card) => {
+    if (!ui.progressModalEl || !progressModal) return;
+
+    const issueCode = Number(card.dataset.issueCode || 0);
+    const projectCode = resolveProjectCode(card);
+
+    if (!issueCode || Number.isNaN(issueCode)) {
+      showToast("일감 코드가 없습니다.");
+      return;
+    }
+    if (!projectCode) {
+      showToast("프로젝트 정보가 없습니다.");
+      return;
+    }
+
+    // 권한 체크
+    let allowed = canModifyCache.get(projectCode);
+    if (allowed === undefined) {
+      try {
+        allowed = await fetchCanModify(projectCode);
+      } catch (e) {
+        allowed = false;
+      }
+    }
+    if (!allowed) {
+      toastNoAuthOnce();
+      return;
+    }
+
+    if (isOverdueCard(card)) {
+      showToast("마감기한이 지나 진척도를 수정할 수 없습니다.");
+      return;
+    }
+
+    pendingProgress = { issueCode, projectCode, card };
+
+    if (ui.progressModalTitle)
+      ui.progressModalTitle.textContent = card.dataset.title || "";
+
+    const cur = Number(card.dataset.progress || 0);
+    if (ui.progressInput)
+      ui.progressInput.value = String(Number.isNaN(cur) ? 0 : cur);
+
+    progressModal.show();
+  };
+
+  ui.btnProgressSubmit?.addEventListener("click", async () => {
+    if (!pendingProgress) {
+      showToast("대상이 없습니다.");
+      return;
+    }
+
+    const { issueCode, projectCode, card } = pendingProgress;
+
+    let v = Number(ui.progressInput?.value);
+    if (Number.isNaN(v)) v = 0;
+
+    // 진행(OB2): 0~90
+    if (v < 0 || v > 90) {
+      showToast("진척도는 0~90 사이로 입력해 주세요.");
+      return;
+    }
+
+    try {
+      isSaving.value = true;
+
+      const res = await fetch("/api/issues/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ projectCode, issueCode, progress: v }),
+      })
+        .then((r) => r.json())
+        .catch(() => null);
+
+      if (!res) {
+        showToast("요청에 실패했습니다.");
+        return;
+      }
+      if (!res.success) {
+        showToast(res.message || "저장 실패");
+        return;
+      }
+
+      // UI 반영
+      setProgressUI(card, v);
+
+      progressModal.hide();
+      cleanupModalBackdrops();
+      showToast("진척도가 저장되었습니다.");
+    } catch (e) {
+      showToast("저장 중 오류가 발생했습니다.");
+    } finally {
+      pendingProgress = null;
+      isSaving.value = false;
+    }
+  });
+
+  // ------------------------------
+  // 반려 / 해결 모달
+  // ------------------------------
+  let pendingReject = null; // { item, fromCol, oldIndex, issueCode }
+
+  const openRejectModal = ({ item, fromCol, oldIndex, issueCode }) => {
+    if (!ui.rejectModalEl || !rejectModal) {
+      showToast("반려 모달이 없습니다.");
+      revertToOrigin(item, fromCol, oldIndex);
+      return;
+    }
+
+    pendingReject = { item, fromCol, oldIndex, issueCode };
+
+    if (ui.rejectReason) ui.rejectReason.value = "";
+
+    rejectModal.show();
+  };
+
+  ui.rejectModalEl?.addEventListener("hidden.bs.modal", () => {
+    if (!pendingReject) return;
+
+    const { item, fromCol, oldIndex } = pendingReject;
+    pendingReject = null;
+
+    isSaving.value = false;
+    revertToOrigin(item, fromCol, oldIndex);
+  });
+
+  ui.btnRejectSubmit?.addEventListener("click", async () => {
+    if (!pendingReject) {
+      showToast("반려 대상이 없습니다.");
+      return;
+    }
+
+    const { issueCode } = pendingReject;
+
+    const reason = (ui.rejectReason?.value || "").trim();
+    if (!reason) {
+      showToast("반려 사유를 입력해 주세요.");
+      return;
+    }
+
+    try {
+      const body = new URLSearchParams();
+      body.set("reason", reason);
+
+      const res = await fetch(
+        `/api/issues/${encodeURIComponent(issueCode)}/reject`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body,
+        },
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+
+      if (!res) {
+        showToast("요청에 실패했습니다.");
+        return;
+      }
+      if (!res.success) {
+        showToast(res.message || "반려 실패");
+        return;
+      }
+
+      pendingReject = null;
+      rejectModal.hide();
+      cleanupModalBackdrops();
+
+      showToast("반려 처리되었습니다.");
+      setTimeout(() => location.reload(), 500);
+    } catch (e) {
+      showToast("반려 처리 중 오류가 발생했습니다.");
+    } finally {
+      isSaving.value = false;
+    }
+  });
+
+  let pendingResolve = null; // { item, fromCol, oldIndex, issueCode, projectCode }
+
+  const openResolveModal = ({
+    item,
+    fromCol,
+    oldIndex,
+    issueCode,
+    projectCode,
+  }) => {
+    if (!ui.resolveModalEl || !resolveModal) {
+      showToast("해결 모달이 없습니다.");
+      revertToOrigin(item, fromCol, oldIndex);
+      return;
+    }
+
+    pendingResolve = { item, fromCol, oldIndex, issueCode, projectCode };
+
+    if (ui.resolveFile) ui.resolveFile.value = "";
+    resolveModal.show();
+  };
+
+  ui.resolveModalEl?.addEventListener("hidden.bs.modal", () => {
+    if (!pendingResolve) return;
+
+    const { item, fromCol, oldIndex } = pendingResolve;
+    pendingResolve = null;
+
+    isSaving.value = false;
+    revertToOrigin(item, fromCol, oldIndex);
+  });
+
+  ui.btnResolveSubmit?.addEventListener("click", async () => {
+    if (!pendingResolve) {
+      showToast("대상이 없습니다.");
+      return;
+    }
+
+    const { issueCode } = pendingResolve;
+
+    const file = ui.resolveFile?.files?.[0] || null;
+    if (!file) {
+      showToast("첨부파일을 선택해 주세요.");
+      return;
+    }
+
+    try {
+      isSaving.value = true;
+
+      const fd = new FormData();
+      fd.append("uploadFile", file);
+
+      const res = await fetch(
+        `/api/issues/${encodeURIComponent(issueCode)}/resolve`,
+        {
+          method: "POST",
+          body: fd,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        },
+      )
+        .then((r) => r.json())
+        .catch(() => null);
+
+      if (!res) {
+        showToast("요청에 실패했습니다.");
+        return;
+      }
+      if (!res.success) {
+        showToast(res.message || "해결 처리 실패");
+        return;
+      }
+
+      pendingResolve = null;
+      resolveModal.hide();
+      cleanupModalBackdrops();
+
+      showToast("해결 처리되었습니다.");
+      setTimeout(() => location.reload(), 500);
+    } catch (e) {
+      showToast("해결 처리 중 오류가 발생했습니다.");
+    } finally {
+      isSaving.value = false;
+    }
+  });
+
+  // ------------------------------
+  // Sortable
+  // ------------------------------
   const initSortable = (colBody) => {
     let dragFromCol = null;
     let dragOldIndex = null;
 
-    // 완료 컬럼인지
     const isDoneCol = (el) => String(el?.dataset?.status || "") === "OB5";
+    const doneThisCol = isDoneCol(colBody);
 
     return new Sortable(colBody, {
+      sort: !doneThisCol,
+
       group: {
         name: "kanban",
-        put: (to) => !isDoneCol(to.el),
-        pull: (from) => !isDoneCol(from.el),
+        put: true,
+        pull: !doneThisCol,
       },
 
       animation: 150,
       draggable: ".kan-card",
-
-      // 카드 전체 어디를 눌러도 들리게
       handle: ".kan-card",
 
-      // 완료 카드 드래그  막음
       filter:
         ".kb-done, .kan-col-body[data-status='OB5'] .kan-card, a, button, input, textarea, select, label",
       preventOnFilter: true,
@@ -674,51 +1038,36 @@
         dragFromCol = evt.from;
         dragOldIndex = evt.oldIndex;
 
-        // 혹시라도(예외 상황) 완료 컬럼에서 시작하면 즉시 원복
         if (isDoneCol(evt.from)) {
           toastNoAuthOnce();
         }
       },
 
       onMove: (evt) => {
-        // 완료 컬럼으로의 이동 자체를 UI 단계에서 차단(드롭 안 됨)
-        if (isDoneCol(evt.to)) return false;
-
-        // 완료 컬럼에서 끌어내는 것도 차단
         if (isDoneCol(evt.from)) return false;
-
-        // 완료 카드 자체(클래스 kb-done)도 차단
         if (evt.dragged && evt.dragged.classList.contains("kb-done"))
           return false;
-
         return true;
       },
 
       onEnd: async (evt) => {
         if (isSaving.value) {
-          // 저장 중이면 무조건 원복
           revertToOrigin(evt.item, dragFromCol, dragOldIndex);
           return;
         }
 
-        // 이동이 없으면 종료
         if (evt.from === evt.to && evt.oldIndex === evt.newIndex) return;
 
         const item = evt.item;
 
-        // 완료 컬럼 관련이면 무조건 원복
-        if (
-          isDoneCol(evt.from) ||
-          isDoneCol(evt.to) ||
-          item.classList.contains("kb-done")
-        ) {
-          toastNoAuthOnce();
+        const issueCode = Number(item?.dataset?.issueCode || 0);
+        const projectCode = resolveProjectCode(item);
+
+        if (!issueCode || Number.isNaN(issueCode)) {
+          showToast("일감 코드가 없어 처리할 수 없습니다.");
           revertToOrigin(item, dragFromCol, dragOldIndex);
           return;
         }
-
-        const issueCode = Number(item?.dataset?.issueCode || 0);
-        const projectCode = resolveProjectCode(item);
 
         if (!projectCode) {
           showToast("프로젝트 정보가 없어 저장할 수 없습니다.");
@@ -747,6 +1096,33 @@
         const fromStatusCode = fromCol?.dataset?.status || "";
         const toStatusCode = toCol?.dataset?.status || "";
 
+        if (toStatusCode === "OB4") {
+          isSaving.value = true;
+
+          openRejectModal({
+            item,
+            fromCol: evt.from,
+            oldIndex: evt.oldIndex,
+            issueCode: issueCode || null,
+          });
+
+          return;
+        }
+
+        if (toStatusCode === "OB3") {
+          isSaving.value = true;
+
+          openResolveModal({
+            item,
+            fromCol: evt.from,
+            oldIndex: evt.oldIndex,
+            issueCode: issueCode || null,
+            projectCode,
+          });
+
+          return;
+        }
+
         const payload = {
           projectCode,
           issueCode: issueCode || null,
@@ -759,7 +1135,12 @@
 
         try {
           isSaving.value = true;
-          await saveMove(payload);
+
+          const data = await saveMove(payload);
+
+          // (핵심) 서버 반영 성공 즉시 카드 UI에 progress 반영
+          applyMoveResultToCard(item, data, toStatusCode);
+
           updateCounts();
           updateCardStates();
         } catch (err) {

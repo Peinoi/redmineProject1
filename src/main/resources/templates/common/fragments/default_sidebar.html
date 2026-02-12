@@ -9,9 +9,6 @@
 				</div> 프로젝트
 			</a>
 
-			<!-- 프로젝트 영역에서만 보이는 추가 메뉴 -->
-			<th:block th:if="${inProjectArea}">
-
 				<a class="nav-link" th:href="@{/issueList}">
 					<div class="sb-nav-link-icon">
 						<i class="fa-solid fa-list-check"></i>
@@ -48,12 +45,6 @@
 					</div> 문서
 				</a>
 
-			<!-- 	<a class="nav-link" th:href="@{/projects}">
-					<div class="sb-nav-link-icon">
-						<i class="fa-solid fa-sliders"></i>
-					</div> 프로젝트 설정
-				</a> -->
-			</th:block>
 
 			<a class="nav-link" th:href="@{/mypage}">
 				<div class="sb-nav-link-icon">

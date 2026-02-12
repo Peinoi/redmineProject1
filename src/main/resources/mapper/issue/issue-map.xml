@@ -1,396 +1,475 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.issue.mapper.IssueMapper">
-<!-- 목록 조회 -->
-<select id="selectVisibleIssues" resultType="IssueVO">
-  SELECT
-    i.issue_code,
-    i.project_code,
-    i.status_code,
-    i.title,
-    i.description,
-    i.priority,
-    i.assignee_code,
-    i.created_by_code,
-    i.created_at,
-    i.due_at,
-    i.started_at,
-    i.resolved_at,
-    i.updated_at,
-    i.progress,
-    i.position,
-    i.file_code,
+	<!-- 목록 조회 -->
+	<select id="selectVisibleIssues" resultType="IssueVO">
+		SELECT
+		i.issue_code,
+		i.project_code,
+		i.status_code,
+		i.title,
+		i.description,
+		i.priority,
+		i.assignee_code,
+		i.created_by_code,
+		i.created_at,
+		i.due_at,
+		i.started_at,
+		i.resolved_at,
+		i.updated_at,
+		CASE
+		WHEN i.due_at IS NOT NULL
+		AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
+		THEN 100
+		ELSE i.progress
+		END AS progress,
+		i.position,
+		i.file_code,
 
-    p.project_name,
+		p.project_name,
 
-    cs.code_name AS status_name,
-    cp.code_name AS priority_name,
+		cs.code_name AS status_name,
+		cp.code_name AS priority_name,
 
-    ua.name AS assignee_name,
-    uc.name AS creator_name,
+		ua.name AS assignee_name,
+		uc.name AS creator_name,
 
-    i.type_code,
-    t.type_name
+		i.type_code,
+		t.type_name
 
-  FROM issues i
-  LEFT JOIN projects p ON p.project_code = i.project_code
-  JOIN status s ON s.status_code = i.status_code
+		FROM issues i
+		LEFT JOIN projects p ON p.project_code = i.project_code
+		JOIN status s ON s.status_code = i.status_code
 
-  LEFT JOIN common_code cs
-    ON cs.code_id = s.code_id
-    AND cs.group_code = 'OB'
+		LEFT JOIN common_code cs
+		ON cs.code_id = s.code_id
+		AND cs.group_code = 'OB'
 
-  LEFT JOIN common_code cp
-    ON cp.code_id = i.priority
-    AND cp.group_code = 'OA'
+		LEFT JOIN common_code cp
+		ON cp.code_id = i.priority
+		AND cp.group_code = 'OA'
 
-  LEFT JOIN users ua ON ua.user_code = i.assignee_code
-  LEFT JOIN users uc ON uc.user_code = i.created_by_code
-  LEFT JOIN types t ON t.type_code = i.type_code
+		LEFT JOIN users ua ON ua.user_code = i.assignee_code
+		LEFT JOIN users uc ON uc.user_code = i.created_by_code
+		LEFT JOIN types t ON t.type_code = i.type_code
 
-  WHERE EXISTS (
-    SELECT 1
-    FROM vw_user_auth v
-    WHERE v.user_code = #{userCode}
-      AND v.project_code = i.project_code
-      AND (
-        (v.admin_ck = 'Y' AND v.status IN ('OD1','OD3'))
-        OR
-        (NVL(v.admin_ck,'N') = 'N' AND v.status = 'OD1')
-      )
-  )
+		WHERE EXISTS (
+		SELECT 1
+		FROM vw_user_auth v
+		WHERE v.user_code = #{userCode}
+		AND v.project_code = i.project_code
+		AND (
+		(v.admin_ck = 'Y' AND v.status IN ('OD1','OD3'))
+		OR
+		(NVL(v.admin_ck,'N') = 'N' AND v.status = 'OD1')
+		)
+		)
 
-  <if test="projectCode != null">
-    AND i.project_code = #{projectCode}
-  </if>
+		<if test="projectCode != null">
+			AND i.project_code = #{projectCode}
+		</if>
 
-  ORDER BY i.issue_code DESC
-</select>
-
-<!-- 단건 -->
-<select id="selectIssue" parameterType="IssueVO" resultType="IssueVO">
-	SELECT
-    i.issue_code,
-    i.project_code,
-    i.status_code,
-    i.title,
-    i.description,
-    i.priority,
-    i.assignee_code,
-    i.created_by_code,
-    i.created_at,
-    i.due_at,
-    i.started_at,
-    i.resolved_at,
-    i.updated_at,
-    i.progress,
-    i.position,
-    i.file_code,
-    
-    i.par_issue_code,
-    pi.title as par_issue_title,
-    
-    s.code_id AS status_id,
-
-    p.project_name,
-
-    cs.code_name AS status_name,
-    cp.code_name AS priority_name,
-    
-    ua.name AS assignee_name,
-    uc.name AS creator_name,
-    
-    ad.original_name,
-  	ad.path AS file_path,
-  	at.uploaded_at,
-  	
-  	i.type_code,
-    t.type_name,
-    
-    i.reject_code,
-	ir.reason AS reject_reason,
-	ir.rejected_by,
-	ur.name AS rejected_by_name,
-	ir.rejected_at
-
-  FROM issues i
-  LEFT JOIN projects p
-    ON p.project_code = i.project_code
-
-  JOIN status s
-    ON s.status_code = i.status_code
-
-  LEFT JOIN common_code cs
-    ON cs.code_id = s.code_id
-    AND cs.group_code = 'OB'
-
-  LEFT JOIN common_code cp
-    ON cp.code_id = i.priority
-    AND cp.group_code = 'OA'
-    
-    LEFT JOIN users ua
-    ON ua.user_code = i.assignee_code
-    
-	LEFT JOIN users uc 
-	ON uc.user_code = i.created_by_code
-	
-	LEFT JOIN attachments_detail ad
-  	ON ad.file_code = i.file_code
-    AND ad.is_used = 1
-    
-    LEFT JOIN attachments at
-    ON at.file_code = ad.file_code
-    
-    LEFT JOIN issues pi
-    ON i.par_issue_code = pi.issue_code
-    
-    LEFT JOIN types t
-	ON t.type_code = i.type_code
-	
-	LEFT JOIN issue_rejects ir
-  	ON ir.reject_code = i.reject_code
-
-	LEFT JOIN users ur
-  	ON ur.user_code = ir.rejected_by
-	
-	WHERE i.issue_code = #{issueCode}
+		ORDER BY i.issue_code DESC
 	</select>
-	
-<!-- 등록 -->
- <insert id="insertIssue" parameterType="com.yedam.app.issue.service.IssueVO">
-  <selectKey keyProperty="issueCode" resultType="long" order="BEFORE">
-    SELECT NVL(MAX(issue_code), 0) + 1
-    FROM issues
-  </selectKey>
 
-  INSERT INTO issues
-  <trim prefix="(" suffix=")" suffixOverrides=",">
-    issue_code,
-    project_code,
-    status_code,
-    title,
-    created_by_code,
-    created_at,
+	<!-- 단건 -->
+	<select id="selectIssue" parameterType="IssueVO"
+		resultType="IssueVO">
+		SELECT
+		i.issue_code,
+		i.project_code,
+		i.status_code,
+		i.title,
+		i.description,
+		i.priority,
+		i.assignee_code,
+		i.created_by_code,
+		i.created_at,
+		i.due_at,
+		i.started_at,
+		i.resolved_at,
+		i.updated_at,
+		CASE
+		WHEN i.due_at IS NOT NULL
+		AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
+		THEN 100
+		ELSE i.progress
+		END AS progress,
 
-    <if test="typeCode != null">
-      type_code,
-    </if>
+		i.position,
+		i.file_code,
 
-    <if test="description != null and description != ''">
-      description,
-    </if>
+		i.par_issue_code,
+		pi.title as par_issue_title,
 
-    <if test="priority != null and priority != ''">
-      priority,
-    </if>
+		s.code_id AS status_id,
 
-    <if test="assigneeCode != null">
-      assignee_code,
-    </if>
+		p.project_name,
 
-    <if test="dueAt != null">
-      due_at,
-    </if>
+		cs.code_name AS status_name,
+		cp.code_name AS priority_name,
 
-    <if test="progress != null">
-      progress,
-    </if>
+		ua.name AS assignee_name,
+		uc.name AS creator_name,
 
-    <if test="parIssueCode != null">
-      par_issue_code,
-    </if>
-  </trim>
+		ad.original_name,
+		ad.path AS file_path,
+		at.uploaded_at,
 
-  VALUES
-  <trim prefix="(" suffix=")" suffixOverrides=",">
-    #{issueCode},
-    #{projectCode},
+		i.type_code,
+		t.type_name,
 
-    (SELECT s.status_code
-       FROM status s
-      WHERE s.project_code = #{projectCode}
-        AND s.code_id = #{statusId}),
+		i.reject_code,
+		ir.reason AS reject_reason,
+		ir.rejected_by,
+		ur.name AS rejected_by_name,
+		ir.rejected_at
 
-    #{title},
-    #{createdByCode},
-    SYSTIMESTAMP,
+		FROM issues i
+		LEFT JOIN projects p
+		ON p.project_code = i.project_code
 
-    <if test="typeCode != null">
-      #{typeCode},
-    </if>
+		JOIN status s
+		ON s.status_code = i.status_code
 
-    <if test="description != null and description != ''">
-      #{description},
-    </if>
+		LEFT JOIN common_code cs
+		ON cs.code_id = s.code_id
+		AND cs.group_code = 'OB'
 
-    <if test="priority != null and priority != ''">
-      #{priority},
-    </if>
+		LEFT JOIN common_code cp
+		ON cp.code_id = i.priority
+		AND cp.group_code = 'OA'
 
-    <if test="assigneeCode != null">
-      #{assigneeCode},
-    </if>
+		LEFT JOIN users ua
+		ON ua.user_code = i.assignee_code
 
-    <if test="dueAt != null">
-      #{dueAt, jdbcType=TIMESTAMP},
-    </if>
+		LEFT JOIN users uc
+		ON uc.user_code = i.created_by_code
 
-    <if test="progress != null">
-      #{progress},
-    </if>
+		LEFT JOIN attachments_detail ad
+		ON ad.file_code = i.file_code
+		AND ad.is_used = 1
 
-    <if test="parIssueCode != null">
-      #{parIssueCode}
-    </if>
-  </trim>
-</insert>
- 
- 
- <!-- 첨부파일 등록 -->
- <update id="updateIssueFileCode">
-  UPDATE issues
-  SET file_code = #{fileCode}
-  WHERE issue_code = #{issueCode}
-</update>
- 
- 
- <!-- 삭제 -->
- <delete id="deleteIssues">
-  DELETE FROM issues
-  WHERE issue_code IN
-  <foreach collection="issueCodes" item="id" open="(" separator="," close=")">
-    #{id}
-  </foreach>
-</delete>
- 
- <select id="selectFileCodesByIssueCodes" resultType="long">
-  SELECT DISTINCT file_code
-  FROM issues
-  WHERE issue_code IN
-  <foreach collection="issueCodes" item="id" open="(" separator="," close=")">
-    #{id}
-  </foreach>
-  AND file_code IS NOT NULL
-</select>
+		LEFT JOIN attachments at
+		ON at.file_code = ad.file_code
 
-<select id="countIssuesByFileCode" resultType="int">
-  SELECT COUNT(*)
-  FROM issues
-  WHERE file_code = #{fileCode}
-</select>
- 
- 
-<!-- 수정 -->
-<update id="updateIssue">
-  UPDATE issues
-  <set>
-    title = #{issue.title},
-    description = #{issue.description},
-    priority = #{issue.priority},
+		LEFT JOIN issues pi
+		ON i.par_issue_code = pi.issue_code
 
-    <choose>
-      <when test="issue.parIssueCode != null">
-        par_issue_code = #{issue.parIssueCode},
-      </when>
-      <otherwise>
-        par_issue_code = NULL,
-      </otherwise>
-    </choose>
+		LEFT JOIN types t
+		ON t.type_code = i.type_code
 
-    <if test="issue.assigneeCode != null">
-      assignee_code = #{issue.assigneeCode},
-    </if>
+		LEFT JOIN issue_rejects ir
+		ON ir.reject_code = i.reject_code
 
-    <if test="issue.statusId != null and issue.statusId != ''">
-      status_code = (
-        SELECT s.status_code
-        FROM status s
-        WHERE s.project_code = #{issue.projectCode}
-          AND s.code_id = #{issue.statusId}
-      ),
-    </if>
+		LEFT JOIN users ur
+		ON ur.user_code = ir.rejected_by
 
-    <if test="issue.dueAt != null">
-      due_at = #{issue.dueAt, jdbcType=TIMESTAMP},
-    </if>
+		WHERE i.issue_code = #{issueCode}
+	</select>
 
-    <if test="issue.startedAt != null">
-      started_at = #{issue.startedAt, jdbcType=TIMESTAMP},
-    </if>
+	<!-- 등록 -->
+	<insert id="insertIssue"
+		parameterType="com.yedam.app.issue.service.IssueVO">
+		<selectKey keyProperty="issueCode" resultType="long"
+			order="BEFORE">
+			SELECT NVL(MAX(issue_code), 0) + 1
+			FROM issues
+		</selectKey>
 
-    <if test="issue.resolvedAt != null">
-      resolved_at = #{issue.resolvedAt, jdbcType=TIMESTAMP},
-    </if>
+		INSERT INTO issues
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			issue_code,
+			project_code,
+			status_code,
+			title,
+			created_by_code,
+			created_at,
 
-    <if test="issue.progress != null">
-      progress = #{issue.progress},
-    </if>
-    
-    <if test="issue.typeCode != null">
- 	 type_code = #{issue.typeCode},
-	</if>
+			<if test="typeCode != null">
+				type_code,
+			</if>
 
-    updated_at = SYSTIMESTAMP
-  </set>
- WHERE issue_code = #{issueCode}
-  AND (#{issue.parIssueCode} IS NULL OR #{issue.parIssueCode} != #{issueCode})
+			<if test="description != null and description != ''">
+				description,
+			</if>
 
-</update>
+			<if test="priority != null and priority != ''">
+				priority,
+			</if>
 
-<!-- 반려사유 등록 -->
-<insert id="insertIssueReject" parameterType="map">
-  <selectKey keyProperty="rejectCode" resultType="long" order="BEFORE">
-    SELECT NVL(MAX(reject_code), 0) + 1 FROM issue_rejects
-  </selectKey>
+			<if test="assigneeCode != null">
+				assignee_code,
+			</if>
 
-  INSERT INTO issue_rejects (
-    reject_code, issue_code, rejected_by, rejected_at, reason
-  ) VALUES (
-    #{rejectCode}, #{issueCode}, #{rejectedBy}, SYSTIMESTAMP, #{reason}
-  )
-</insert>
+			<if test="dueAt != null">
+				due_at,
+			</if>
 
-<!-- 일감과 연결 -->
-<update id="setIssueRejectCode">
-  UPDATE issues
-  SET reject_code = #{rejectCode},
-      updated_at = SYSTIMESTAMP
-  WHERE issue_code = #{issueCode}
-</update>
+			<if test="progress != null">
+				progress,
+			</if>
 
-<!-- 상태변경 -->
+			<if test="parIssueCode != null">
+				par_issue_code,
+			</if>
+		</trim>
+
+		VALUES
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			#{issueCode},
+			#{projectCode},
+
+			(SELECT s.status_code
+			FROM status s
+			WHERE s.project_code = #{projectCode}
+			AND s.code_id = #{statusId}),
+
+			#{title},
+			#{createdByCode},
+			SYSTIMESTAMP,
+
+			<if test="typeCode != null">
+				#{typeCode},
+			</if>
+
+			<if test="description != null and description != ''">
+				#{description},
+			</if>
+
+			<if test="priority != null and priority != ''">
+				#{priority},
+			</if>
+
+			<if test="assigneeCode != null">
+				#{assigneeCode},
+			</if>
+
+			<if test="dueAt != null">
+				#{dueAt, jdbcType=TIMESTAMP},
+			</if>
+
+			<if test="progress != null">
+				CASE
+				WHEN #{dueAt, jdbcType=TIMESTAMP} IS NOT NULL
+				AND TRUNC(#{dueAt, jdbcType=TIMESTAMP}) &lt; TRUNC(SYSDATE)
+				THEN 100
+				ELSE #{progress}
+				END
+			</if>
+
+
+
+			<if test="parIssueCode != null">
+				#{parIssueCode}
+			</if>
+		</trim>
+	</insert>
+
+
+	<!-- 첨부파일 등록 -->
+	<update id="updateIssueFileCode">
+		UPDATE issues
+		SET file_code = #{fileCode}
+		WHERE issue_code = #{issueCode}
+	</update>
+
+
+	<!-- 삭제 -->
+	<delete id="deleteIssues">
+		DELETE FROM issues
+		WHERE issue_code IN
+		<foreach collection="issueCodes" item="id" open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+	</delete>
+
+	<select id="selectFileCodesByIssueCodes" resultType="long">
+		SELECT DISTINCT file_code
+		FROM issues
+		WHERE issue_code IN
+		<foreach collection="issueCodes" item="id" open="("
+			separator="," close=")">
+			#{id}
+		</foreach>
+		AND file_code IS NOT NULL
+	</select>
+
+	<select id="countIssuesByFileCode" resultType="int">
+		SELECT COUNT(*)
+		FROM issues
+		WHERE file_code = #{fileCode}
+	</select>
+
+
+	<!-- 수정 -->
+	<update id="updateIssue">
+		UPDATE issues
+		<set>
+			title = #{issue.title},
+			description = #{issue.description},
+			priority = #{issue.priority},
+
+			<choose>
+				<when test="issue.parIssueCode != null">
+					par_issue_code = #{issue.parIssueCode},
+				</when>
+				<otherwise>
+					par_issue_code = NULL,
+				</otherwise>
+			</choose>
+
+			<if test="issue.assigneeCode != null">
+				assignee_code = #{issue.assigneeCode},
+			</if>
+
+			<if test="issue.statusId != null and issue.statusId != ''">
+				status_code = (
+				SELECT s.status_code
+				FROM status s
+				WHERE s.project_code = #{issue.projectCode}
+				AND s.code_id = #{issue.statusId}
+				),
+			</if>
+
+			<if test="issue.dueAt != null">
+				due_at = #{issue.dueAt, jdbcType=TIMESTAMP},
+			</if>
+
+			<if test="issue.startedAt != null">
+				started_at =
+				CASE
+				WHEN started_at IS NULL THEN #{issue.startedAt, jdbcType=TIMESTAMP}
+				ELSE started_at
+				END,
+			</if>
+
+			<if test="issue.resolvedAt != null">
+				resolved_at = #{issue.resolvedAt, jdbcType=TIMESTAMP},
+			</if>
+
+			progress =
+			CASE
+			WHEN NVL(#{issue.dueAt, jdbcType=TIMESTAMP}, due_at) IS NOT NULL
+			AND TRUNC(NVL(#{issue.dueAt, jdbcType=TIMESTAMP}, due_at)) &lt;
+			TRUNC(SYSDATE)
+			THEN 100
+			ELSE NVL(#{issue.progress}, progress)
+			END,
+
+
+			<if test="issue.typeCode != null">
+				type_code = #{issue.typeCode},
+			</if>
+
+			updated_at = SYSTIMESTAMP
+		</set>
+		WHERE issue_code = #{issueCode}
+		AND (#{issue.parIssueCode} IS NULL OR #{issue.parIssueCode} !=
+		#{issueCode})
+
+	</update>
+
+	<!-- 반려사유 등록 -->
+	<insert id="insertIssueReject" parameterType="map">
+		<selectKey keyProperty="rejectCode" resultType="long"
+			order="BEFORE">
+			SELECT NVL(MAX(reject_code), 0) + 1 FROM issue_rejects
+		</selectKey>
+
+		INSERT INTO issue_rejects (
+		reject_code, issue_code, rejected_by, rejected_at, reason
+		) VALUES (
+		#{rejectCode}, #{issueCode}, #{rejectedBy}, SYSTIMESTAMP, #{reason}
+		)
+	</insert>
+
+	<!-- 일감과 연결 -->
+	<update id="setIssueRejectCode">
+		UPDATE issues
+		SET reject_code = #{rejectCode},
+		updated_at = SYSTIMESTAMP
+		WHERE issue_code = #{issueCode}
+	</update>
+
+	<!-- 상태변경 -->
 <update id="updateIssueStatusByStatusId">
   UPDATE issues
-  SET status_code = (
-        SELECT s.status_code
-        FROM status s
-        WHERE s.project_code = #{projectCode}
-          AND s.code_id = #{statusId}
-      ),
-      progress =
-        CASE
-          WHEN #{statusId} = 'OB4' THEN 50
-          WHEN #{statusId} = 'OB5' THEN 100
-          ELSE progress
-        END,
-      updated_at = SYSTIMESTAMP
+  SET
+    status_code = (
+      SELECT s.status_code
+      FROM status s
+      WHERE s.project_code = #{projectCode}
+        AND s.code_id = #{statusId}
+    ),
+
+    started_at = CASE
+      WHEN started_at IS NULL AND #{statusId} != 'OB1' THEN SYSTIMESTAMP
+      ELSE started_at
+    END,
+
+    progress = CASE
+      WHEN due_at IS NOT NULL
+       AND TRUNC(due_at) &lt; TRUNC(SYSDATE)
+      THEN 100
+      WHEN #{statusId} = 'OB1' THEN 0
+      WHEN #{statusId} = 'OB3' THEN 95
+      WHEN #{statusId} = 'OB4' THEN 50
+      WHEN #{statusId} = 'OB5' THEN 100
+      ELSE progress
+    END,
+
+    resolved_at = CASE
+      WHEN #{statusId} = 'OB5' AND resolved_at IS NULL THEN SYSTIMESTAMP
+      ELSE resolved_at
+    END,
+
+    updated_at = SYSTIMESTAMP
   WHERE issue_code = #{issueCode}
 </update>
 
-<!-- 반려이력 조회 -->
- <select id="selectRejectHistory" resultType="IssueVO">
-  SELECT
-    ir.reject_code,
-    ir.issue_code,
-    ir.rejected_by,
-    ur.name AS rejected_by_name,
-    ir.rejected_at,
-    ir.reason AS reject_reason
-  FROM issue_rejects ir
-  LEFT JOIN users ur
-    ON ur.user_code = ir.rejected_by
-  WHERE ir.issue_code = #{issueCode}
-  ORDER BY ir.rejected_at DESC, ir.reject_code DESC
-</select>
- 
+
+	<!-- 반려이력 조회 -->
+	<select id="selectRejectHistory" resultType="IssueVO">
+		SELECT
+		ir.reject_code,
+		ir.issue_code,
+		ir.rejected_by,
+		ur.name AS rejected_by_name,
+		ir.rejected_at,
+		ir.reason AS reject_reason
+		FROM issue_rejects ir
+		LEFT JOIN users ur
+		ON ur.user_code = ir.rejected_by
+		WHERE ir.issue_code = #{issueCode}
+		ORDER BY ir.rejected_at DESC, ir.reject_code DESC
+	</select>
+
+	<!-- 해결 + 첨부파일 -->
+	<update id="resolveIssueWithFile">
+		UPDATE issues
+		SET
+		status_code = (
+		SELECT s.status_code
+		FROM status s
+		WHERE s.project_code = #{projectCode}
+		AND s.code_id = 'OB3'
+		),
+
+		started_at = NVL(started_at, SYSDATE),
+
+		progress = CASE
+		WHEN due_at IS NOT NULL
+		AND TRUNC(due_at) &lt; TRUNC(SYSDATE)
+		THEN 100
+		ELSE 95
+		END,
+
+		file_code = #{fileCode},
+		updated_at = SYSTIMESTAMP
+		WHERE issue_code = #{issueCode}
+	</update>
+
+
 </mapper>

@@ -326,4 +326,41 @@ public class IssueController {
     res.put("data", issueService.findRejectHistory(issueCode));
     return res;
   }
+  
+  // 해결 + 첨부
+  @ResponseBody
+  @PostMapping(value = "/api/issues/{issueCode}/resolve", consumes = "multipart/form-data")
+  public Map<String, Object> resolve(
+      @PathVariable Long issueCode,
+      @RequestParam("uploadFile") MultipartFile uploadFile,
+      HttpSession session
+  ) {
+    Map<String, Object> res = new java.util.HashMap<>();
+
+    UserVO user = (UserVO) session.getAttribute("user");
+    if (user == null) {
+      res.put("success", false);
+      res.put("message", "LOGIN_REQUIRED");
+      return res;
+    }
+
+    IssueVO tmp = new IssueVO();
+    tmp.setIssueCode(issueCode);
+    IssueVO issue = issueService.findByIssueCode(tmp);
+    if (issue == null) {
+      res.put("success", false);
+      res.put("message", "NOT_FOUND");
+      return res;
+    }
+
+    boolean canModify = authorityService.canModify(issue.getProjectCode(), user.getUserCode(), "일감");
+    if (!canModify) {
+      res.put("success", false);
+      res.put("message", "권한이 없습니다.");
+      return res;
+    }
+
+    return issueService.resolveIssue(issueCode, user.getUserCode(), uploadFile);
+  }
+
 }

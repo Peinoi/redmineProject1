@@ -44,5 +44,8 @@ public interface IssueMapper {
 	// 반려이력 목록 조회
 	List<IssueVO> selectRejectHistory(@Param("issueCode") Long issueCode);
 
-
+	// 해결 + 첨부파일 등록
+	int resolveIssueWithFile(@Param("issueCode") Long issueCode, @Param("projectCode") Long projectCode,
+		    @Param("fileCode") Long fileCode
+		);
 }

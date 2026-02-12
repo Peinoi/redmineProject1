@@ -91,4 +91,34 @@ public class KanbanController {
       return Map.of("success", false, "message", e.getMessage());
     }
   }
+  
+  // 진척도 업데이트
+  @ResponseBody
+  @PostMapping("/api/issues/progress")
+  public Map<String, Object> updateProgress(@RequestBody com.yedam.app.kanban.web.dto.ProgressUpdateRequest req,
+                                           HttpSession session) {
+    UserVO user = (UserVO) session.getAttribute("user");
+    if (user == null || user.getUserCode() == null) {
+      return Map.of("success", false, "message", "로그인 정보가 없습니다.");
+    }
+    Integer userCode = user.getUserCode().intValue();
+
+    if (req == null || req.getProjectCode() == null || req.getIssueCode() == null || req.getProgress() == null) {
+      return Map.of("success", false, "message", "요청 값이 올바르지 않습니다.");
+    }
+
+    // 권한 체크
+    boolean canModify = authorityService.canModify(req.getProjectCode(), userCode, "일감");
+    if (!canModify) {
+      return Map.of("success", false, "message", "권한이 없습니다.");
+    }
+
+    try {
+      kanbanService.updateProgress(userCode, req.getProjectCode(), req.getIssueCode(), req.getProgress());
+      return Map.of("success", true);
+    } catch (Exception e) {
+      return Map.of("success", false, "message", e.getMessage());
+    }
+  }
+
 }

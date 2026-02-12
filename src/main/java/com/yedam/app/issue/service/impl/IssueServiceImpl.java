@@ -39,7 +39,6 @@ public class IssueServiceImpl implements IssueService {
     int result = issueMapper.insertIssue(issue);
     if (result != 1) return null;
 
-    // CREATE 로그: meta는 굳이 필요 없으니 null
     logService.addActionLog(
       issue.getProjectCode(),
       issue.getCreatedByCode(),
@@ -63,10 +62,8 @@ public class IssueServiceImpl implements IssueService {
       return result;
     }
 
-    // 수정 전 데이터(before)
     IssueVO before = issueMapper.selectIssue(issue);
 
-    // 1) 내용 수정
     int updated = issueMapper.updateIssue(issue.getIssueCode(), issue);
     if (updated <= 0) {
       result.put("success", false);
@@ -75,7 +72,6 @@ public class IssueServiceImpl implements IssueService {
       return result;
     }
 
-    // 2) 파일이 있으면 첨부 저장 -> fileCode 얻기 (파일 로그는 지금은 안 찍음)
     if (uploadFile != null && !uploadFile.isEmpty()) {
       Long fileCode = attachmentService.saveSingleFile("ISSUE", userCode, uploadFile);
       if (fileCode != null) {
@@ -83,10 +79,8 @@ public class IssueServiceImpl implements IssueService {
       }
     }
 
-    // 수정 후 데이터(after)
     IssueVO after = issueMapper.selectIssue(issue);
 
-    // UPDATE 로그: meta에는 changes만
     String meta = buildUpdateMeta(before, after);
 
     logService.addActionLog(
@@ -136,252 +130,328 @@ public class IssueServiceImpl implements IssueService {
     if (fileCode != null) {
       issueMapper.updateIssueFileCode(issueCode, fileCode);
     }
-
   }
 
   // -----------------------------
-  // meta 만들기(UPDATE용): changes만
+  // meta 만들기(UPDATE용): changes
   // -----------------------------
   private String buildUpdateMeta(IssueVO before, IssueVO after) {
-	  StringBuilder sb = new StringBuilder();
-	  sb.append("{\"changes\":[");
+    StringBuilder sb = new StringBuilder();
+    sb.append("{\"changes\":[");
 
-	  boolean first = true;
+    boolean first = true;
 
-	  // title/description 같은 건 원문 그대로
-	  first = appendChange(sb, first, "title",
-	      before == null ? null : before.getTitle(),
-	      after == null ? null : after.getTitle());
+    first = appendChange(sb, first, "title",
+        before == null ? null : before.getTitle(),
+        after == null ? null : after.getTitle());
 
-	  first = appendChange(sb, first, "description",
-	      before == null ? null : before.getDescription(),
-	      after == null ? null : after.getDescription());
+    first = appendChange(sb, first, "description",
+        before == null ? null : before.getDescription(),
+        after == null ? null : after.getDescription());
 
-	  // 우선순위: 비교는 코드, 저장은 이름
-	  first = appendChangeByCode(sb, first, "priority",
-	      before == null ? null : before.getPriority(),
-	      after == null ? null : after.getPriority(),
-	      before == null ? null : before.getPriorityName(),
-	      after == null ? null : after.getPriorityName());
+    first = appendChangeByCode(sb, first, "priority",
+        before == null ? null : before.getPriority(),
+        after == null ? null : after.getPriority(),
+        before == null ? null : before.getPriorityName(),
+        after == null ? null : after.getPriorityName());
 
-	  // 상태: 비교는 statusId(OB1...), 저장은 statusName(신규/진행/완료...)
-	  first = appendChangeByCode(sb, first, "status",
-	      before == null ? null : before.getStatusId(),
-	      after == null ? null : after.getStatusId(),
-	      before == null ? null : before.getStatusName(),
-	      after == null ? null : after.getStatusName());
+    first = appendChangeByCode(sb, first, "status",
+        before == null ? null : before.getStatusId(),
+        after == null ? null : after.getStatusId(),
+        before == null ? null : before.getStatusName(),
+        after == null ? null : after.getStatusName());
 
-	  // 담당자: 비교는 assigneeCode, 저장은 assigneeName
-	  first = appendChangeByCode(sb, first, "assignee",
-	      before == null || before.getAssigneeCode() == null ? null : String.valueOf(before.getAssigneeCode()),
-	      after == null || after.getAssigneeCode() == null ? null : String.valueOf(after.getAssigneeCode()),
-	      before == null ? null : before.getAssigneeName(),
-	      after == null ? null : after.getAssigneeName());
+    first = appendChangeByCode(sb, first, "assignee",
+        before == null || before.getAssigneeCode() == null ? null : String.valueOf(before.getAssigneeCode()),
+        after == null || after.getAssigneeCode() == null ? null : String.valueOf(after.getAssigneeCode()),
+        before == null ? null : before.getAssigneeName(),
+        after == null ? null : after.getAssigneeName());
 
-	  // 유형: 비교는 typeCode, 저장은 typeName
-	  first = appendChangeByCode(sb, first, "type",
-	      before == null || before.getTypeCode() == null ? null : String.valueOf(before.getTypeCode()),
-	      after == null || after.getTypeCode() == null ? null : String.valueOf(after.getTypeCode()),
-	      before == null ? null : before.getTypeName(),
-	      after == null ? null : after.getTypeName());
+    first = appendChangeByCode(sb, first, "type",
+        before == null || before.getTypeCode() == null ? null : String.valueOf(before.getTypeCode()),
+        after == null || after.getTypeCode() == null ? null : String.valueOf(after.getTypeCode()),
+        before == null ? null : before.getTypeName(),
+        after == null ? null : after.getTypeName());
 
-	  // 상위일감: 비교는 parIssueCode, 저장은 parIssueTitle
-	  first = appendChangeByCode(sb, first, "parentIssue",
-	      before == null || before.getParIssueCode() == null ? null : String.valueOf(before.getParIssueCode()),
-	      after == null || after.getParIssueCode() == null ? null : String.valueOf(after.getParIssueCode()),
-	      before == null ? null : before.getParIssueTitle(),
-	      after == null ? null : after.getParIssueTitle());
+    first = appendChangeByCode(sb, first, "parentIssue",
+        before == null || before.getParIssueCode() == null ? null : String.valueOf(before.getParIssueCode()),
+        after == null || after.getParIssueCode() == null ? null : String.valueOf(after.getParIssueCode()),
+        before == null ? null : before.getParIssueTitle(),
+        after == null ? null : after.getParIssueTitle());
 
-	  // 날짜/숫자류는 그대로
-	  first = appendChange(sb, first, "dueAt",
-	      before == null || before.getDueAt() == null ? null : before.getDueAt().toString(),
-	      after == null || after.getDueAt() == null ? null : after.getDueAt().toString());
+    first = appendChange(sb, first, "dueAt",
+        before == null || before.getDueAt() == null ? null : before.getDueAt().toString(),
+        after == null || after.getDueAt() == null ? null : after.getDueAt().toString());
 
-	  first = appendChange(sb, first, "startedAt",
-	      before == null || before.getStartedAt() == null ? null : before.getStartedAt().toString(),
-	      after == null || after.getStartedAt() == null ? null : after.getStartedAt().toString());
+    first = appendChange(sb, first, "startedAt",
+        before == null || before.getStartedAt() == null ? null : before.getStartedAt().toString(),
+        after == null || after.getStartedAt() == null ? null : after.getStartedAt().toString());
 
-	  first = appendChange(sb, first, "resolvedAt",
-	      before == null || before.getResolvedAt() == null ? null : before.getResolvedAt().toString(),
-	      after == null || after.getResolvedAt() == null ? null : after.getResolvedAt().toString());
+    first = appendChange(sb, first, "resolvedAt",
+        before == null || before.getResolvedAt() == null ? null : before.getResolvedAt().toString(),
+        after == null || after.getResolvedAt() == null ? null : after.getResolvedAt().toString());
 
-	  first = appendChange(sb, first, "progress",
-	      before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
-	      after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress()));
+    first = appendChange(sb, first, "progress",
+        before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
+        after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress()));
 
-	  sb.append("]}");
-	  return sb.toString();
-	}
+    sb.append("]}");
+    return sb.toString();
+  }
 
-	// "변경 감지"는 code로 하고, "기록"은 display(이름)로 함
-	private boolean appendChangeByCode(StringBuilder sb, boolean first, String field,
-	                                  String beforeCode, String afterCode,
-	                                  String beforeDisplay, String afterDisplay) {
-	  if (beforeCode == null && afterCode == null) return first;
-	  if (beforeCode != null && beforeCode.equals(afterCode)) return first;
+  private boolean appendChangeByCode(StringBuilder sb, boolean first, String field,
+                                    String beforeCode, String afterCode,
+                                    String beforeDisplay, String afterDisplay) {
+    if (beforeCode == null && afterCode == null) return first;
+    if (beforeCode != null && beforeCode.equals(afterCode)) return first;
 
-	  if (!first) sb.append(",");
-	  sb.append("{\"field\":\"").append(esc(field)).append("\",")
-	    .append("\"before\":").append(jsonValue(normalizeDisplay(beforeDisplay))).append(",")
-	    .append("\"after\":").append(jsonValue(normalizeDisplay(afterDisplay))).append("}");
+    if (!first) sb.append(",");
+    sb.append("{\"field\":\"").append(esc(field)).append("\",")
+      .append("\"before\":").append(jsonValue(normalizeDisplay(beforeDisplay))).append(",")
+      .append("\"after\":").append(jsonValue(normalizeDisplay(afterDisplay))).append("}");
 
-	  return false;
-	}
+    return false;
+  }
 
-	private String normalizeDisplay(String s) {
-	  if (s == null || s.isBlank()) return "-";
-	  return s;
-	}
+  private boolean appendChange(StringBuilder sb, boolean first, String field, String before, String after) {
+    if (before == null && after == null) return first;
+    if (before != null && before.equals(after)) return first;
 
-	private boolean appendChange(StringBuilder sb, boolean first, String field, String before, String after) {
-	  if (before == null && after == null) return first;
-	  if (before != null && before.equals(after)) return first;
+    if (!first) sb.append(",");
+    sb.append("{\"field\":\"").append(esc(field)).append("\",")
+      .append("\"before\":").append(jsonValue(before)).append(",")
+      .append("\"after\":").append(jsonValue(after)).append("}");
 
-	  if (!first) sb.append(",");
-	  sb.append("{\"field\":\"").append(esc(field)).append("\",")
-	    .append("\"before\":").append(jsonValue(before)).append(",")
-	    .append("\"after\":").append(jsonValue(after)).append("}");
+    return false;
+  }
 
-	  return false;
-	}
+  private String normalizeDisplay(String s) {
+    if (s == null || s.isBlank()) return "-";
+    return s;
+  }
 
-	private String jsonValue(String v) {
-	  if (v == null) return "null";
-	  return "\"" + esc(v) + "\"";
-	}
+  private String jsonValue(String v) {
+    if (v == null) return "null";
+    return "\"" + esc(v) + "\"";
+  }
 
-	private String esc(String s) {
-	  if (s == null) return "";
-	  return s.replace("\\", "\\\\")
-	          .replace("\"", "\\\"")
-	          .replace("\n", "\\n")
-	          .replace("\r", "\\r")
-	          .replace("\t", "\\t");
-	}
+  private String esc(String s) {
+    if (s == null) return "";
+    return s.replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
+  }
 
-	// 승인
-	@Override
-	@Transactional
-	public Map<String, Object> approveIssue(Long issueCode, Integer userCode) {
-	  Map<String, Object> res = new java.util.HashMap<>();
+  // -----------------------------
+  // REJECT에서만 반려사유를 meta에 "추가"
+  // -----------------------------
+  private String addRejectReasonToMeta(String meta, String reason) {
+    String r = (reason == null) ? null : reason.trim();
+    if (r == null || r.isEmpty()) return meta;
 
-	  if (issueCode == null) {
-	    res.put("success", false);
-	    res.put("message", "issueCode가 없습니다.");
-	    return res;
-	  }
+    if (meta == null || meta.isBlank() || !meta.contains("\"changes\"")) {
+      return "{\"changes\":[{\"field\":\"rejectReason\",\"before\":null,\"after\":\"" + esc(r) + "\"}]}";
+    }
 
-	  IssueVO param = new IssueVO();
-	  param.setIssueCode(issueCode);
+    if (meta.contains("\"changes\":[]")) {
+      return meta.replace("\"changes\":[]",
+          "\"changes\":[{\"field\":\"rejectReason\",\"before\":null,\"after\":\"" + esc(r) + "\"}]");
+    }
 
-	  IssueVO before = issueMapper.selectIssue(param);
-	  if (before == null) {
-	    res.put("success", false);
-	    res.put("message", "일감을 찾을 수 없습니다.");
-	    return res;
-	  }
+    int pos = meta.lastIndexOf("]}");
+    if (pos < 0) return meta;
 
-	  // 상태를 완료(OB5)로 변경
-	  int updated = issueMapper.updateIssueStatusByStatusId(
-	      issueCode, before.getProjectCode(), "OB5"
-	  );
+    String insert = ",{\"field\":\"rejectReason\",\"before\":null,\"after\":\"" + esc(r) + "\"}";
+    return meta.substring(0, pos) + insert + meta.substring(pos);
+  }
 
-	  if (updated <= 0) {
-	    res.put("success", false);
-	    res.put("message", "승인 처리에 실패했습니다.");
-	    return res;
-	  }
+  // 승인
+  @Override
+  @Transactional
+  public Map<String, Object> approveIssue(Long issueCode, Integer userCode) {
+    Map<String, Object> res = new java.util.HashMap<>();
 
-	  IssueVO after = issueMapper.selectIssue(param);
+    if (issueCode == null) {
+      res.put("success", false);
+      res.put("message", "issueCode가 없습니다.");
+      return res;
+    }
 
-	  // 로그
-	  logService.addActionLog(
-	      after.getProjectCode(),
-	      userCode,
-	      "APPROVE",
-	      "ISSUE",
-	      after.getIssueCode(),
-	      "{\"changes\":[{\"field\":\"status\",\"before\":\"" + before.getStatusName() + "\",\"after\":\"" + after.getStatusName() + "\"}]}"
-	  );
+    IssueVO param = new IssueVO();
+    param.setIssueCode(issueCode);
 
-	  res.put("success", true);
-	  res.put("message", "승인 처리되었습니다.");
-	  res.put("data", after);
-	  return res;
-	}
+    IssueVO before = issueMapper.selectIssue(param);
+    if (before == null) {
+      res.put("success", false);
+      res.put("message", "일감을 찾을 수 없습니다.");
+      return res;
+    }
 
-	// 반려
-	@Override
-	@Transactional
-	public Map<String, Object> rejectIssue(Long issueCode, Integer userCode, String reason) {
-	  Map<String, Object> res = new java.util.HashMap<>();
+    int updated = issueMapper.updateIssueStatusByStatusId(
+        issueCode, before.getProjectCode(), "OB5"
+    );
 
-	  if (issueCode == null) {
-	    res.put("success", false);
-	    res.put("message", "issueCode가 없습니다.");
-	    return res;
-	  }
-	  if (reason == null || reason.trim().isEmpty()) {
-	    res.put("success", false);
-	    res.put("message", "반려 사유를 입력해 주세요.");
-	    return res;
-	  }
+    if (updated <= 0) {
+      res.put("success", false);
+      res.put("message", "승인 처리에 실패했습니다.");
+      return res;
+    }
 
-	  IssueVO param = new IssueVO();
-	  param.setIssueCode(issueCode);
+    IssueVO after = issueMapper.selectIssue(param);
 
-	  IssueVO before = issueMapper.selectIssue(param);
-	  if (before == null) {
-	    res.put("success", false);
-	    res.put("message", "일감을 찾을 수 없습니다.");
-	    return res;
-	  }
+    String meta = buildUpdateMeta(before, after);
 
-	  // 1) 반려 레코드 insert (Map으로 rejectCode 받아오기)
-	  java.util.Map<String, Object> p = new java.util.HashMap<>();
-	  p.put("issueCode", issueCode);
-	  p.put("rejectedBy", userCode);
-	  p.put("reason", reason.trim());
+    logService.addActionLog(
+        after.getProjectCode(),
+        userCode,
+        "APPROVE",
+        "ISSUE",
+        after.getIssueCode(),
+        meta
+    );
 
-	  int ins = issueMapper.insertIssueReject(p);
-	  if (ins <= 0) {
-	    res.put("success", false);
-	    res.put("message", "반려 사유 저장에 실패했습니다.");
-	    return res;
-	  }
+    res.put("success", true);
+    res.put("message", "승인 처리되었습니다.");
+    res.put("data", after);
+    return res;
+  }
 
-	  Long rejectCode = (Long) p.get("rejectCode");
+  // 반려
+  @Override
+  @Transactional
+  public Map<String, Object> rejectIssue(Long issueCode, Integer userCode, String reason) {
+    Map<String, Object> res = new java.util.HashMap<>();
 
-	  // 2) issues.reject_code 업데이트
-	  issueMapper.setIssueRejectCode(issueCode, rejectCode);
+    if (issueCode == null) {
+      res.put("success", false);
+      res.put("message", "issueCode가 없습니다.");
+      return res;
+    }
+    if (reason == null || reason.trim().isEmpty()) {
+      res.put("success", false);
+      res.put("message", "반려 사유를 입력해 주세요.");
+      return res;
+    }
 
-	  // 3) 상태를 반려(OB4)로 변경
-	  issueMapper.updateIssueStatusByStatusId(
-	      issueCode, before.getProjectCode(), "OB4"
-	  );
+    IssueVO param = new IssueVO();
+    param.setIssueCode(issueCode);
 
-	  IssueVO after = issueMapper.selectIssue(param);
+    IssueVO before = issueMapper.selectIssue(param);
+    if (before == null) {
+      res.put("success", false);
+      res.put("message", "일감을 찾을 수 없습니다.");
+      return res;
+    }
 
-	  // 로그
-	  logService.addActionLog(
-	      after.getProjectCode(),
-	      userCode,
-	      "REJECT",
-	      "ISSUE",
-	      after.getIssueCode(),
-	      "{\"changes\":[{\"field\":\"status\",\"before\":\"" + before.getStatusName() + "\",\"after\":\"" + after.getStatusName() + "\"},{\"field\":\"rejectReason\",\"before\":null,\"after\":\"" + reason.trim().replace("\"","\\\"") + "\"}]}"
-	  );
+    java.util.Map<String, Object> p = new java.util.HashMap<>();
+    p.put("issueCode", issueCode);
+    p.put("rejectedBy", userCode);
+    p.put("reason", reason.trim());
 
-	  res.put("success", true);
-	  res.put("message", "반려 처리되었습니다.");
-	  res.put("data", after);
-	  return res;
-	}
+    int ins = issueMapper.insertIssueReject(p);
+    if (ins <= 0) {
+      res.put("success", false);
+      res.put("message", "반려 사유 저장에 실패했습니다.");
+      return res;
+    }
 
-	// 반려이력조회
-	@Override
-	public List<IssueVO> findRejectHistory(Long issueCode) {
-	  return issueMapper.selectRejectHistory(issueCode);
-	}
+    Long rejectCode = (Long) p.get("rejectCode");
 
+    issueMapper.setIssueRejectCode(issueCode, rejectCode);
+
+    issueMapper.updateIssueStatusByStatusId(
+        issueCode, before.getProjectCode(), "OB4"
+    );
+
+    IssueVO after = issueMapper.selectIssue(param);
+
+    // 일반 변경(meta) + 반려사유는 REJECT에서만 추가
+    String meta = buildUpdateMeta(before, after);
+    meta = addRejectReasonToMeta(meta, reason);
+
+    logService.addActionLog(
+        after.getProjectCode(),
+        userCode,
+        "REJECT",
+        "ISSUE",
+        after.getIssueCode(),
+        meta
+    );
+
+    res.put("success", true);
+    res.put("message", "반려 처리되었습니다.");
+    res.put("data", after);
+    return res;
+  }
+
+  // 반려이력조회
+  @Override
+  public List<IssueVO> findRejectHistory(Long issueCode) {
+    return issueMapper.selectRejectHistory(issueCode);
+  }
+
+  // 해결 + 첨부
+  @Override
+  @Transactional
+  public Map<String, Object> resolveIssue(Long issueCode, Integer userCode, MultipartFile uploadFile) {
+    Map<String, Object> res = new java.util.HashMap<>();
+
+    if (issueCode == null) {
+      res.put("success", false);
+      res.put("message", "issueCode가 없습니다.");
+      return res;
+    }
+    if (uploadFile == null || uploadFile.isEmpty()) {
+      res.put("success", false);
+      res.put("message", "첨부파일을 선택해 주세요.");
+      return res;
+    }
+
+    IssueVO param = new IssueVO();
+    param.setIssueCode(issueCode);
+
+    IssueVO before = issueMapper.selectIssue(param);
+    if (before == null) {
+      res.put("success", false);
+      res.put("message", "일감을 찾을 수 없습니다.");
+      return res;
+    }
+
+    Long fileCode = attachmentService.saveSingleFile("ISSUE", userCode, uploadFile);
+    if (fileCode == null) {
+      res.put("success", false);
+      res.put("message", "파일 저장에 실패했습니다.");
+      return res;
+    }
+
+    int updated = issueMapper.resolveIssueWithFile(issueCode, before.getProjectCode(), fileCode);
+    if (updated <= 0) {
+      attachmentService.deleteSingleFile(fileCode);
+      res.put("success", false);
+      res.put("message", "해결 처리에 실패했습니다.");
+      return res;
+    }
+
+    IssueVO after = issueMapper.selectIssue(param);
+
+    // resolve/update는 그냥 일반 변경만 (rejectReason 절대 넣지 않음)
+    String meta = buildUpdateMeta(before, after);
+
+    logService.addActionLog(
+        after.getProjectCode(),
+        userCode,
+        "UPDATE",
+        "ISSUE",
+        after.getIssueCode(),
+        meta
+    );
+
+    res.put("success", true);
+    res.put("message", "해결 처리되었습니다.");
+    res.put("data", after);
+    res.put("fileCode", fileCode);
+    return res;
+  }
 }

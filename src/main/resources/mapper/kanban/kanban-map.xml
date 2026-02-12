@@ -3,142 +3,182 @@
 
 <mapper namespace="com.yedam.app.kanban.mapper.KanbanMapper">
 
-  <select id="selectKanbanIssuesByScope" resultType="IssueVO">
-  SELECT
-    i.issue_code       AS issueCode,
-    i.project_code     AS projectCode,
+	<select id="selectKanbanIssuesByScope" resultType="IssueVO">
+		SELECT
+		i.issue_code AS issueCode,
+		i.project_code AS projectCode,
 
-    i.status_code      AS statusCode,
-    s.code_id          AS statusId,
-    cs.code_name 	   AS statusName,
+		i.status_code AS statusCode,
+		s.code_id AS statusId,
+		cs.code_name AS
+		statusName,
 
-    i.title            AS title,
-    i.priority         AS priority,
-    cp.code_name 	   AS priorityName,
+		i.title AS title,
+		i.priority AS priority,
+		cp.code_name AS
+		priorityName,
 
-    i.assignee_code    AS assigneeCode,
-    au.name            AS assigneeName,
+		i.assignee_code AS assigneeCode,
+		au.name AS assigneeName,
 
-    i.created_by_code  AS createdByCode,
-    cu.name            AS creatorName,
+		i.created_by_code AS createdByCode,
+		cu.name AS creatorName,
 
-    i.created_at       AS createdAt,
-    i.due_at		   AS dueAt,
-    i.position         AS position,
+		i.created_at AS createdAt,
+		i.due_at AS dueAt,
+		i.position AS position,
 
-    p.project_name     AS projectName,
-    
-    i.type_code 		AS typeCode,
-    t.type_name			AS typeName
-    
-  FROM issues i
-  JOIN status s
-    ON s.status_code  = i.status_code
-   AND s.project_code = i.project_code
-  LEFT JOIN users au ON au.user_code = i.assignee_code
-  LEFT JOIN users cu ON cu.user_code = i.created_by_code
-  LEFT JOIN projects p ON p.project_code = i.project_code
-  LEFT JOIN common_code cs on cs.code_id = s.code_id
-  LEFT JOIN common_code cp on cp.code_id = i.priority 
-  LEFT JOIN types t on t.type_code = i.type_code
-  WHERE 1=1
+		CASE
+  			WHEN i.due_at IS NOT NULL
+  			AND i.due_at &lt; TRUNC(SYSDATE) THEN 100
+  			ELSE i.progress
+		END AS progress,
 
-    <if test="projectCode != null">
-      AND i.project_code = #{projectCode}
-    </if>
+		p.project_name AS projectName,
 
-    <!-- 프로젝트 접근 권한 + 활성(OD1)만 -->
-    AND EXISTS (
-      SELECT 1
-        FROM vw_user_auth v
-       WHERE v.user_code    = #{userCode}
-         AND v.project_code = i.project_code
-         AND v.status       = 'OD1'
-    )
+		i.type_code AS typeCode,
+		t.type_name AS typeName
 
-    <choose>
-      <when test="viewScope == 'ME'">
-        AND i.assignee_code = #{userCode}
-      </when>
+		FROM issues i
+		JOIN status s
+		ON s.status_code =
+		i.status_code
+		AND s.project_code = i.project_code
+		LEFT JOIN users au ON
+		au.user_code = i.assignee_code
+		LEFT JOIN users cu ON cu.user_code =
+		i.created_by_code
+		LEFT JOIN projects p ON p.project_code =
+		i.project_code
+		LEFT JOIN common_code cs on cs.code_id = s.code_id
+		LEFT
+		JOIN common_code cp on cp.code_id = i.priority
+		LEFT JOIN types t on
+		t.type_code = i.type_code
+		WHERE 1=1
 
-      <when test="viewScope == 'ME_PLUS_CREATED'">
-        AND (i.assignee_code = #{userCode} OR i.created_by_code = #{userCode})
-      </when>
+		<if test="projectCode != null">
+			AND i.project_code = #{projectCode}
+		</if>
 
-      <otherwise>
-        <!-- ALL -->
-        AND (
-          i.assignee_code = #{userCode}
-          OR i.created_by_code = #{userCode}
-          OR EXISTS (
-              SELECT 1
-                FROM vw_user_auth v2
-               WHERE v2.user_code    = #{userCode}
-                 AND v2.project_code = i.project_code
-                 AND v2.admin_ck     = 'Y'
-                 AND v2.status       = 'OD1'
-          )
-        )
-      </otherwise>
-    </choose>
+		<!-- 프로젝트 접근 권한 + 활성(OD1)만 -->
+		AND EXISTS (
+		SELECT 1
+		FROM vw_user_auth v
+		WHERE v.user_code = #{userCode}
+		AND v.project_code = i.project_code
+		AND v.status = 'OD1'
+		)
 
-  ORDER BY
-    s.code_id,
-    COALESCE(i.position, 999999),
-    i.issue_code DESC
-</select>
+		<choose>
+			<when test="viewScope == 'ME'">
+				AND i.assignee_code = #{userCode}
+			</when>
 
-  
+			<when test="viewScope == 'ME_PLUS_CREATED'">
+				AND (i.assignee_code = #{userCode} OR
+				i.created_by_code = #{userCode})
+			</when>
 
-  <!-- 상태(code_id) + position 저장 -->
-  <update id="updateIssueStatusAndPosition">
+			<otherwise>
+				<!-- ALL -->
+				AND (
+				i.assignee_code = #{userCode}
+				OR i.created_by_code = #{userCode}
+				OR EXISTS (
+				SELECT 1
+				FROM vw_user_auth v2
+				WHERE v2.user_code =
+				#{userCode}
+				AND v2.project_code = i.project_code
+				AND v2.admin_ck = 'Y'
+				AND v2.status = 'OD1'
+				)
+				)
+			</otherwise>
+		</choose>
+
+		ORDER BY
+		s.code_id,
+		COALESCE(i.position, 999999),
+		i.issue_code DESC
+	</select>
+
+
+	<!-- 상태 포지션 시작일 진행도 완료일 -->
+	<update id="updateIssueStatusAndPosition">
   UPDATE issues i
-     SET i.status_code = (
-           SELECT s.status_code
-             FROM status s
-            WHERE s.project_code = #{projectCode}
-              AND s.code_id      = #{toStatusCode}
-         ),
-         i.position   = #{position},
+  SET
+    i.status_code = (
+      SELECT s.status_code
+      FROM status s
+      WHERE s.project_code = #{projectCode}
+        AND s.code_id = #{toStatusCode}
+    ),
+    i.position = #{position},
 
-         /* OB1 -> 다른 상태로 최초 이동 시 started_at 기록 */
-         i.started_at = CASE
-                          WHEN #{fromStatusCode} = 'OB1'
-                           AND #{toStatusCode}   != 'OB1'
-                           AND i.started_at IS NULL
-                          THEN SYSTIMESTAMP
-                          ELSE i.started_at
-                        END,
+    i.started_at = CASE
+      WHEN i.started_at IS NULL
+       AND #{toStatusCode} != 'OB1'
+       AND (SELECT s0.code_id
+            FROM status s0
+            WHERE s0.status_code = i.status_code
+              AND s0.project_code = i.project_code) = 'OB1'
+      THEN SYSTIMESTAMP
+      ELSE i.started_at
+    END,
 
-         /* 상태 변경에 따른 진척도 자동 세팅 */
-         i.progress   = CASE
-                          WHEN #{toStatusCode} = 'OB3' THEN 95
-                          WHEN #{toStatusCode} = 'OB4' THEN 50
-                          WHEN #{toStatusCode} = 'OB5' THEN 100
-                          ELSE i.progress
-                        END,
+    i.progress = CASE
+      WHEN i.due_at IS NOT NULL
+       AND i.due_at &lt; TRUNC(SYSDATE)
+      THEN 100
+      WHEN #{toStatusCode} = 'OB1' THEN 0
+      WHEN #{toStatusCode} = 'OB3' THEN 95
+      WHEN #{toStatusCode} = 'OB4' THEN 50
+      WHEN #{toStatusCode} = 'OB5' THEN 100
+      ELSE i.progress
+    END,
 
-         /* 완료(OB5)로 이동할 때마다 완료일을 지금 시간으로 저장 */
-         i.resolved_at = CASE
-                           WHEN #{toStatusCode} = 'OB5' THEN SYSTIMESTAMP
-                           ELSE i.resolved_at
-                         END,
+    i.resolved_at = CASE
+      WHEN #{toStatusCode} = 'OB5'
+       AND i.resolved_at IS NULL
+      THEN SYSTIMESTAMP
+      ELSE i.resolved_at
+    END,
 
-         i.updated_at = SYSTIMESTAMP
-   WHERE i.issue_code = #{issueCode}
+    i.updated_at = SYSTIMESTAMP
+  WHERE i.issue_code = #{issueCode}
 </update>
 
-  <!-- 일괄 position 업데이트 -->
-  <update id="batchUpdatePositions">
-    BEGIN
-      <foreach collection="list" item="it">
-        UPDATE issues i
-           SET i.position   = #{it.position},
-               i.updated_at = SYSTIMESTAMP
-         WHERE i.issue_code = #{it.issueCode};
-      </foreach>
-    END;
-  </update>
 
+
+	<!-- 일괄 position 업데이트 -->
+	<update id="batchUpdatePositions">
+		BEGIN
+		<foreach collection="list" item="it">
+			UPDATE issues i
+			SET i.position
+			= #{it.position},
+			i.updated_at = SYSTIMESTAMP
+			WHERE i.issue_code =
+			#{it.issueCode};
+		</foreach>
+		END;
+	</update>
+
+	<!-- 진척도 업데이트 -->
+	<update id="updateIssueProgress">
+		UPDATE issues i
+		SET i.progress = CASE
+		WHEN i.due_at IS NOT NULL
+		AND i.due_at &lt; TRUNC(SYSDATE)
+		THEN 100
+		ELSE #{progress}
+		END,
+		i.updated_at = SYSTIMESTAMP
+		WHERE i.issue_code = #{issueCode}
+		AND
+		i.project_code = #{projectCode}
+	</update>
 
 </mapper>

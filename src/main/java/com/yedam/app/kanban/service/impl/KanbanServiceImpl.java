@@ -1,5 +1,7 @@
 package com.yedam.app.kanban.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -8,11 +10,13 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.yedam.app.issue.mapper.IssueMapper;
 import com.yedam.app.issue.service.IssueVO;
 import com.yedam.app.kanban.mapper.KanbanMapper;
 import com.yedam.app.kanban.service.KanbanService;
 import com.yedam.app.kanban.web.dto.IssuePosUpdate;
 import com.yedam.app.kanban.web.dto.KanbanMoveRequest;
+import com.yedam.app.log.service.LogService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +25,16 @@ import lombok.RequiredArgsConstructor;
 public class KanbanServiceImpl implements KanbanService {
 
   private final KanbanMapper kanbanMapper;
+
+  private final IssueMapper issueMapper;
+  private final LogService logService;
+  private static final DateTimeFormatter LOG_DT =
+		    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+  
+  private String fmt(LocalDateTime dt) {
+	  if (dt == null) return null;
+	  return dt.format(LOG_DT);
+	}
 
   @Override
   public Map<String, List<IssueVO>> getBoardColumns(Integer userCode, Long projectCode, String viewScope) {
@@ -54,33 +68,200 @@ public class KanbanServiceImpl implements KanbanService {
       throw new IllegalArgumentException("invalid request");
     }
 
+    // 1) before 조회
+    IssueVO param = new IssueVO();
+    param.setIssueCode(req.getIssueCode());
+    IssueVO before = issueMapper.selectIssue(param);
+    if (before == null) {
+      throw new IllegalArgumentException("issue not found");
+    }
+
     boolean hasOrders = req.getToOrder() != null && !req.getToOrder().isEmpty();
     int tmpPos = (req.getToIndex() == null ? 9999 : req.getToIndex() + 1);
 
-    // 상태 + 임시 position 먼저 반영
+    // 2) 상태 + 임시 position 먼저 반영
     kanbanMapper.updateIssueStatusAndPosition(
-    	    req.getProjectCode(),
-    	    req.getIssueCode(),
-    	    req.getFromStatusCode(),
-    	    req.getToStatusCode(),
-    	    tmpPos
-    	);
+        req.getProjectCode(),
+        req.getIssueCode(),
+        req.getFromStatusCode(),
+        req.getToStatusCode(),
+        tmpPos
+    );
 
-    if (!hasOrders) return;
+    // 3) from/to 컬럼을 1..N으로 재정렬 저장
+    if (hasOrders) {
+      List<IssuePosUpdate> updates = new ArrayList<>();
 
-    // from/to 컬럼을 1..N으로 재정렬 저장
-    List<IssuePosUpdate> updates = new ArrayList<>();
-
-    for (int i = 0; i < req.getToOrder().size(); i++) {
-      updates.add(new IssuePosUpdate(req.getToOrder().get(i), i + 1));
-    }
-
-    if (req.getFromOrder() != null && !req.getFromOrder().isEmpty()) {
-      for (int i = 0; i < req.getFromOrder().size(); i++) {
-        updates.add(new IssuePosUpdate(req.getFromOrder().get(i), i + 1));
+      for (int i = 0; i < req.getToOrder().size(); i++) {
+        updates.add(new IssuePosUpdate(req.getToOrder().get(i), i + 1));
       }
+
+      if (req.getFromOrder() != null && !req.getFromOrder().isEmpty()) {
+        for (int i = 0; i < req.getFromOrder().size(); i++) {
+          updates.add(new IssuePosUpdate(req.getFromOrder().get(i), i + 1));
+        }
+      }
+
+      kanbanMapper.batchUpdatePositions(updates);
     }
 
-    kanbanMapper.batchUpdatePositions(updates);
+    // 4) after 조회
+    IssueVO after = issueMapper.selectIssue(param);
+
+    // 5) 변경 meta 만들고 로그 저장
+    String meta = buildKanbanMoveMeta(before, after);
+
+    logService.addActionLog(
+        after.getProjectCode(),
+        userCode,
+        "UPDATE",
+        "ISSUE",
+        after.getIssueCode(),
+        meta
+    );
   }
+
+  // 칸반 이동에서 필요한 것만 기록: status/progress/position
+  private String buildKanbanMoveMeta(IssueVO before, IssueVO after) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{\"changes\":[");
+
+    boolean first = true;
+
+    // status: 비교는 statusId, 기록은 statusName
+    first = appendChangeByCode(sb, first, "status",
+        before == null ? null : before.getStatusId(),
+        after == null ? null : after.getStatusId(),
+        before == null ? null : before.getStatusName(),
+        after == null ? null : after.getStatusName()
+    );
+
+    // progress
+    first = appendChange(sb, first, "progress",
+        before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
+        after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress())
+    );
+    
+    // 시작일
+    first = appendChange(sb, first, "startedAt",
+        before == null ? null : fmt(before.getStartedAt()),
+        after == null ? null : fmt(after.getStartedAt())
+    );
+
+    // 완료일
+    first = appendChange(sb, first, "resolvedAt",
+        before == null ? null : fmt(before.getResolvedAt()),
+        after == null ? null : fmt(after.getResolvedAt())
+    );
+
+    sb.append("]}");
+    return sb.toString();
+  }
+
+  private boolean appendChangeByCode(StringBuilder sb, boolean first, String field,
+                                    String beforeCode, String afterCode,
+                                    String beforeDisplay, String afterDisplay) {
+    if (beforeCode == null && afterCode == null) return first;
+    if (beforeCode != null && beforeCode.equals(afterCode)) return first;
+
+    if (!first) sb.append(",");
+    sb.append("{\"field\":\"").append(esc(field)).append("\",")
+      .append("\"before\":").append(jsonValue(normalizeDisplay(beforeDisplay))).append(",")
+      .append("\"after\":").append(jsonValue(normalizeDisplay(afterDisplay))).append("}");
+
+    return false;
+  }
+
+  private boolean appendChange(StringBuilder sb, boolean first, String field, String before, String after) {
+    if (before == null && after == null) return first;
+    if (before != null && before.equals(after)) return first;
+
+    if (!first) sb.append(",");
+    sb.append("{\"field\":\"").append(esc(field)).append("\",")
+      .append("\"before\":").append(jsonValue(before)).append(",")
+      .append("\"after\":").append(jsonValue(after)).append("}");
+
+    return false;
+  }
+
+  private String normalizeDisplay(String s) {
+    if (s == null || s.isBlank()) return "-";
+    return s;
+  }
+
+  private String jsonValue(String v) {
+    if (v == null) return "null";
+    return "\"" + esc(v) + "\"";
+  }
+
+  private String esc(String s) {
+    if (s == null) return "";
+    return s.replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t");
+  }
+  
+  // 진척도 업데이트
+  @Transactional
+  @Override
+  public void updateProgress(Integer userCode, Long projectCode, Long issueCode, Integer progress) {
+    if (userCode == null || projectCode == null || issueCode == null || progress == null) {
+      throw new IllegalArgumentException("invalid request");
+    }
+    
+    IssueVO param = new IssueVO();
+    param.setIssueCode(issueCode);
+
+    IssueVO before = issueMapper.selectIssue(param);
+    if (before == null) throw new IllegalArgumentException("issue not found");
+
+    // 안전: 요청 projectCode와 실제 projectCode가 다르면 차단
+    if (before.getProjectCode() == null || !before.getProjectCode().equals(projectCode)) {
+      throw new IllegalArgumentException("프로젝트 정보가 일치하지 않습니다.");
+    }
+
+    // 진행에서만 수정 허용
+    String statusId = before.getStatusId();
+    if (!"OB2".equals(statusId)) {
+      throw new IllegalArgumentException("진척도 변경은 진행 상태에서만 가능합니다.");
+    }
+
+    int updated = kanbanMapper.updateIssueProgress(projectCode, issueCode, progress);
+    if (updated <= 0) {
+      throw new IllegalArgumentException("진척도 저장에 실패했습니다.");
+    }
+
+    IssueVO after = issueMapper.selectIssue(param);
+
+    // logs에 남길 meta
+    String meta = buildProgressMeta(before, after);
+
+    logService.addActionLog(
+        projectCode,
+        userCode,
+        "UPDATE",
+        "ISSUE",
+        issueCode,
+        meta
+    );
+  }
+
+  private String buildProgressMeta(IssueVO before, IssueVO after) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("{\"changes\":[");
+
+    boolean first = true;
+
+    // progress
+    first = appendChange(sb, first, "progress",
+        before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
+        after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress())
+    );
+
+    sb.append("]}");
+    return sb.toString();
+  }
+
 }
