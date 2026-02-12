@@ -146,7 +146,36 @@
 		const tCode = filters.type?.trim() || "";
 		const pCode = filters.projectCode?.trim() || "";
 
-		// 1. ISSUE 필터링
+		// 1. 선택한 유형의 모든 하위 유형 코드 수집
+		let typeCodesSet = new Set();
+		if (tCode) {
+			// 모든 TYPE 데이터에서 부모-자식 관계 파악
+			const typeMap = {};
+			data.filter(d => d.rowType === "TYPE").forEach(t => {
+				typeMap[t.typeCode] = t;
+			});
+
+			// 재귀적으로 하위 유형 찾기
+			const getAllChildTypes = (parentCode) => {
+				const codes = new Set([parentCode]);
+				const findChildren = (code) => {
+					Object.values(typeMap).forEach(type => {
+						if (type.parTypeCode && String(type.parTypeCode) === String(code)) {
+							codes.add(String(type.typeCode));
+							findChildren(String(type.typeCode));
+						}
+					});
+				};
+				findChildren(parentCode);
+				return codes;
+			};
+
+			typeCodesSet = getAllChildTypes(tCode);
+			console.log("유형 필터 - 선택한 유형:", tCode);
+			console.log("유형 필터 - 포함된 모든 하위 유형:", Array.from(typeCodesSet));
+		}
+
+		// 2. ISSUE 필터링
 		const filteredIssues = data.filter(item => {
 			if (item.rowType !== "ISSUE") return false;
 			let ok = true;
@@ -154,7 +183,10 @@
 			if (filters.status && item.issueStatus !== filters.status) ok = false;
 			if (filters.priority && item.priority !== filters.priority) ok = false;
 			if (title && !(item.title || "").toLowerCase().includes(title)) ok = false;
-			if (tCode && String(item.typeCode) !== tCode) ok = false;
+
+			// 유형 필터: 선택한 유형과 모든 하위 유형 포함
+			if (tCode && !typeCodesSet.has(String(item.typeCode))) ok = false;
+
 			return ok;
 		});
 
@@ -162,11 +194,11 @@
 		const issueMap = {};
 		filteredIssues.forEach(i => issueMap[i.issueCode] = i);
 
-		// 2. TYPE/PROJECT map
+		// 3. TYPE map
 		const typeMap = {};
 		data.filter(d => d.rowType === "TYPE").forEach(t => typeMap[t.typeCode] = t);
 
-		// 3. 하위 ISSUE 있는 TYPE 찾기
+		// 4. 하위 ISSUE 있는 TYPE 찾기
 		const validTypes = new Set();
 		filteredIssues.forEach(issue => {
 			let type = typeMap[issue.typeCode];
@@ -177,7 +209,14 @@
 			}
 		});
 
-		// 4. PROJECT 체크
+		// 유형 필터가 적용된 경우, 선택한 유형과 하위 유형들도 표시
+		if (tCode) {
+			typeCodesSet.forEach(code => {
+				validTypes.add(Number(code));
+			});
+		}
+
+		// 5. PROJECT 체크
 		const validProjects = new Set();
 		data.filter(d => d.rowType === "PROJECT").forEach(p => {
 			const hasChild = data.some(item =>
@@ -187,12 +226,19 @@
 			if (hasChild) validProjects.add(p.projectCode);
 		});
 
-		// 5. 최종 필터링
+		// 6. 최종 필터링
 		const filteredData = data.filter(item => {
 			if (item.rowType === "ISSUE") return !!issueMap[item.issueCode];
 			if (item.rowType === "TYPE") return validTypes.has(item.typeCode);
 			if (item.rowType === "PROJECT") return validProjects.has(item.projectCode);
 			return false;
+		});
+
+		console.log("최종 필터링 결과:", {
+			총개수: filteredData.length,
+			PROJECT: filteredData.filter(d => d.rowType === "PROJECT").length,
+			TYPE: filteredData.filter(d => d.rowType === "TYPE").length,
+			ISSUE: filteredData.filter(d => d.rowType === "ISSUE").length
 		});
 
 		return filteredData;
@@ -316,8 +362,8 @@
 
 				// 신규 ISSUE이면 start/end fallback
 				if (!start) start = new Date();
-				if (!end) end = new Date(start.getTime() + 24*60*60*1000);
-				
+				if (!end) end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+
 				// 종료일 < 시작일 방어
 				if (end < start) end = new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000);
 

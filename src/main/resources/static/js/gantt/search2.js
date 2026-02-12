@@ -1,8 +1,14 @@
+// /js/issue/search.js
 (() => {
-	const $ = (sel) => document.querySelector(sel);
+	const $ = (s) => document.querySelector(s);
+	const $$ = (s) => Array.from(document.querySelectorAll(s));
 
-	// UI 요소
+	// -------------------------
+	// DOM 요소
+	// -------------------------
 	const ui = {
+		filterForm: $("#issueFilterForm"),
+
 		projectText: $("#filterProjectText"),
 		projectValue: $("#filterProjectValue"),
 		title: $("#filterTitle"),
@@ -12,53 +18,96 @@
 		assigneeValue: $("#filterAssigneeValue"),
 		creatorText: $("#filterCreatorText"),
 		creatorValue: $("#filterCreatorValue"),
-		startDateFrom: $("#filterStartDateFrom"),
-		startDateTo: $("#filterStartDateTo"),
+		createdAt: $("#filterCreatedAt"),
+		dueAt: $("#filterDueAt"),
+
+		typeText: $("#filterTypeText"),
+		typeValue: $("#filterTypeValue"),
+
 		btnApply: $("#btnApplyFilters"),
 		btnReset: $("#btnResetFilters"),
+
 		btnProjectModal: $("#btnOpenProjectModal"),
 		btnAssigneeModal: $("#btnOpenAssigneeModal"),
 		btnCreatorModal: $("#btnOpenCreatorModal"),
+		btnTypeModal: $("#btnOpenTypeModal"),
+
 		projectModalEl: $("#projectSelectModal"),
 		assigneeModalEl: $("#assigneeSelectModal"),
+		creatorModalEl: $("#creatorSelectModal"),
+		typeModalEl: $("#typeSelectModal"),
+
 		projectModalList: $("#projectModalList"),
 		assigneeModalList: $("#assigneeModalList"),
+		creatorModalList: $("#creatorModalList"),
+
 		projectModalSearch: $("#projectModalSearch"),
 		assigneeModalSearch: $("#assigneeModalSearch"),
+		creatorModalSearch: $("#creatorModalSearch"),
+		typeModalSearch: $("#typeModalSearch"),
 	};
 
-	let projectModal, assigneeModal, creatorModal;
-	let projectCache = [];
-	let userCache = [];
+	// form submit 자체 방지
+	ui.filterForm?.addEventListener("submit", (e) => e.preventDefault());
 
-	// 초기화 (DOM 로드 대기)
-	window.addEventListener("load", () => {
-		if (ui.projectModalEl) projectModal = new bootstrap.Modal(ui.projectModalEl);
-		if (ui.assigneeModalEl) assigneeModal = new bootstrap.Modal(ui.assigneeModalEl);
+	// -------------------------
+	// 유틸 함수
+	// -------------------------
+	const STATUS_LABEL = {
+		OB1: "신규",
+		OB2: "진행",
+		OB3: "해결",
+		OB4: "반려",
+		OB5: "완료",
+	};
 
-		bindEvents();
-	});
+	const PRIORITY_LABEL = {
+		OA1: "긴급",
+		OA2: "높음",
+		OA3: "보통",
+		OA4: "낮음",
+	};
 
-	function bindEvents() {
-		if (ui.btnApply) ui.btnApply.addEventListener("click", applyFilters);
-		if (ui.btnReset) ui.btnReset.addEventListener("click", resetFilters);
-		if (ui.btnProjectModal) ui.btnProjectModal.addEventListener("click", openProjectModal);
-		if (ui.btnAssigneeModal) ui.btnAssigneeModal.addEventListener("click", openAssigneeModal);
+	const showToast = (message) => {
+		const toastId = "commonToast";
+		let toastEl = document.getElementById(toastId);
 
-		bindProjectModalSearch();
-		bindUserModalSearch();
-	}
+		if (!toastEl) {
+			toastEl = document.createElement("div");
+			toastEl.id = toastId;
+			toastEl.className = "toast align-items-center text-bg-dark border-0";
+			toastEl.setAttribute("role", "alert");
+			toastEl.setAttribute("aria-live", "assertive");
+			toastEl.setAttribute("aria-atomic", "true");
+			toastEl.style.position = "fixed";
+			toastEl.style.right = "16px";
+			toastEl.style.bottom = "16px";
+			toastEl.style.zIndex = "1080";
+			toastEl.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body" id="commonToastBody"></div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+      `;
+			document.body.appendChild(toastEl);
+		}
 
-	// 프로젝트 모달 렌더
-	function renderProjectModalList(items) {
-		if (!ui.projectModalList) return;
-		ui.projectModalList.innerHTML = "";
+		const bodyEl = document.getElementById("commonToastBody");
+		if (bodyEl) bodyEl.textContent = message;
+
+		const t = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 });
+		t.show();
+	};
+
+	const renderListButtons = (listEl, items, onPick) => {
+		if (!listEl) return;
+		listEl.innerHTML = "";
 
 		if (!items.length) {
-			const empty = document.createElement("div");
-			empty.className = "text-muted";
-			empty.textContent = "결과가 없습니다.";
-			ui.projectModalList.appendChild(empty);
+			const div = document.createElement("div");
+			div.className = "text-muted";
+			div.textContent = "결과가 없습니다.";
+			listEl.appendChild(div);
 			return;
 		}
 
@@ -67,192 +116,333 @@
 			btn.type = "button";
 			btn.className = "list-group-item list-group-item-action";
 			btn.textContent = it.name;
-			btn.addEventListener("click", () => {
-				ui.projectText.value = it.name;
-				ui.projectValue.value = String(it.code);
-				projectModal.hide();
-			});
-			ui.projectModalList.appendChild(btn);
+			btn.addEventListener("click", () => onPick(it));
+			listEl.appendChild(btn);
 		});
-	}
+	};
 
-	async function openProjectModal() {
-		if (ui.projectModalSearch) ui.projectModalSearch.value = "";
+	// -------------------------
+	// 캐시
+	// -------------------------
+	let projectCache = [];
+	let userCache = [];
+	let typeCache = [];
 
-		if (projectCache.length === 0) {
-			const res = await fetch("/api/projects/modal", {
-				headers: { Accept: "application/json" },
-			});
+	const ensureProjectCache = async () => {
+		if (projectCache.length) return true;
+		const res = await fetch("/api/projects/modal", { headers: { Accept: "application/json" } });
+		if (!res.ok) { showToast("프로젝트 목록을 불러오지 못했습니다."); return false; }
+		projectCache = (await res.json()).map(p => ({ code: String(p.projectCode), name: p.projectName }));
+		return true;
+	};
 
-			if (!res.ok) {
-				alert("프로젝트 목록을 불러오지 못했습니다.");
-				return;
-			}
+	const ensureUserCache = async () => {
+		if (userCache.length) return true;
+		const res = await fetch("/api/users/modal/my-projects", { headers: { Accept: "application/json" } });
+		if (!res.ok) { showToast("사용자 목록을 불러오지 못했습니다."); return false; }
+		userCache = (await res.json()).map(u => ({ code: String(u.userCode), name: u.userName }));
+		return true;
+	};
 
-			const projects = await res.json();
-			projectCache = projects.map((p) => ({
-				code: p.projectCode,
-				name: p.projectName,
-			}));
-		}
-
-		renderProjectModalList(projectCache);
-		projectModal.show();
-	}
-
-	function bindProjectModalSearch() {
-		if (!ui.projectModalSearch) return;
-		ui.projectModalSearch.addEventListener("input", () => {
-			const q = ui.projectModalSearch.value.trim().toLowerCase();
-			const filtered = projectCache.filter((p) =>
-				String(p.name).toLowerCase().includes(q)
-			);
-			renderProjectModalList(filtered);
-		});
-	}
-
-	// 유저 캐시 로드
-	async function ensureUserCache() {
-		if (userCache.length > 0) return true;
-
-		const res = await fetch("/api/users/modal/my-projects", {
-			headers: { Accept: "application/json" },
-		});
-
+	const ensureTypeCache = async () => {
+		if (typeCache.length) return true;
+		const res = await fetch("/api/types/modal", { headers: { Accept: "application/json" } });
 		if (!res.ok) {
-			alert("사용자 목록을 불러오지 못했습니다.");
+			showToast("유형 목록을 불러오지 못했습니다.");
 			return false;
 		}
 
-		const users = await res.json();
-		userCache = users.map((u) => ({
-			code: String(u.userCode),
-			name: u.userName,
-		}));
+		// 서버에서 받은 원본 데이터를 그대로 저장 (이미 트리 구조)
+		typeCache = await res.json();
 		return true;
-	}
+	};
 
-	// 유저 모달 렌더
-	function renderUserModalList(listEl, items, onPick) {
-		if (!listEl) return;
-		listEl.innerHTML = "";
+	// -------------------------
+	// Gantt 필터 객체 만들기
+	// -------------------------
+	const getGanttFilters = () => {
+		const sCode = ui.status?.value?.trim() || "";
+		const prCode = ui.priority?.value?.trim() || "";
+		const sLabel = sCode ? STATUS_LABEL[sCode] : "";
+		const prLabel = prCode ? PRIORITY_LABEL[prCode] : "";
 
-		if (!items.length) {
-			const empty = document.createElement("div");
-			empty.className = "text-muted";
-			empty.textContent = "결과가 없습니다.";
-			listEl.appendChild(empty);
-			return;
-		}
+		return {
+			projectCode: ui.projectValue?.value || "",
+			title: ui.title?.value?.trim()?.toLowerCase() || "",
+			type: ui.typeValue?.value || "",
+			status: sLabel,  // 라벨로 변환
+			priority: prLabel,  // 라벨로 변환
+			assigneeCode: ui.assigneeValue?.value || "",
+			creatorCode: ui.creatorValue?.value || "",
+			createdAt: ui.createdAt?.value || "",
+			dueAt: ui.dueAt?.value || ""
+		};
+	};
 
-		items.forEach((u) => {
-			const btn = document.createElement("button");
-			btn.type = "button";
-			btn.className = "list-group-item list-group-item-action";
-			btn.textContent = u.name;
-			btn.addEventListener("click", () => onPick(u));
-			listEl.appendChild(btn);
+	// -------------------------
+	// 모달
+	// -------------------------
+	const projectModal = ui.projectModalEl ? new bootstrap.Modal(ui.projectModalEl) : null;
+	const assigneeModal = ui.assigneeModalEl ? new bootstrap.Modal(ui.assigneeModalEl) : null;
+	const creatorModal = ui.creatorModalEl ? new bootstrap.Modal(ui.creatorModalEl) : null;
+	const typeModal = ui.typeModalEl ? new bootstrap.Modal(ui.typeModalEl) : null;
+
+	const openProjectModal = async () => {
+		if (!projectModal) return;
+		ui.projectModalSearch && (ui.projectModalSearch.value = "");
+		const ok = await ensureProjectCache();
+		if (!ok) return;
+		renderListButtons(ui.projectModalList, projectCache, (picked) => {
+			ui.projectText.value = picked.name;
+			ui.projectValue.value = picked.code;
+			projectModal.hide();
 		});
-	}
+		projectModal.show();
+	};
 
-	async function openAssigneeModal() {
-		if (ui.assigneeModalSearch) ui.assigneeModalSearch.value = "";
-
+	const openUserModal = async (type) => {
+		const modal = type === "assignee" ? assigneeModal : creatorModal;
+		const listEl = type === "assignee" ? ui.assigneeModalList : ui.creatorModalList;
+		const searchEl = type === "assignee" ? ui.assigneeModalSearch : ui.creatorModalSearch;
+		if (!modal) return;
+		searchEl && (searchEl.value = "");
 		const ok = await ensureUserCache();
 		if (!ok) return;
+		renderListButtons(listEl, userCache, (picked) => {
+			if (type === "assignee") {
+				ui.assigneeText.value = picked.name;
+				ui.assigneeValue.value = picked.code;
+			} else {
+				ui.creatorText.value = picked.name;
+				ui.creatorValue.value = picked.code;
+			}
+			modal.hide();
+		});
+		modal.show();
+	};
 
-		renderUserModalList(ui.assigneeModalList, userCache, (picked) => {
-			ui.assigneeText.value = picked.name;
-			ui.assigneeValue.value = picked.code;
-			assigneeModal.hide();
+	const renderTypeTree = (items, container) => {
+		if (!container) return;
+		container.innerHTML = "";
+
+		const createNode = (type) => {
+			const li = document.createElement("li");
+
+			const div = document.createElement("div");
+			div.textContent = type.name;
+			div.className = "type-item list-group-item list-group-item-action";
+			div.addEventListener("click", (e) => {
+				e.stopPropagation();
+				ui.typeText.value = type.name;
+				ui.typeValue.value = type.code;
+				typeModal?.hide();
+			});
+
+			li.appendChild(div);
+
+			if (type.children && type.children.length > 0) {
+				const ul = document.createElement("ul");
+				type.children.forEach(c => ul.appendChild(createNode(c)));
+				li.appendChild(ul);
+			}
+
+			return li;
+		};
+
+		const rootUl = document.createElement("ul");
+		items.forEach(p => {
+			const projLi = document.createElement("li");
+
+			const projDiv = document.createElement("div");
+			projDiv.textContent = p.name;
+			projDiv.style.fontWeight = "600";
+			projDiv.style.color = "#0d6efd";
+			projDiv.style.marginBottom = "0.5rem";
+
+			projLi.appendChild(projDiv);
+
+			if (p.children && p.children.length > 0) {
+				const childUl = document.createElement("ul");
+				p.children.forEach(t => childUl.appendChild(createNode(t)));
+				projLi.appendChild(childUl);
+			}
+
+			rootUl.appendChild(projLi);
 		});
 
-		assigneeModal.show();
-	}
-
-	function bindUserModalSearch() {
-		if (ui.assigneeModalSearch) {
-			ui.assigneeModalSearch.addEventListener("input", async () => {
-				const ok = await ensureUserCache();
-				if (!ok) return;
-
-				const q = ui.assigneeModalSearch.value.trim().toLowerCase();
-				const filtered = userCache.filter((u) =>
-					String(u.name).toLowerCase().includes(q)
-				);
-
-				renderUserModalList(ui.assigneeModalList, filtered, (picked) => {
-					ui.assigneeText.value = picked.name;
-					ui.assigneeValue.value = picked.code;
-					assigneeModal.hide();
-				});
-			});
-		}
-	}
-
-	// 우선순위 코드 매핑
-	const priorityCodeMap = {
-		'OA1': '긴급',
-		'OA2': '높음',
-		'OA3': '보통',
-		'OA4': '낮음'
+		container.appendChild(rootUl);
 	};
 
-	// 상태 코드 매핑
-	const statusCodeMap = {
-		'OB1': '신규',
-		'OB2': '진행',
-		'OB3': '해결',
-		'OB4': '반려',
-		'OB5': '완료'
+
+	const buildTypeTreeForJS = (serverData) => {
+		const projectMap = {};
+
+		// 재귀적으로 유형을 변환하는 함수
+		const convertType = (type) => {
+			return {
+				code: String(type.typeCode),
+				name: type.typeName,
+				children: (type.children || []).map(child => convertType(child))
+			};
+		};
+
+		// 서버 데이터를 프로젝트별로 그룹화
+		serverData.forEach(type => {
+			const pCode = String(type.projectCode);
+			const pName = type.projectName || "기타 프로젝트";
+
+			if (!projectMap[pCode]) {
+				projectMap[pCode] = {
+					code: pCode,
+					name: pName,
+					children: []
+				};
+			}
+
+			// 최상위 유형만 추가 (parTypeCode가 null인 것)
+			if (!type.parTypeCode) {
+				projectMap[pCode].children.push(convertType(type));
+			}
+		});
+
+		return Object.values(projectMap).filter(p => p.children.length > 0);
 	};
 
-	// 필터 적용
-	function applyFilters() {
-		const filters = {
-			projectCode: ui.projectValue?.value || '',
-			title: ui.title?.value || '',
-			status: ui.status?.value || '',
-			priority: ui.priority?.value || '',
-			assigneeCode: ui.assigneeValue?.value || '',
-			startDateFrom: ui.startDateFrom?.value || '',
-			startDateTo: ui.startDateTo?.value || '',
-		};
+	const openTypeModal = async () => {
+		if (!typeModal) return;
+		ui.typeModalSearch && (ui.typeModalSearch.value = "");
+		const ok = await ensureTypeCache();
+		if (!ok) return;
 
-		// 상태, 우선순위를 텍스트로 변환
-		const filterObj = {
-			projectCode: filters.projectCode,
-			title: filters.title,
-			status: filters.status ? statusCodeMap[filters.status] : '',
-			priority: filters.priority ? priorityCodeMap[filters.priority] : '',
-			assigneeCode: filters.assigneeCode,
-			startDateFrom: filters.startDateFrom,
-			startDateTo: filters.startDateTo,
-		};
+		// typeCache를 트리 구조로 변환
+		const treeData = buildTypeTreeForJS(typeCache);
+		renderTypeTree(treeData, document.getElementById("typeModalTree"));
+		typeModal.show();
+	};
 
-		// list.js의 ganttReload 함수 호출
-		if (typeof window.ganttReload === 'function') {
-			window.ganttReload(filterObj);
+	// -------------------------
+	// 이벤트 바인딩
+	// -------------------------
+	ui.btnApply?.addEventListener("click", (e) => {
+		e.preventDefault();
+
+		// Gantt 필터 적용
+		if (window.ganttReload) {
+			const filters = getGanttFilters();
+			console.log("적용할 필터:", filters);
+			window.ganttReload(filters);
+		} else {
+			showToast("Gantt 차트가 아직 초기화되지 않았습니다.");
 		}
-	}
+	});
 
-	// 필터 초기화
-	function resetFilters() {
-		if (ui.projectText) ui.projectText.value = '';
-		if (ui.projectValue) ui.projectValue.value = '';
-		if (ui.title) ui.title.value = '';
-		if (ui.status) ui.status.value = '';
-		if (ui.priority) ui.priority.value = '';
-		if (ui.assigneeText) ui.assigneeText.value = '';
-		if (ui.assigneeValue) ui.assigneeValue.value = '';
-		if (ui.startDateFrom) ui.startDateFrom.value = '';
-		if (ui.startDateTo) ui.startDateTo.value = '';
+	ui.btnReset?.addEventListener("click", (e) => {
+		e.preventDefault();
+		ui.projectText.value = "";
+		ui.projectValue.value = "";
+		ui.title.value = "";
+		ui.typeText.value = "";
+		ui.typeValue.value = "";
+		ui.status.value = "";
+		ui.priority.value = "";
+		ui.assigneeText.value = "";
+		ui.assigneeValue.value = "";
+		ui.creatorText.value = "";
+		ui.creatorValue.value = "";
+		ui.createdAt.value = "";
+		ui.dueAt.value = "";
 
-		// list.js의 ganttReload 함수 호출 (필터 없이)
-		if (typeof window.ganttReload === 'function') {
+		// Gantt 차트 초기화 (필터 없이 전체 데이터)
+		if (window.ganttReload) {
 			window.ganttReload({});
 		}
-	}
+	});
+
+	ui.btnProjectModal?.addEventListener("click", openProjectModal);
+	ui.btnAssigneeModal?.addEventListener("click", () => openUserModal("assignee"));
+	ui.btnCreatorModal?.addEventListener("click", () => openUserModal("creator"));
+	ui.btnTypeModal?.addEventListener("click", openTypeModal);
+
+	ui.projectModalSearch?.addEventListener("input", async () => {
+		const ok = await ensureProjectCache();
+		if (!ok) return;
+		const q = ui.projectModalSearch.value.trim().toLowerCase();
+		renderListButtons(
+			ui.projectModalList,
+			projectCache.filter(p => p.name.toLowerCase().includes(q)),
+			picked => {
+				ui.projectText.value = picked.name;
+				ui.projectValue.value = picked.code;
+				projectModal?.hide();
+			}
+		);
+	});
+
+	ui.assigneeModalSearch?.addEventListener("input", async () => {
+		const ok = await ensureUserCache();
+		if (!ok) return;
+		const q = ui.assigneeModalSearch.value.trim().toLowerCase();
+		renderListButtons(
+			ui.assigneeModalList,
+			userCache.filter(u => u.name.toLowerCase().includes(q)),
+			picked => {
+				ui.assigneeText.value = picked.name;
+				ui.assigneeValue.value = picked.code;
+				assigneeModal?.hide();
+			}
+		);
+	});
+
+	ui.creatorModalSearch?.addEventListener("input", async () => {
+		const ok = await ensureUserCache();
+		if (!ok) return;
+		const q = ui.creatorModalSearch.value.trim().toLowerCase();
+		renderListButtons(
+			ui.creatorModalList,
+			userCache.filter(u => u.name.toLowerCase().includes(q)),
+			picked => {
+				ui.creatorText.value = picked.name;
+				ui.creatorValue.value = picked.code;
+				creatorModal?.hide();
+			}
+		);
+	});
+
+	ui.typeModalSearch?.addEventListener("input", async () => {
+		const ok = await ensureTypeCache();
+		if (!ok) return;
+
+		const q = ui.typeModalSearch.value.trim().toLowerCase();
+		let filteredTypes;
+
+		if (q) {
+			// 검색어가 있을 때: 재귀적으로 검색
+			const searchInTree = (types) => {
+				const results = [];
+				types.forEach(type => {
+					const nameMatch = type.typeName.toLowerCase().includes(q);
+					const childMatches = type.children && type.children.length > 0
+						? searchInTree(type.children)
+						: [];
+
+					if (nameMatch || childMatches.length > 0) {
+						results.push({
+							...type,
+							children: childMatches.length > 0 ? childMatches : type.children
+						});
+					}
+				});
+				return results;
+			};
+
+			filteredTypes = searchInTree(typeCache);
+		} else {
+			filteredTypes = typeCache;
+		}
+
+		const treeData = buildTypeTreeForJS(filteredTypes);
+		renderTypeTree(treeData, document.getElementById("typeModalTree"));
+	});
 
 	document.addEventListener("DOMContentLoaded", () => {
 		const toggleBtn = document.getElementById("btnToggleSearch");
@@ -262,7 +452,6 @@
 
 		toggleBtn.addEventListener("click", () => {
 			const isOpen = searchWrapper.style.display === "block";
-
 			searchWrapper.style.display = isOpen ? "none" : "block";
 			toggleBtn.textContent = isOpen ? "검색조건 열기" : "검색조건 닫기";
 		});

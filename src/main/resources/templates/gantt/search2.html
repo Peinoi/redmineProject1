@@ -1,128 +1,162 @@
+<!-- search.html -->
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org/">
 <div th:fragment="searchCondition">
-	<!-- 검색조건 내용 -->
 	<!-- 검색조건 토글 버튼 -->
 	<button type="button" class="btn btn-outline-secondary mb-2"
 		id="btnToggleSearch">검색조건 열기</button>
 
 	<!-- 검색조건 전체 wrapper (기본 닫힘) -->
-	<div id="searchConditionWrapper" style="display: none;">
-
-		<div class="search-filters mb-3 mt-3">
-			<div class="row g-2 align-items-end">
-				<div class="col-12 col-md-3">
-					<label class="form-label">프로젝트</label>
-					<div class="input-group">
-						<input type="text" id="filterProjectText" class="form-control"
-							placeholder="프로젝트 선택" readonly> <input type="hidden"
-							id="filterProjectValue">
-						<button type="button" class="btn btn-secondary"
-							id="btnOpenProjectModal">선택</button>
-					</div>
-				</div>
-
-				<div class="col-12 col-md-3">
-					<label class="form-label">일감명</label> <input type="text"
-						id="filterTitle" class="form-control" placeholder="일감명 입력">
-				</div>
-
-				<div class="col-12 col-md-3">
-					<label class="form-label">상태</label> <select id="filterStatus"
-						class="form-select">
-						<option value="">전체</option>
-						<option value="OB1">신규</option>
-						<option value="OB2">진행</option>
-						<option value="OB3">해결</option>
-						<option value="OB4">반려</option>
-						<option value="OB5">완료</option>
-					</select>
-				</div>
-
-				<div class="col-12 col-md-3">
-					<label class="form-label">우선순위</label> <select id="filterPriority"
-						class="form-select">
-						<option value="">전체</option>
-						<option value="OA1">긴급</option>
-						<option value="OA2">높음</option>
-						<option value="OA3">보통</option>
-						<option value="OA4">낮음</option>
-					</select>
-				</div>
-			</div>
-
-			<div class="row g-2 align-items-end mt-1">
-				<div class="col-12 col-md-3">
-					<label class="form-label">담당자</label>
-					<div class="input-group">
-						<input type="text" id="filterAssigneeText" class="form-control"
-							placeholder="담당자 선택" readonly> <input type="hidden"
-							id="filterAssigneeValue">
-						<button type="button" class="btn btn-secondary"
-							id="btnOpenAssigneeModal">선택</button>
-					</div>
-				</div>
-
-				<div class="col-12 col-md-3">
-					<label class="form-label">등록자</label>
-					<div class="input-group">
-						<input type="text" id="filterCreatorText" class="form-control"
-							placeholder="등록자 선택" readonly th:value="${creatorName}" /> <input
-							type="hidden" id="filterCreatorValue" name="createdByCode"
-							th:value="${param.createdByCode}" />
-						<button type="button" class="btn btn-secondary"
-							id="btnOpenCreatorModal">선택</button>
-					</div>
-				</div>
-
-				<div class="col-12 col-md-6">
-					<div class="row g-2">
-						<div class="col">
-							<label class="form-label">프로젝트 등록일</label> <input type="date"
-								id="filterStartDateFrom" class="form-control">
-						</div>
-						<div class="col-auto d-flex align-items-end pb-2">
-							<span class="text-muted">~</span>
-						</div>
-						<div class="col">
-							<label class="form-label">프로젝트 등록일</label> <input type="date"
-								id="filterStartDateTo" class="form-control">
+	<form id="issueFilterForm" th:action="@{/issueList}" method="get">
+		<div id="searchConditionWrapper" style="display: none;">
+			<div class="search-filters mb-3 mt-3">
+				<div class="row g-2 align-items-end">
+					<!-- 프로젝트 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">프로젝트</label>
+						<div class="input-group">
+							<input type="text" id="filterProjectText" class="form-control"
+								placeholder="프로젝트 선택" readonly th:value="${projectName}" /> <input
+								type="hidden" id="filterProjectValue" name="projectCode"
+								th:value="${projectCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenProjectModal">선택</button>
 						</div>
 					</div>
+
+					<!-- 일감명 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">일감명</label> <input type="text"
+							id="filterTitle" name="title" class="form-control"
+							placeholder="일감명 입력" th:value="${param.title}" />
+					</div>
+
+					<!-- 유형 -->
+					<div class="col-12 col-md-2">
+						<label class="form-label">유형</label>
+						<div class="input-group">
+							<input type="text" id="filterTypeText" class="form-control"
+								placeholder="유형 선택" readonly th:value="${typeLabel}" /> <input
+								type="hidden" id="filterTypeValue" name="typeCode"
+								th:value="${param.typeCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenTypeModal">선택</button>
+						</div>
+					</div>
+
+					<!-- 상태 -->
+					<div class="col-12 col-md-2">
+						<label class="form-label">상태</label> <select id="filterStatus"
+							name="statusId" class="form-select">
+							<option value=""
+								th:selected="${param.statusId == null or param.statusId == ''}">전체</option>
+							<option value="OB1" th:selected="${param.statusId == 'OB1'}">신규</option>
+							<option value="OB2" th:selected="${param.statusId == 'OB2'}">진행</option>
+							<option value="OB3" th:selected="${param.statusId == 'OB3'}">해결</option>
+							<option value="OB4" th:selected="${param.statusId == 'OB4'}">반려</option>
+							<option value="OB5" th:selected="${param.statusId == 'OB5'}">완료</option>
+						</select>
+					</div>
+
+					<!-- 우선순위 -->
+					<div class="col-12 col-md-2">
+						<label class="form-label">우선순위</label> <select id="filterPriority"
+							name="priority" class="form-select">
+							<option value=""
+								th:selected="${param.priority == null or param.priority == ''}">전체</option>
+							<option value="OA1" th:selected="${param.priority == 'OA1'}">긴급</option>
+							<option value="OA2" th:selected="${param.priority == 'OA2'}">높음</option>
+							<option value="OA3" th:selected="${param.priority == 'OA3'}">보통</option>
+							<option value="OA4" th:selected="${param.priority == 'OA4'}">낮음</option>
+						</select>
+					</div>
 				</div>
 
-			</div>
-			<div class="d-flex justify-content-between align-items-center mt-3">
-				<!-- 왼쪽 비워두기 -->
-				<div></div>
+				<div class="row g-2 align-items-end mt-1">
+					<!-- 담당자 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">담당자</label>
+						<div class="input-group">
+							<input type="text" id="filterAssigneeText" class="form-control"
+								placeholder="담당자 선택" readonly th:value="${assigneeName}" /> <input
+								type="hidden" id="filterAssigneeValue" name="assigneeCode"
+								th:value="${param.assigneeCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenAssigneeModal">선택</button>
+						</div>
+					</div>
 
-				<!-- 오른쪽 버튼 -->
-				<div class="d-flex gap-2">
+					<!-- 등록자 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">등록자</label>
+						<div class="input-group">
+							<input type="text" id="filterCreatorText" class="form-control"
+								placeholder="등록자 선택" readonly th:value="${creatorName}" /> <input
+								type="hidden" id="filterCreatorValue" name="createdByCode"
+								th:value="${param.createdByCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenCreatorModal">선택</button>
+						</div>
+					</div>
+
+					<!-- 등록일 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">등록일</label> <input type="date"
+							id="filterCreatedAt" name="createdAt" class="form-control"
+							th:value="${param.createdAt}" />
+					</div>
+
+					<!-- 마감기한 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">마감기한</label> <input type="date"
+							id="filterDueAt" name="dueAt" class="form-control"
+							th:value="${param.dueAt}" />
+					</div>
+				</div>
+
+				<div class="d-flex justify-content-end gap-2 mt-3">
 					<button type="button" class="btn btn-secondary"
 						id="btnResetFilters">
 						<i class="fas fa-redo me-1"></i>초기화
 					</button>
-					<button type="button" class="btn btn-primary" id="btnApplyFilters">
+					<button type="submit" class="btn btn-primary" id="btnApplyFilters">
 						<i class="fa-solid fa-magnifying-glass me-1"></i>조회
 					</button>
 				</div>
 			</div>
 		</div>
+	</form>
 
-		<div class="modal fade" id="projectSelectModal" tabindex="-1"
-			aria-hidden="true">
-			<div class="modal-dialog modal-lg modal-dialog-scrollable">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title">프로젝트 선택</h5>
-						<button type="button" class="btn-close" data-bs-dismiss="modal"
-							aria-label="Close"></button>
-					</div>
-					<div class="modal-body">
-						<input type="text" id="projectModalSearch"
-							class="form-control mb-2" placeholder="프로젝트명 검색">
-						<div class="list-group" id="projectModalList"></div>
-					</div>
+	<div class="modal fade" id="projectSelectModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">프로젝트 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="projectModalSearch"
+						class="form-control mb-2" placeholder="프로젝트명 검색" />
+					<div class="list-group" id="projectModalList"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="typeSelectModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">유형 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="typeModalSearch" class="form-control mb-2"
+						placeholder="유형명 검색" />
+					<div id="typeModalTree" class="type-tree list-group list-group-flush"></div> <!-- 여기가 트리 렌더링 영역 -->
 				</div>
 			</div>
 		</div>
@@ -139,7 +173,7 @@
 				</div>
 				<div class="modal-body">
 					<input type="text" id="assigneeModalSearch"
-						class="form-control mb-2" placeholder="담당자명 검색">
+						class="form-control mb-2" placeholder="담당자명 검색" />
 					<div class="list-group" id="assigneeModalList"></div>
 				</div>
 			</div>
@@ -164,4 +198,3 @@
 		</div>
 	</div>
 </div>
-</html>

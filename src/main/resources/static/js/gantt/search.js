@@ -40,7 +40,6 @@
 		projectModalList: $("#projectModalList"),
 		assigneeModalList: $("#assigneeModalList"),
 		creatorModalList: $("#creatorModalList"),
-		typeModalTbody: $("#typeModalTbody"),
 
 		projectModalSearch: $("#projectModalSearch"),
 		assigneeModalSearch: $("#assigneeModalSearch"),
@@ -54,32 +53,6 @@
 	// -------------------------
 	// 유틸 함수
 	// -------------------------
-	const rows = () => $$("tr.issueRow");
-	const getRow = (tr) => {
-		const d = tr.dataset;
-		return {
-			rowType: (d.rowType || "").trim(),
-			issueCode: (d.issueCode || "").trim(),
-			project: (d.project || "").trim(),
-			projectCode: (d.projectCode || "").trim(),
-			title: (d.title || "").trim().toLowerCase(),
-			status: (d.status || "").trim(),
-			priority: (d.priority || "").trim(),
-			assigneeCode: (d.assigneeCode || "").trim(),
-			creatorCode: (d.creatorCode || "").trim(),
-			created: (d.created || "").trim(),
-			due: (d.due || "").trim(),
-			typeCode: (d.typeCode || "").trim(),
-			parentTypeCode: (d.parentTypeCode || "").trim(),
-		};
-	};
-
-	const sameDay = (rowDate, filterDate) => {
-		if (!filterDate) return true;
-		if (!rowDate) return false;
-		return rowDate.slice(0, 10) === filterDate;
-	};
-
 	const STATUS_LABEL = {
 		OB1: "신규",
 		OB2: "진행",
@@ -185,127 +158,20 @@
 	};
 
 	// -------------------------
-	// 필터 적용
+	// Gantt 필터 객체 만들기
 	// -------------------------
-	// 유형의 모든 하위 코드를 재귀적으로 수집하는 함수
-	const getAllChildTypeCodes = (typeCode, typeList) => {
-		const codes = new Set([typeCode]);
-
-		const findChildren = (parentCode) => {
-			typeList.forEach(type => {
-				if (type.parTypeCode && String(type.parTypeCode) === String(parentCode)) {
-					const childCode = String(type.typeCode);
-					codes.add(childCode);
-					findChildren(childCode); // 재귀적으로 하위 유형 찾기
-				}
-			});
-		};
-
-		findChildren(typeCode);
-		return codes;
-	};
-
-	const applyFiltersClient = () => {
-		const pCode = ui.projectValue?.value?.trim() || "";
-		const pName = ui.projectText?.value?.trim() || "";
-		const title = ui.title?.value?.trim()?.toLowerCase() || "";
-
-		const tCode = ui.typeValue?.value?.trim() || "";
+	const getGanttFilters = () => {
 		const sCode = ui.status?.value?.trim() || "";
 		const prCode = ui.priority?.value?.trim() || "";
 		const sLabel = sCode ? STATUS_LABEL[sCode] : "";
 		const prLabel = prCode ? PRIORITY_LABEL[prCode] : "";
-		const aCode = ui.assigneeValue?.value?.trim() || "";
-		const cCode = ui.creatorValue?.value?.trim() || "";
-		const created = ui.createdAt?.value?.trim() || "";
-		const due = ui.dueAt?.value?.trim() || "";
 
-		// 선택한 유형의 모든 하위 유형 코드 수집
-		const typeCodesSet = tCode ? getAllChildTypeCodes(tCode, typeCache) : new Set();
-
-		const issueMatches = new Set(); // 매칭된 ISSUE 코드 저장
-		const typeMatches = new Set(); // 매칭된 TYPE 코드 저장
-
-		rows().forEach((tr) => {
-			const d = getRow(tr);
-			let ok = true;
-
-			// ISSUE 행 필터링
-			if (d.rowType === "ISSUE") {
-				if (pCode) ok = ok && (d.projectCode ? d.projectCode === pCode : d.project === pName);
-				if (title) ok = ok && (d.title || "").toLowerCase().includes(title);
-				if (tCode) ok = ok && typeCodesSet.has(d.typeCode);
-				if (sLabel) ok = ok && d.status === sLabel;
-				if (prLabel) ok = ok && d.priority === prLabel;
-				if (aCode) ok = ok && d.assigneeCode === aCode;
-				if (cCode) ok = ok && d.creatorCode === cCode;
-				ok = ok && sameDay(d.created, created);
-				ok = ok && sameDay(d.due, due);
-
-				if (ok) {
-					issueMatches.add(d.issueCode);
-				}
-			}
-			// TYPE 행 필터링 - 유형 필터가 적용된 경우 해당 유형과 하위 유형만 표시
-			else if (d.rowType === "TYPE") {
-				if (pCode) ok = ok && d.projectCode === pCode;
-				if (tCode) ok = ok && typeCodesSet.has(d.typeCode);
-
-				if (ok) {
-					typeMatches.add(d.typeCode);
-				}
-			}
-			// PROJECT 행 필터링
-			else if (d.rowType === "PROJECT") {
-				if (pCode) ok = ok && d.projectCode === pCode;
-			}
-
-			tr.dataset.filtered = ok ? "0" : "1";
-			tr.style.display = ok ? "" : "none";
-		});
-
-		// PROJECT/TYPE 행의 최종 표시 여부 결정
-		rows().forEach((tr) => {
-			const d = getRow(tr);
-
-			if (d.rowType === "TYPE") {
-				// 자신이 매칭되었거나, 하위에 매칭된 ISSUE가 있으면 표시
-				const selfMatched = typeMatches.has(d.typeCode);
-				const hasChildIssue = rows().some((childTr) => {
-					const c = getRow(childTr);
-					return c.rowType === "ISSUE" &&
-						c.parentTypeCode === d.typeCode &&
-						issueMatches.has(c.issueCode);
-				});
-
-				const ok = selfMatched || hasChildIssue;
-				tr.dataset.filtered = ok ? "0" : "1";
-				tr.style.display = ok ? "" : "none";
-			}
-			else if (d.rowType === "PROJECT") {
-				// 하위에 표시할 TYPE이나 ISSUE가 있으면 표시
-				const hasVisibleChild = rows().some((childTr) => {
-					const c = getRow(childTr);
-					return c.projectCode === d.projectCode &&
-						(c.rowType === "TYPE" || c.rowType === "ISSUE") &&
-						childTr.dataset.filtered === "0";
-				});
-
-				const ok = hasVisibleChild;
-				tr.dataset.filtered = ok ? "0" : "1";
-				tr.style.display = ok ? "" : "none";
-			}
-		});
-	};
-
-	// Gantt용 필터 객체 만들기
-	const getGanttFilters = () => {
 		return {
 			projectCode: ui.projectValue?.value || "",
 			title: ui.title?.value?.trim()?.toLowerCase() || "",
 			type: ui.typeValue?.value || "",
-			status: ui.status?.value || "",
-			priority: ui.priority?.value || "",
+			status: sLabel,  // 라벨로 변환
+			priority: prLabel,  // 라벨로 변환
 			assigneeCode: ui.assigneeValue?.value || "",
 			creatorCode: ui.creatorValue?.value || "",
 			createdAt: ui.createdAt?.value || "",
@@ -324,7 +190,8 @@
 	const openProjectModal = async () => {
 		if (!projectModal) return;
 		ui.projectModalSearch && (ui.projectModalSearch.value = "");
-		const ok = await ensureProjectCache(); if (!ok) return;
+		const ok = await ensureProjectCache();
+		if (!ok) return;
 		renderListButtons(ui.projectModalList, projectCache, (picked) => {
 			ui.projectText.value = picked.name;
 			ui.projectValue.value = picked.code;
@@ -339,10 +206,16 @@
 		const searchEl = type === "assignee" ? ui.assigneeModalSearch : ui.creatorModalSearch;
 		if (!modal) return;
 		searchEl && (searchEl.value = "");
-		const ok = await ensureUserCache(); if (!ok) return;
+		const ok = await ensureUserCache();
+		if (!ok) return;
 		renderListButtons(listEl, userCache, (picked) => {
-			if (type === "assignee") { ui.assigneeText.value = picked.name; ui.assigneeValue.value = picked.code; }
-			else { ui.creatorText.value = picked.name; ui.creatorValue.value = picked.code; }
+			if (type === "assignee") {
+				ui.assigneeText.value = picked.name;
+				ui.assigneeValue.value = picked.code;
+			} else {
+				ui.creatorText.value = picked.name;
+				ui.creatorValue.value = picked.code;
+			}
 			modal.hide();
 		});
 		modal.show();
@@ -352,76 +225,46 @@
 		if (!container) return;
 		container.innerHTML = "";
 
-		// 최상위 ul 생성
+		const createNode = (type) => {
+			const li = document.createElement("li");
+
+			const div = document.createElement("div");
+			div.textContent = type.name;
+			div.className = "type-item list-group-item list-group-item-action";
+			div.addEventListener("click", (e) => {
+				e.stopPropagation();
+				ui.typeText.value = type.name;
+				ui.typeValue.value = type.code;
+				typeModal?.hide();
+			});
+
+			li.appendChild(div);
+
+			if (type.children && type.children.length > 0) {
+				const ul = document.createElement("ul");
+				type.children.forEach(c => ul.appendChild(createNode(c)));
+				li.appendChild(ul);
+			}
+
+			return li;
+		};
+
 		const rootUl = document.createElement("ul");
-		rootUl.style.listStyleType = "none";
-		rootUl.style.paddingLeft = "0";
-
-		items.forEach(proj => {
+		items.forEach(p => {
 			const projLi = document.createElement("li");
-			projLi.style.marginBottom = "10px";
 
-			const projLabel = document.createElement("div");
-			projLabel.textContent = proj.name;
-			projLabel.style.fontWeight = "bold";
-			projLabel.style.fontSize = "1.1em";
-			projLabel.style.color = "#0d6efd";
-			projLabel.style.marginBottom = "5px";
-			projLi.appendChild(projLabel);
+			const projDiv = document.createElement("div");
+			projDiv.textContent = p.name;
+			projDiv.style.fontWeight = "600";
+			projDiv.style.color = "#0d6efd";
+			projDiv.style.marginBottom = "0.5rem";
 
-			if (proj.children && proj.children.length > 0) {
-				const projUl = document.createElement("ul");
-				projUl.style.listStyleType = "none";
-				projUl.style.paddingLeft = "20px";
+			projLi.appendChild(projDiv);
 
-				const appendType = (type) => {
-					const li = document.createElement("li");
-					li.style.marginTop = "5px";
-
-					const typeLabel = document.createElement("div");
-					typeLabel.textContent = type.name;
-					typeLabel.style.cursor = "pointer";
-					typeLabel.style.padding = "5px 10px";
-					typeLabel.style.borderRadius = "4px";
-					typeLabel.style.transition = "background-color 0.2s";
-
-					// 호버 효과
-					typeLabel.addEventListener("mouseenter", () => {
-						typeLabel.style.backgroundColor = "#e7f3ff";
-					});
-					typeLabel.addEventListener("mouseleave", () => {
-						typeLabel.style.backgroundColor = "";
-					});
-
-					// 클릭 이벤트
-					typeLabel.addEventListener("click", (e) => {
-						e.stopPropagation(); // 이벤트 버블링 방지
-						ui.typeText.value = type.name;
-						ui.typeValue.value = type.code;
-						typeModal?.hide();
-					});
-
-					li.appendChild(typeLabel);
-
-					// 자식 유형이 있으면 재귀적으로 추가
-					if (type.children && type.children.length > 0) {
-						const childUl = document.createElement("ul");
-						childUl.style.listStyleType = "none";
-						childUl.style.paddingLeft = "20px";
-						childUl.style.borderLeft = "2px solid #dee2e6";
-						childUl.style.marginTop = "5px";
-
-						type.children.forEach(c => {
-							childUl.appendChild(appendType(c));
-						});
-						li.appendChild(childUl);
-					}
-
-					return li;
-				};
-
-				proj.children.forEach(t => projUl.appendChild(appendType(t)));
-				projLi.appendChild(projUl);
+			if (p.children && p.children.length > 0) {
+				const childUl = document.createElement("ul");
+				p.children.forEach(t => childUl.appendChild(createNode(t)));
+				projLi.appendChild(childUl);
 			}
 
 			rootUl.appendChild(projLi);
@@ -429,6 +272,7 @@
 
 		container.appendChild(rootUl);
 	};
+
 
 	const buildTypeTreeForJS = (serverData) => {
 		const projectMap = {};
@@ -481,13 +325,14 @@
 	// -------------------------
 	ui.btnApply?.addEventListener("click", (e) => {
 		e.preventDefault();
-		// 기존 클라이언트 테이블 필터 적용
-		applyFiltersClient();
 
 		// Gantt 필터 적용
 		if (window.ganttReload) {
 			const filters = getGanttFilters();
+			console.log("적용할 필터:", filters);
 			window.ganttReload(filters);
+		} else {
+			showToast("Gantt 차트가 아직 초기화되지 않았습니다.");
 		}
 	});
 
@@ -506,7 +351,11 @@
 		ui.creatorValue.value = "";
 		ui.createdAt.value = "";
 		ui.dueAt.value = "";
-		rows().forEach(tr => { tr.dataset.filtered = "0"; tr.style.display = ""; });
+
+		// Gantt 차트 초기화 (필터 없이 전체 데이터)
+		if (window.ganttReload) {
+			window.ganttReload({});
+		}
 	});
 
 	ui.btnProjectModal?.addEventListener("click", openProjectModal);
@@ -515,21 +364,48 @@
 	ui.btnTypeModal?.addEventListener("click", openTypeModal);
 
 	ui.projectModalSearch?.addEventListener("input", async () => {
-		const ok = await ensureProjectCache(); if (!ok) return;
+		const ok = await ensureProjectCache();
+		if (!ok) return;
 		const q = ui.projectModalSearch.value.trim().toLowerCase();
-		renderListButtons(ui.projectModalList, projectCache.filter(p => p.name.toLowerCase().includes(q)), picked => { ui.projectText.value = picked.name; ui.projectValue.value = picked.code; projectModal?.hide(); });
+		renderListButtons(
+			ui.projectModalList,
+			projectCache.filter(p => p.name.toLowerCase().includes(q)),
+			picked => {
+				ui.projectText.value = picked.name;
+				ui.projectValue.value = picked.code;
+				projectModal?.hide();
+			}
+		);
 	});
 
 	ui.assigneeModalSearch?.addEventListener("input", async () => {
-		const ok = await ensureUserCache(); if (!ok) return;
+		const ok = await ensureUserCache();
+		if (!ok) return;
 		const q = ui.assigneeModalSearch.value.trim().toLowerCase();
-		renderListButtons(ui.assigneeModalList, userCache.filter(u => u.name.toLowerCase().includes(q)), picked => { ui.assigneeText.value = picked.name; ui.assigneeValue.value = picked.code; assigneeModal?.hide(); });
+		renderListButtons(
+			ui.assigneeModalList,
+			userCache.filter(u => u.name.toLowerCase().includes(q)),
+			picked => {
+				ui.assigneeText.value = picked.name;
+				ui.assigneeValue.value = picked.code;
+				assigneeModal?.hide();
+			}
+		);
 	});
 
 	ui.creatorModalSearch?.addEventListener("input", async () => {
-		const ok = await ensureUserCache(); if (!ok) return;
+		const ok = await ensureUserCache();
+		if (!ok) return;
 		const q = ui.creatorModalSearch.value.trim().toLowerCase();
-		renderListButtons(ui.creatorModalList, userCache.filter(u => u.name.toLowerCase().includes(q)), picked => { ui.creatorText.value = picked.name; ui.creatorValue.value = picked.code; creatorModal?.hide(); });
+		renderListButtons(
+			ui.creatorModalList,
+			userCache.filter(u => u.name.toLowerCase().includes(q)),
+			picked => {
+				ui.creatorText.value = picked.name;
+				ui.creatorValue.value = picked.code;
+				creatorModal?.hide();
+			}
+		);
 	});
 
 	ui.typeModalSearch?.addEventListener("input", async () => {
@@ -550,7 +426,6 @@
 						: [];
 
 					if (nameMatch || childMatches.length > 0) {
-						// 매칭되면 자식도 포함해서 추가
 						results.push({
 							...type,
 							children: childMatches.length > 0 ? childMatches : type.children
@@ -562,11 +437,9 @@
 
 			filteredTypes = searchInTree(typeCache);
 		} else {
-			// 검색어가 없으면: 전체 표시
 			filteredTypes = typeCache;
 		}
 
-		// 트리 구조로 재생성
 		const treeData = buildTypeTreeForJS(filteredTypes);
 		renderTypeTree(treeData, document.getElementById("typeModalTree"));
 	});
@@ -579,7 +452,6 @@
 
 		toggleBtn.addEventListener("click", () => {
 			const isOpen = searchWrapper.style.display === "block";
-
 			searchWrapper.style.display = isOpen ? "none" : "block";
 			toggleBtn.textContent = isOpen ? "검색조건 열기" : "검색조건 닫기";
 		});
