@@ -35,8 +35,8 @@
 			{
 				name: "start_date", label: "시작일", align: "center", width: 110,
 				template: (t) => {
-					// 일감 상태가 "신규"일때 빈칸으로 표시
-					if (t.status === "신규") {
+					// ISSUE 상태가 "신규"이거나 TYPE 노드인 경우 시작일 빈칸
+					if ((t.rowType === "ISSUE" && t.status === "신규") || t.rowType === "TYPE") {
 						return "";
 					}
 					return DateUtils.getYYYYMMDD(t.start_date);
@@ -204,20 +204,6 @@
 	/* ========================================================================
 	   날짜 선택 유틸 (rowType 기준)
 	   ======================================================================== */
-	function getStartDate(item) {
-		if (item.rowType === "ISSUE") return item.issueStartDate;
-		if (item.rowType === "TYPE") return item.typeStartDate;
-		if (item.rowType === "PROJECT") return item.createdOn;
-		return null;
-	}
-
-	function getEndDate(item) {
-		if (item.rowType === "ISSUE") return item.issueEndDate;
-		if (item.rowType === "TYPE") return item.typeEndDate;
-		if (item.rowType === "PROJECT") return item.projectEndDate;
-		return null;
-	}
-
 	function toValidDate(value) {
 		if (!value) return null;
 		const d = new Date(value);
@@ -282,37 +268,30 @@
 			issues.forEach(item => {
 				if (item.rowType !== "TYPE") return;
 
-				const start = toValidDate(item.typeStartDate);
-				const end = toValidDate(item.typeEndDate);
-
-				// TYPE 날짜가 없으면 skip
-				if (!start || !end) {
-					return;
-				}
-
 				const typeId = `TYPE_${item.typeCode}`;
 
-				if (!typeMap[item.typeCode]) {
-					typeMap[item.typeCode] = {
-						id: typeId,
-						typeCode: item.typeCode,
-						parTypeCode: item.parTypeCode
-					};
+				let start = toValidDate(item.typeStartDate);
+				let end = toValidDate(item.typeEndDate);
 
-					tasks.push({
-						id: typeId,
-						text: item.typeName,
-						start_date: start,
-						end_date: end,
-						type: gantt.config.types.task,
-						parent: projectId,
-						open: true,
-						isTypeNode: true,
-						progress: (item.typeActualProg || 0) / 100,  // 타입은 typeActualProg 사용
-						typeActualProg: item.typeActualProg || 0,
-						typePlanProg: item.typePlanProg || 0
-					});
-				}
+				// 방어 코드
+				if (!start) start = new Date();
+				if (!end) end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+
+				tasks.push({
+					id: typeId,
+					text: item.typeName,
+					start_date: start,
+					end_date: end,
+					type: gantt.config.types.task,
+					parent: projectId,
+					open: true,
+					isTypeNode: true,
+					progress: (item.typeActualProg || 0) / 100,  // 타입은 typeActualProg 사용
+					typeActualProg: item.typeActualProg || 0,
+					typePlanProg: item.typePlanProg || 0
+				});
+
+				typeMap[item.typeCode] = { id: typeId, parTypeCode: item.parTypeCode };
 			});
 
 			// 3. TYPE parent 연결
@@ -332,11 +311,15 @@
 			issues.forEach(item => {
 				if (item.rowType !== "ISSUE") return;
 
-				const start = toValidDate(item.issueStartDate);
-				const end = toValidDate(item.issueEndDate);
+				let start = toValidDate(item.issueStartDate);
+				let end = toValidDate(item.issueEndDate);
 
-				// 종료일 < 시작일 → skip
-				if (!start || !end || new Date(end) < new Date(start)) return;
+				// 신규 ISSUE이면 start/end fallback
+				if (!start) start = new Date();
+				if (!end) end = new Date(start.getTime() + 24*60*60*1000);
+				
+				// 종료일 < 시작일 방어
+				if (end < start) end = new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000);
 
 				let parentId;
 

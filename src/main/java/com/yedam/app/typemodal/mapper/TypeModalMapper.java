@@ -5,5 +5,8 @@ import java.util.List;
 import com.yedam.app.typemodal.service.TypeModalVO;
 
 public interface TypeModalMapper {
-		  List<TypeModalVO> selectTypeModalList();
+	
+	List<TypeModalVO> selectTypeModalByUser(Integer userCode);
+
+	List<TypeModalVO> selectTypeModalList(Integer projectCode);
 }
