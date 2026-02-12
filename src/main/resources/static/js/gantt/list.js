@@ -171,8 +171,6 @@
 			};
 
 			typeCodesSet = getAllChildTypes(tCode);
-			console.log("유형 필터 - 선택한 유형:", tCode);
-			console.log("유형 필터 - 포함된 모든 하위 유형:", Array.from(typeCodesSet));
 		}
 
 		// 2. ISSUE 필터링
@@ -234,13 +232,6 @@
 			return false;
 		});
 
-		console.log("최종 필터링 결과:", {
-			총개수: filteredData.length,
-			PROJECT: filteredData.filter(d => d.rowType === "PROJECT").length,
-			TYPE: filteredData.filter(d => d.rowType === "TYPE").length,
-			ISSUE: filteredData.filter(d => d.rowType === "ISSUE").length
-		});
-
 		return filteredData;
 	};
 
@@ -287,7 +278,6 @@
 
 				// start_date 없으면 gantt 전체가 죽으니 방어
 				if (!projectStart || !projectEnd) {
-					console.error("PROJECT DATE INVALID", projectRow);
 					continue;
 				}
 

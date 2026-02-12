@@ -25,35 +25,67 @@
 	min-width: 210px;
 }
 
-/* 유형 모달 트리 스타일 */
-.type-tree ul {
-	list-style: none;
-	padding-left: 0;
+/* 유형 모달 트리 컨테이너 */
+#typeModalTree {
+	border: none !important;
+	padding: 2px;
 }
 
-.type-tree li {
-	margin: 0.2rem 0;
+/* 1. 프로젝트별 카드 (간격 및 라운딩) */
+.type-project-group {
+	border: 1px solid #dee2e6;
+	border-radius: 8px !important;
+	overflow: hidden;
+	margin-bottom: 12px;
+	background-color: #fff;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-.type-tree .type-item {
-	display: block;
-	padding: 6px 12px;
-	border-radius: 6px;
-	transition: background-color 0.2s;
-	cursor: pointer;
-	color: #212529; /* 일반 텍스트 색상 */
-}
-
-.type-tree .type-item:hover {
-	background-color: #e7f3ff;
-}
-
-.type-tree .type-item.active {
-	background-color: #0d6efd;
+/* 2. 프로젝트 헤더 */
+.type-project-header {
+	background-color: #6d747b;
 	color: #fff;
+	padding: 12px 16px;
+	font-weight: 700;
+	font-size: 0.95rem;
+	border-bottom: 1px solid #dee2e6;
 }
 
-.type-tree ul ul {
-	padding-left: 1.5rem;
-	border-left: 2px solid #dee2e6;
+/* 3. 트리 구조 및 구분선 설정 */
+#typeModalTree ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* 모든 유형 아이템에 하단 선 적용 */
+.type-item {
+	cursor: pointer;
+	padding: 12px 16px !important;
+	display: block;
+	font-size: 0.9rem;
+	color: #333;
+	background-color: #fff;
+	border-bottom: 1px solid #f0f0f0 !important; /* 하위 유형 포함 모든 곳에 선 생성 */
+	transition: background-color 0.15s;
+	text-decoration: none;
+}
+
+/* 카드 전체의 맨 마지막 유형만 선을 제거 (박스 테두리와 겹침 방지) */
+.type-project-group>ul>li:last-child>.type-item:last-child,
+	.type-project-group>ul>li:last-child>ul>li:last-child>.type-item {
+	border-bottom: none !important;
+}
+
+.type-item:hover {
+	background-color: #f9fafb !important;
+}
+
+/* 4. 계층별 들여쓰기 */
+#typeModalTree ul ul .type-item {
+	padding-left: 40px !important;
+}
+
+#typeModalTree ul ul ul .type-item {
+	padding-left: 65px !important;
 }
