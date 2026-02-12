@@ -9,9 +9,11 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.yedam.app.auth.service.AuthService;
+import com.yedam.app.auth.service.RoleAuthVO;
 import com.yedam.app.login.service.UserVO;
 import com.yedam.app.project.service.ProjectService;
 import com.yedam.app.project.service.RoleVO;
@@ -41,7 +43,24 @@ public class AuthContorller {
 		return "auth/authadd";
 	}
 
-	// AuthContorller.java 내부
+	@ResponseBody
+	@PostMapping("/api/auth/register")
+	public Map<String, Object> registerRole(@RequestBody Map<String, Object> requestData, HttpSession session) {
+
+		// 보안용으로 필요 js끄기로 하면 검증 안됨
+		String roleName = (String) requestData.get("roleName");
+		if (roleName == null || roleName.trim().isEmpty()) {
+			Map<String, Object> result = new HashMap<>();
+			result.put("success", false);
+			result.put("message", "역할명을 입력해주세요.");
+			return result;
+		}
+
+		// 서비스에 Map 그대로 전달
+		return authService.insertRoleWithAuth(requestData);
+	}
+
+	// 역할 관리자 권한 변경 
 	@ResponseBody
 	@PostMapping("/api/auth/{adminCk}/{roleCode}/adminmodify")
 	public int modifyAdminRole(@PathVariable String adminCk, @PathVariable Integer roleCode) {

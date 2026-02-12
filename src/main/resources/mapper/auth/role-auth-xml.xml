@@ -2,6 +2,24 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.auth.mapper.AuthMapper">
 
+	<!-- 역할 등록 -->
+	<insert id="addAuth" parameterType="RoleVO">
+	    <selectKey keyProperty="roleCode" resultType="int" order="BEFORE">
+	        SELECT NVL(MAX(role_code), 0) + 1 FROM role
+	    </selectKey>
+	    INSERT INTO role (role_code, role_name, explanation, admin_ck)
+	    VALUES (#{roleCode}, #{roleName}, #{explanation}, #{adminCk})
+	</insert>
+
+	<!-- 역할 권한 등록 -->
+    <insert id="addRoleAuth" parameterType="RoleAuthVO">
+    	<selectKey keyProperty="raCode" resultType="int" order="BEFORE">
+	        SELECT NVL(MAX(ra_code), 0) + 1 FROM role_authority
+	    </selectKey>
+        INSERT INTO role_authority (ra_code, role_code, category, rd_rol, wr_rol, mo_rol, del_rol)
+        VALUES (#{raCode},#{roleCode}, #{category}, #{rdRol}, #{wrRol}, #{moRol}, #{delRol})
+    </insert>
+
 	<!-- 역할 수정 -->
 	<!-- <update id="deleteRole"> UPDATE role SET role_name = role_name || '[-delete]' 
 		WHERE role_code = #{roleCode} AND role_name NOT LIKE '%[-delete]' </update> -->
