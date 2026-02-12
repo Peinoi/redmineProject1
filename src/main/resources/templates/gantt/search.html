@@ -151,24 +151,12 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">유형 선택</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal"
-						aria-label="Close"></button>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 				</div>
 				<div class="modal-body">
 					<input type="text" id="typeModalSearch" class="form-control mb-2"
 						placeholder="유형명 검색" />
-
-					<div class="table-responsive">
-						<table class="table table-hover align-middle mb-0">
-							<thead>
-								<tr>
-									<th style="width: 45%">상위유형</th>
-									<th style="width: 55%">유형</th>
-								</tr>
-							</thead>
-							<tbody id="typeModalTbody"></tbody>
-						</table>
-					</div>
+					<div id="typeModalTree"></div> <!-- 여기가 트리 렌더링 영역 -->
 				</div>
 			</div>
 		</div>

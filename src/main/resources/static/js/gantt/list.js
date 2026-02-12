@@ -270,26 +270,12 @@
 
 				const typeId = `TYPE_${item.typeCode}`;
 
-				// 하위 ISSUE 가져오기 (신규 제외)
-				const childIssues = issues.filter(
-					i => i.rowType === "ISSUE" && i.typeCode === item.typeCode && i.issueStatus !== "신규"
-				);
+				let start = toValidDate(item.typeStartDate);
+				let end = toValidDate(item.typeEndDate);
 
-				let start, end;
-
-				if (childIssues.length > 0) {
-					// 최소 시작일, 최대 종료일 계산
-					start = new Date(Math.min(...childIssues.map(i => toValidDate(i.issueStartDate)?.getTime() || Infinity)));
-					end = new Date(Math.max(...childIssues.map(i => toValidDate(i.issueEndDate)?.getTime() || -Infinity)));
-				} else {
-					// 신규 ISSUE만 있거나 하위 ISSUE 없는 경우
-					start = null; // 또는 projectStart 등 fallback
-					end = null;
-				}
-
-				// fallback
-				if (!start) start = new Date(); // 오늘
-				if (!end) end = new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000); // 시작일 + 1일
+				// 방어 코드
+				if (!start) start = new Date();
+				if (!end) end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
 
 				tasks.push({
 					id: typeId,
@@ -325,13 +311,13 @@
 			issues.forEach(item => {
 				if (item.rowType !== "ISSUE") return;
 
-				const start = toValidDate(item.issueStartDate);
-				const end = toValidDate(item.issueEndDate);
+				let start = toValidDate(item.issueStartDate);
+				let end = toValidDate(item.issueEndDate);
 
 				// 신규 ISSUE이면 start/end fallback
 				if (!start) start = new Date();
-				if (!end) end = new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000);
-
+				if (!end) end = new Date(start.getTime() + 24*60*60*1000);
+				
 				// 종료일 < 시작일 방어
 				if (end < start) end = new Date(start.getTime() + 1 * 24 * 60 * 60 * 1000);
 

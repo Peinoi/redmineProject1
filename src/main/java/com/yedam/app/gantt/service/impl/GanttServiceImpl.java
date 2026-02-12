@@ -23,7 +23,6 @@ public class GanttServiceImpl implements GanttService {
 	// 전체조회
 	@Override
 	public List<GanttVO> getGanttList(Integer userCode, GanttVO ganttVO) {
-
 		List<GanttVO> list = ganttMapper.selectGanttList(userCode, ganttVO);
 
 		Map<Integer, Integer> issueCountMap = new HashMap<>();
@@ -39,6 +38,9 @@ public class GanttServiceImpl implements GanttService {
 			if ("ISSUE".equals(vo.getRowType())) {
 				vo.setIssueStartDate(issueStartDate(vo));
 				vo.setIssueEndDate(issueEndDate(vo));
+
+				System.out.println("ISSUE=" + vo.getNodeId() + " / status=" + vo.getIssueStatus() + " / start="
+						+ vo.getIssueStartDate() + " / end=" + vo.getIssueEndDate());
 			}
 		}
 
@@ -78,55 +80,35 @@ public class GanttServiceImpl implements GanttService {
 
 	// 하위 TYPE과 ISSUE까지 포함해서 TYPE 시작일/종료일 계산
 	private LocalDateTime[] calculateTypeDate(GanttVO vo, List<GanttVO> list, Map<String, LocalDateTime[]> cache) {
-		// 이미 계산된 TYPE면 재계산 금지
+
 		if (cache.containsKey(vo.getNodeId())) {
 			return cache.get(vo.getNodeId());
 		}
 
+		List<GanttVO> childIssues = new java.util.ArrayList<>();
+
+		// 모든 하위 ISSUE 수집
+		collectChildIssues(vo.getNodeId(), list, childIssues);
+
 		LocalDateTime minStart = null;
 		LocalDateTime maxEnd = null;
 
-		// nodeId로 자식 찾기
-		String currentNodeId = vo.getNodeId(); // "TYPE_1", "TYPE_2" 등
+		for (GanttVO issue : childIssues) {
+			System.out.println("TYPE " + vo.getNodeId() + " 집계 ISSUE = " + issue.getNodeId() + " start="
+					+ issue.getIssueStartDate());
 
-		for (GanttVO child : list) {
-			// parentId가 현재 TYPE의 nodeId와 같은 것이 자식
-			if (currentNodeId.equals(child.getParentId())) {
+			LocalDateTime start = issue.getIssueStartDate();
+			LocalDateTime end = issue.getIssueEndDate();
 
-				if ("ISSUE".equals(child.getRowType())) {
-					String status = child.getIssueStatus();
-					LocalDateTime start = child.getIssueStartDate();
-					LocalDateTime end = child.getIssueEndDate();
+			if (start != null && (minStart == null || start.isBefore(minStart))) {
+				minStart = start;
+			}
 
-					// 시작일: 신규이면 null 처리
-					if ("신규".equals(status)) {
-						start = null; // 시작일 계산에서 제외
-					}
-
-					if (start != null && (minStart == null || start.isBefore(minStart))) {
-						minStart = start;
-					}
-
-					// 종료일: 신규 ISSUE도 포함, dueAt 그대로
-					if (end != null && (maxEnd == null || end.isAfter(maxEnd))) {
-						maxEnd = end;
-					}
-
-				} else if ("TYPE".equals(child.getRowType())) {
-					// 하위 TYPE 재귀 호출 → 하위 TYPE 안의 ISSUE까지 포함
-					LocalDateTime[] childDates = calculateTypeDate(child, list, cache);
-					LocalDateTime childStart = childDates[0];
-					LocalDateTime childEnd = childDates[1];
-
-					if (childStart != null && (minStart == null || childStart.isBefore(minStart)))
-						minStart = childStart;
-					if (childEnd != null && (maxEnd == null || childEnd.isAfter(maxEnd)))
-						maxEnd = childEnd;
-				}
+			if (end != null && (maxEnd == null || end.isAfter(maxEnd))) {
+				maxEnd = end;
 			}
 		}
 
-		// 계산 결과 VO에 저장
 		vo.setTypeStartDate(minStart);
 		vo.setTypeEndDate(maxEnd);
 
@@ -134,6 +116,24 @@ public class GanttServiceImpl implements GanttService {
 		cache.put(vo.getNodeId(), result);
 
 		return result;
+	}
+
+	private void collectChildIssues(String parentId, List<GanttVO> list, List<GanttVO> result) {
+
+		for (GanttVO child : list) {
+
+			// 1️. ISSUE가 현재 TYPE의 직계 자식인 경우
+			if ("ISSUE".equals(child.getRowType()) && parentId.equals(child.getParentId())) {
+
+				result.add(child);
+			}
+
+			// 2️. 하위 TYPE인 경우 (TYPE 트리 구조)
+			if ("TYPE".equals(child.getRowType()) && parentId.equals(child.getParentId())) {
+
+				collectChildIssues(child.getNodeId(), list, result);
+			}
+		}
 	}
 
 	// 작업 기간 계산
@@ -189,34 +189,39 @@ public class GanttServiceImpl implements GanttService {
 
 	// ===== 일감 시작일 규칙 =====
 	private LocalDateTime issueStartDate(GanttVO vo) {
-		String status = vo.getIssueStatus();
 
-		// 신규 → 마감기한
+		String status = vo.getIssueStatus();
+		LocalDateTime result = null;
+
+		// 신규 → 마감기한 - 1
 		if (status == null || "신규".equals(status)) {
 			if (vo.getDueAt() != null) {
 				return vo.getDueAt().minusDays(1);
-			} else {
-				return null; // DueAt가 없으면 null 반환
 			}
 		}
-
 		// 진행 / 해결 / 반려 / 완료 → startedAt
-		if (vo.getStartedAt() != null) {
-			return vo.getStartedAt();
+		else if (vo.getStartedAt() != null) {
+			result = vo.getStartedAt();
+		} else {
+			result = vo.getDueAt();
 		}
 
-		// fallback
-		return vo.getDueAt();
+		// 여기 추가 (중요)
+		return result == null ? null : result.toLocalDate().atStartOfDay();
 	}
 
 	// ===== 일감 종료일 규칙 =====
 	private LocalDateTime issueEndDate(GanttVO vo) {
+		LocalDateTime result = null;
+
 		// 완료 → resolvedAt
 		if ("완료".equals(vo.getIssueStatus()) && vo.getResolvedAt() != null) {
-			return vo.getResolvedAt();
+			result = vo.getResolvedAt();
+		} else {
+			result = vo.getDueAt();
 		}
 
-		// 그 외 → dueAt
-		return vo.getDueAt();
+		// 여기 추가
+		return result == null ? null : result.toLocalDate().atStartOfDay();
 	}
 }
