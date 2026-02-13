@@ -1,3 +1,4 @@
+// /static/js/kanban/kanban-board.js
 (() => {
   if (window.__KANBAN_BOARD_INITED__) return;
   window.__KANBAN_BOARD_INITED__ = true;
@@ -39,7 +40,8 @@
     projectModalList: $("#projectModalList"),
     assigneeModalList: $("#assigneeModalList"),
     creatorModalList: $("#creatorModalList"),
-    typeModalTbody: $("#typeModalTbody"),
+
+    typeModalTree: $("#typeModalTree"),
 
     projectModalSearch: $("#projectModalSearch"),
     assigneeModalSearch: $("#assigneeModalSearch"),
@@ -84,6 +86,9 @@
     t.show();
   };
 
+  // ------------------------------
+  // Modal helpers
+  // ------------------------------
   const cleanupModalBackdrops = () => {
     document.body.classList.remove("modal-open");
     document.body.style.removeProperty("padding-right");
@@ -93,9 +98,7 @@
 
   const bindModalCleanup = (modalEl) => {
     if (!modalEl) return;
-    modalEl.addEventListener("hidden.bs.modal", () => {
-      cleanupModalBackdrops();
-    });
+    modalEl.addEventListener("hidden.bs.modal", () => cleanupModalBackdrops());
   };
 
   const getModal = (el) =>
@@ -120,13 +123,16 @@
     ui.progressModalEl,
   ].forEach(bindModalCleanup);
 
+  // ------------------------------
+  // Filters / counts / due state
+  // ------------------------------
   const cards = () => $$(".kan-card[data-issue-code]");
   const isVisible = (el) => el.style.display !== "none";
 
   const sameDay = (rowDate, filterDate) => {
     if (!filterDate) return true;
     if (!rowDate) return false;
-    return rowDate.slice(0, 10) === filterDate;
+    return String(rowDate).slice(0, 10) === filterDate;
   };
 
   const getScope = () => {
@@ -148,10 +154,11 @@
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
   const parseYmdLocal = (ymd) => {
-    if (!ymd || ymd.length < 10) return null;
-    const y = Number(ymd.slice(0, 4));
-    const m = Number(ymd.slice(5, 7));
-    const d = Number(ymd.slice(8, 10));
+    if (!ymd || String(ymd).length < 10) return null;
+    const s = String(ymd);
+    const y = Number(s.slice(0, 4));
+    const m = Number(s.slice(5, 7));
+    const d = Number(s.slice(8, 10));
     if (!y || !m || !d) return null;
     return new Date(y, m - 1, d, 0, 0, 0, 0);
   };
@@ -213,7 +220,6 @@
     const dueStr = (card?.dataset?.due || "").trim();
     const dueDate = parseYmdLocal(dueStr);
     if (!dueDate) return false;
-
     const today = startOfToday();
     return dueDate.getTime() < today.getTime();
   };
@@ -323,7 +329,7 @@
   });
 
   // ------------------------------
-  // 모달 데이터 로드/렌더
+  // Modal data load / render
   // ------------------------------
   let projectCache = [];
   let userCache = [];
@@ -387,6 +393,7 @@
 
   const ensureTypeCache = async () => {
     if (typeCache.length > 0) return true;
+
     const res = await fetch("/api/types/modal", {
       headers: { Accept: "application/json" },
     });
@@ -394,15 +401,119 @@
       showToast("유형 목록을 불러오지 못했습니다.");
       return false;
     }
-    const data = await res.json().catch(() => []);
-    typeCache = (data || []).map((t) => ({
-      code: String(t.typeCode),
-      parentName: (t.parTypeName ?? "").trim(),
-      name: (t.typeName ?? "").trim(),
-    }));
+
+    typeCache = (await res.json().catch(() => [])) || [];
     return true;
   };
 
+  // ---- Type tree helpers ----
+  const buildTypeTreeForJS = (serverData) => {
+    const projectMap = {};
+
+    const convertType = (type) => ({
+      code: String(type.typeCode),
+      name: type.typeName,
+      children: (type.children || []).map(convertType),
+    });
+
+    (serverData || []).forEach((type) => {
+      const pCode = String(type.projectCode);
+      const pName = type.projectName || "기타 프로젝트";
+
+      if (!projectMap[pCode]) {
+        projectMap[pCode] = { code: pCode, name: pName, children: [] };
+      }
+
+      if (!type.parTypeCode) {
+        projectMap[pCode].children.push(convertType(type));
+      }
+    });
+
+    return Object.values(projectMap).filter((p) => p.children.length > 0);
+  };
+
+  const renderTypeTree = (items, container) => {
+    if (!container) return;
+    container.innerHTML = "";
+
+    const createNode = (type) => {
+      const li = document.createElement("li");
+
+      const div = document.createElement("div");
+      div.className = "type-item";
+      div.textContent = type.name;
+
+      div.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        if (ui.typeText) ui.typeText.value = type.name;
+        if (ui.typeValue) ui.typeValue.value = type.code;
+
+        typeModal?.hide();
+        setTimeout(cleanupModalBackdrops, 50);
+      });
+
+      li.appendChild(div);
+
+      if (type.children && type.children.length > 0) {
+        const ul = document.createElement("ul");
+        type.children.forEach((c) => ul.appendChild(createNode(c)));
+        li.appendChild(ul);
+      }
+
+      return li;
+    };
+
+    if (!items || items.length === 0) {
+      const div = document.createElement("div");
+      div.className = "p-4 text-center text-muted";
+      div.textContent = "결과가 없습니다.";
+      container.appendChild(div);
+      return;
+    }
+
+    items.forEach((p) => {
+      const groupWrapper = document.createElement("div");
+      groupWrapper.className = "type-project-group";
+
+      const projHeader = document.createElement("div");
+      projHeader.className = "type-project-header";
+      projHeader.textContent = p.name;
+      groupWrapper.appendChild(projHeader);
+
+      const rootUl = document.createElement("ul");
+      (p.children || []).forEach((t) => rootUl.appendChild(createNode(t)));
+      groupWrapper.appendChild(rootUl);
+
+      container.appendChild(groupWrapper);
+    });
+  };
+
+  const filterTypeServerTree = (data, qLower) => {
+    if (!qLower) return data || [];
+
+    const walk = (node) => {
+      const name = String(node.typeName || "").toLowerCase();
+      const children = node.children || [];
+      const filteredChildren = children.map(walk).filter(Boolean);
+
+      const matched = name.includes(qLower);
+
+      if (matched) {
+        return node;
+      }
+
+      if (filteredChildren.length > 0) {
+        return { ...node, children: filteredChildren };
+      }
+
+      return null;
+    };
+
+    return (data || []).map(walk).filter(Boolean);
+  };
+
+  // ---- open modals ----
   const openProjectModal = async () => {
     if (!projectModal) return;
     if (ui.projectModalSearch) ui.projectModalSearch.value = "";
@@ -450,46 +561,6 @@
     modal.show();
   };
 
-  const renderTypeTable = (items) => {
-    if (!ui.typeModalTbody) return;
-    ui.typeModalTbody.innerHTML = "";
-
-    if (!items.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 2;
-      td.className = "text-muted";
-      td.textContent = "결과가 없습니다.";
-      tr.appendChild(td);
-      ui.typeModalTbody.appendChild(tr);
-      return;
-    }
-
-    items.forEach((t) => {
-      const tr = document.createElement("tr");
-      tr.style.cursor = "pointer";
-
-      const tdParent = document.createElement("td");
-      tdParent.textContent = t.parentName;
-
-      const tdName = document.createElement("td");
-      tdName.textContent = t.name;
-
-      tr.appendChild(tdParent);
-      tr.appendChild(tdName);
-
-      tr.addEventListener("click", () => {
-        if (ui.typeText) ui.typeText.value = t.name;
-        if (ui.typeValue) ui.typeValue.value = t.code;
-
-        typeModal?.hide();
-        setTimeout(cleanupModalBackdrops, 50);
-      });
-
-      ui.typeModalTbody.appendChild(tr);
-    });
-  };
-
   const openTypeModal = async () => {
     if (!typeModal) return;
     if (ui.typeModalSearch) ui.typeModalSearch.value = "";
@@ -497,7 +568,9 @@
     const ok = await ensureTypeCache();
     if (!ok) return;
 
-    renderTypeTable(typeCache);
+    const treeData = buildTypeTreeForJS(typeCache);
+    renderTypeTree(treeData, ui.typeModalTree);
+
     typeModal.show();
   };
 
@@ -561,26 +634,24 @@
     if (!ok) return;
 
     const q = ui.typeModalSearch.value.trim().toLowerCase();
-    const list = q
-      ? typeCache.filter((t) =>
-          (t.parentName + " " + t.name).toLowerCase().includes(q),
-        )
-      : typeCache;
 
-    renderTypeTable(list);
+    const filteredServerTree = filterTypeServerTree(typeCache, q);
+    const treeData = buildTypeTreeForJS(filteredServerTree);
+    renderTypeTree(treeData, ui.typeModalTree);
   });
 
   // ------------------------------
-  // 칸반 드래그 + 클릭 기능
+  // Kanban drag + click
   // ------------------------------
   if (!ui.boardMeta || !ui.wrap) return;
 
   const isSaving = { value: false };
 
+  // position 저장은 "숨겨진 카드"까지 포함해서 보내야 꼬임이 없음
   const getOrder = (colBody) =>
-    Array.from(colBody.querySelectorAll(".kan-card"))
-      .filter(isVisible)
-      .map((c) => Number(c.dataset.issueCode));
+    Array.from(colBody.querySelectorAll(".kan-card[data-issue-code]")).map(
+      (c) => Number(c.dataset.issueCode),
+    );
 
   const resolveProjectCode = (itemEl) => {
     const raw = itemEl?.dataset?.projectCode || "";
@@ -588,7 +659,9 @@
     return typeof n === "number" && !Number.isNaN(n) ? n : null;
   };
 
-  // 권한 캐시
+  const myUserCode = String(ui.boardMeta?.dataset?.userCode || "").trim();
+
+  // 권한 캐시: 프로젝트 수정권한(canModify)
   const canModifyCache = new Map();
 
   const fetchCanModify = async (projectCode) => {
@@ -605,6 +678,36 @@
 
     canModifyCache.set(projectCode, ok);
     return ok;
+  };
+
+  // 관리자 여부
+  const isAdminCache = new Map();
+
+  const fetchIsAdmin = async (projectCode) => {
+    if (!projectCode) return false;
+    if (isAdminCache.has(projectCode)) return isAdminCache.get(projectCode);
+
+    const res = await fetch(
+      `/api/authority/project/isAdmin?projectCode=${encodeURIComponent(projectCode)}`,
+      { headers: { Accept: "application/json" } },
+    );
+
+    const data = await res.json().catch(() => ({}));
+    const ok = !!(res.ok && data?.success && data?.isAdmin);
+
+    isAdminCache.set(projectCode, ok);
+    return ok;
+  };
+
+  // 담당자면 canModify 없어도 허용(서버 정책과 일치)
+  const isAssigneeCard = (card) => {
+    if (!myUserCode) return false;
+    return String(card?.dataset?.assigneeCode || "") === myUserCode;
+  };
+
+  const canEditNormal = async (card, projectCode) => {
+    if (isAssigneeCard(card)) return true;
+    return await fetchCanModify(projectCode);
   };
 
   // 드래그 원복
@@ -631,7 +734,7 @@
   };
 
   // ------------------------------
-  // (추가) 카드 UI 즉시 반영 유틸
+  // Card UI update helpers
   // ------------------------------
   const setProgressUI = (card, v) => {
     if (!card) return;
@@ -647,14 +750,7 @@
       bar.setAttribute("aria-valuenow", String(n));
     }
 
-    const badge = card.querySelector(".kb-progress");
-    if (badge) badge.textContent = `진척도 ${n}%`;
-
-    // 너 마크업이 ".small.text-muted"였는데 혹시 구조가 다를 수도 있어서 후보를 넓힘
-    const pct =
-      card.querySelector(".kb-progress-text") ||
-      card.querySelector(".progress-text") ||
-      card.querySelector(".small.text-muted");
+    const pct = card.querySelector(".small.text-muted");
     if (pct) pct.textContent = `${n}%`;
   };
 
@@ -664,14 +760,12 @@
   };
 
   const applyMoveResultToCard = (card, data, toStatusCode) => {
-    // 1) 신규로 돌아오면 progress는 무조건 0으로 즉시 보정
     if (toStatusCode === "OB1") {
       setProgressUI(card, 0);
       setStatusUI(card, "OB1");
       return;
     }
 
-    // 2) 서버가 내려준 값이 있으면 그걸로 반영
     if (data && typeof data === "object") {
       if (data.statusId) setStatusUI(card, data.statusId);
       if (data.progress != null) setProgressUI(card, data.progress);
@@ -696,7 +790,7 @@
   };
 
   // ------------------------------
-  // 클릭 / 더블클릭
+  // Click / dblclick
   // ------------------------------
   let clickTimer = null;
 
@@ -735,7 +829,7 @@
   });
 
   // ------------------------------
-  // 진행(OB2) 진척도 모달 + 저장
+  // Progress modal (OB2)
   // ------------------------------
   let pendingProgress = null; // { issueCode, projectCode, card }
 
@@ -754,14 +848,11 @@
       return;
     }
 
-    // 권한 체크
-    let allowed = canModifyCache.get(projectCode);
-    if (allowed === undefined) {
-      try {
-        allowed = await fetchCanModify(projectCode);
-      } catch (e) {
-        allowed = false;
-      }
+    let allowed = false;
+    try {
+      allowed = await canEditNormal(card, projectCode);
+    } catch (e) {
+      allowed = false;
     }
     if (!allowed) {
       toastNoAuthOnce();
@@ -775,12 +866,14 @@
 
     pendingProgress = { issueCode, projectCode, card };
 
-    if (ui.progressModalTitle)
+    if (ui.progressModalTitle) {
       ui.progressModalTitle.textContent = card.dataset.title || "";
+    }
 
     const cur = Number(card.dataset.progress || 0);
-    if (ui.progressInput)
+    if (ui.progressInput) {
       ui.progressInput.value = String(Number.isNaN(cur) ? 0 : cur);
+    }
 
     progressModal.show();
   };
@@ -796,7 +889,6 @@
     let v = Number(ui.progressInput?.value);
     if (Number.isNaN(v)) v = 0;
 
-    // 진행(OB2): 0~90
     if (v < 0 || v > 90) {
       showToast("진척도는 0~90 사이로 입력해 주세요.");
       return;
@@ -826,7 +918,6 @@
         return;
       }
 
-      // UI 반영
       setProgressUI(card, v);
 
       progressModal.hide();
@@ -841,9 +932,9 @@
   });
 
   // ------------------------------
-  // 반려 / 해결 모달
+  // Reject / Resolve modals
   // ------------------------------
-  let pendingReject = null; // { item, fromCol, oldIndex, issueCode }
+  let pendingReject = null;
 
   const openRejectModal = ({ item, fromCol, oldIndex, issueCode }) => {
     if (!ui.rejectModalEl || !rejectModal) {
@@ -923,7 +1014,7 @@
     }
   });
 
-  let pendingResolve = null; // { item, fromCol, oldIndex, issueCode, projectCode }
+  let pendingResolve = null;
 
   const openResolveModal = ({
     item,
@@ -1019,17 +1110,10 @@
 
     return new Sortable(colBody, {
       sort: !doneThisCol,
-
-      group: {
-        name: "kanban",
-        put: true,
-        pull: !doneThisCol,
-      },
-
+      group: { name: "kanban", put: true, pull: !doneThisCol },
       animation: 150,
       draggable: ".kan-card",
       handle: ".kan-card",
-
       filter:
         ".kb-done, .kan-col-body[data-status='OB5'] .kan-card, a, button, input, textarea, select, label",
       preventOnFilter: true,
@@ -1038,9 +1122,7 @@
         dragFromCol = evt.from;
         dragOldIndex = evt.oldIndex;
 
-        if (isDoneCol(evt.from)) {
-          toastNoAuthOnce();
-        }
+        if (isDoneCol(evt.from)) toastNoAuthOnce();
       },
 
       onMove: (evt) => {
@@ -1075,13 +1157,11 @@
           return;
         }
 
-        let allowed = canModifyCache.get(projectCode);
-        if (allowed === undefined) {
-          try {
-            allowed = await fetchCanModify(projectCode);
-          } catch (e) {
-            allowed = false;
-          }
+        let allowed = false;
+        try {
+          allowed = await canEditNormal(item, projectCode);
+        } catch (e) {
+          allowed = false;
         }
 
         if (!allowed) {
@@ -1096,22 +1176,39 @@
         const fromStatusCode = fromCol?.dataset?.status || "";
         const toStatusCode = toCol?.dataset?.status || "";
 
-        if (toStatusCode === "OB4") {
-          isSaving.value = true;
+        //반려, 완료는 관리자만 가능
+        if (toStatusCode === "OB4" || toStatusCode === "OB5") {
+          let isAdmin = isAdminCache.get(projectCode);
 
-          openRejectModal({
-            item,
-            fromCol: evt.from,
-            oldIndex: evt.oldIndex,
-            issueCode: issueCode || null,
-          });
+          if (isAdmin === undefined) {
+            try {
+              isAdmin = await fetchIsAdmin(projectCode);
+            } catch (e) {
+              isAdmin = false;
+            }
+          }
 
-          return;
+          if (!isAdmin) {
+            toastNoAuthOnce();
+            revertToOrigin(item, dragFromCol, dragOldIndex);
+            return;
+          }
+
+          // 관리자 OB4 반려 모달
+          if (toStatusCode === "OB4") {
+            isSaving.value = true;
+            openRejectModal({
+              item,
+              fromCol: evt.from,
+              oldIndex: evt.oldIndex,
+              issueCode: issueCode || null,
+            });
+            return;
+          }
         }
 
         if (toStatusCode === "OB3") {
           isSaving.value = true;
-
           openResolveModal({
             item,
             fromCol: evt.from,
@@ -1119,7 +1216,6 @@
             issueCode: issueCode || null,
             projectCode,
           });
-
           return;
         }
 
@@ -1138,7 +1234,6 @@
 
           const data = await saveMove(payload);
 
-          // (핵심) 서버 반영 성공 즉시 카드 UI에 progress 반영
           applyMoveResultToCard(item, data, toStatusCode);
 
           updateCounts();
@@ -1155,10 +1250,11 @@
 
   $$(".kan-col-body[data-status]").forEach(initSortable);
 
+  // ------------------------------
+  // Init view
+  // ------------------------------
   const forceScopeME = () => {
-    ui.scopeRadios.forEach((r) => {
-      r.checked = false;
-    });
+    ui.scopeRadios.forEach((r) => (r.checked = false));
     const me = ui.scopeRadios.find((r) => r.value === "ME");
     if (me) me.checked = true;
   };

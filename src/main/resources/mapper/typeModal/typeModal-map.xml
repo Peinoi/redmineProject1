@@ -2,31 +2,32 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper
 	namespace="com.yedam.app.typemodal.mapper.TypeModalMapper">
-	<select id="selectTypeModalByUser"
-		resultType="TypeModalVO">
+	<select id="selectTypeModalByUser" resultType="TypeModalVO">
 		SELECT
-		    t.type_code       AS typeCode,
-		    t.type_name       AS typeName,
-		    t.par_type_code   AS parTypeCode,
-		    p.type_name       AS parTypeName,
-		    t.project_code    AS projectCode,
-		    pr.project_name   AS projectName
+		t.type_code AS typeCode,
+		t.type_name AS typeName,
+		t.par_type_code AS parTypeCode,
+		p.type_name AS parTypeName,
+		t.project_code AS projectCode,
+		pr.project_name AS projectName
 		FROM types t
 		LEFT OUTER JOIN types p
-		  ON t.par_type_code = p.type_code
+		ON t.par_type_code = p.type_code
 		LEFT OUTER JOIN projects pr
-		  ON t.project_code = pr.project_code    
+		ON t.project_code = pr.project_code
 		WHERE t.project_code IN (
-		    SELECT DISTINCT project_code
-		    FROM VW_USER_PROJECT_AUTH
-		    WHERE user_code = #{userCode}
+		SELECT DISTINCT project_code
+		FROM VW_USER_PROJECT_AUTH
+		WHERE user_code = #{userCode}
 		)
-		ORDER BY NVL(p.type_name, t.type_name), t.type_name
+		ORDER BY NVL(p.type_name, t.type_name),
+		t.type_name
 	</select>
 
 	<select id="selectTypeModalList" resultType="TypeModalVO">
 		SELECT
-		t.type_code AS typeCode,
+		t.type_code AS
+		typeCode,
 		t.type_name AS typeName,
 		t.par_type_code AS parTypeCode,
 		p.type_name AS parTypeName,
@@ -34,7 +35,29 @@
 		FROM types t
 		LEFT OUTER JOIN types p
 		ON t.par_type_code = p.type_code
+		WHERE
+		t.project_code = #{projectCode}
+		ORDER BY NVL(p.type_name, t.type_name),
+		t.type_name
+	</select>
+
+	<select id="selectTypeModalListForInsert"
+		resultType="TypeModalVO">
+		SELECT
+		t.type_code AS typeCode,
+		t.type_name AS typeName,
+		t.par_type_code AS parTypeCode,
+		p.type_name AS parTypeName,
+		t.project_code AS projectCode,
+		pr.project_name AS projectName,
+		t.end_at         AS endAt
+		FROM types t
+		LEFT OUTER JOIN types p
+		ON t.par_type_code = p.type_code
+		LEFT OUTER JOIN projects pr
+		ON t.project_code = pr.project_code
 		WHERE t.project_code = #{projectCode}
 		ORDER BY NVL(p.type_name, t.type_name), t.type_name
 	</select>
+
 </mapper>

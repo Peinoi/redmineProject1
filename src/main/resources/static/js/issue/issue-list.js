@@ -44,12 +44,14 @@
     projectModalList: $("#projectModalList"),
     assigneeModalList: $("#assigneeModalList"),
     creatorModalList: $("#creatorModalList"),
-    typeModalTbody: $("#typeModalTbody"),
 
     projectModalSearch: $("#projectModalSearch"),
     assigneeModalSearch: $("#assigneeModalSearch"),
     creatorModalSearch: $("#creatorModalSearch"),
     typeModalSearch: $("#typeModalSearch"),
+
+    // 트리 렌더링 컨테이너 (type 모달 내부에 있어야 함)
+    typeModalTree: $("#typeModalTree"),
 
     btnCreate: $("#btnIssueCreate"),
   };
@@ -356,6 +358,9 @@
     modal.show();
   };
 
+  // -------------------------
+  // 타입 모달 (트리 방식)
+  // -------------------------
   const ensureTypeCache = async () => {
     if (typeCache.length > 0) return true;
 
@@ -367,57 +372,167 @@
       return false;
     }
 
-    const data = await res.json();
-    typeCache = data.map((t) => {
-      const parentName = (t.parTypeName ?? "").trim();
-      const name = (t.typeName ?? "").trim();
-      return {
-        code: String(t.typeCode),
-        parentName,
-        name,
-        label: `${name}`,
-      };
-    });
-
+    typeCache = await res.json();
     return true;
   };
 
-  const renderTypeTable = (items) => {
-    if (!ui.typeModalTbody) return;
-    ui.typeModalTbody.innerHTML = "";
+  // 서버 데이터가 "flat"이든 "children" 포함이든 모두 커버
+  const buildTypeTreeForJS = (serverData) => {
+    if (!Array.isArray(serverData) || serverData.length === 0) return [];
 
-    if (!items.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 2;
-      td.className = "text-muted";
-      td.textContent = "결과가 없습니다.";
-      tr.appendChild(td);
-      ui.typeModalTbody.appendChild(tr);
+    const hasChildren = serverData.some(
+      (x) => Array.isArray(x?.children) && x.children.length > 0,
+    );
+
+    // children 포함(이미 트리 느낌)일 때: 프로젝트별로 최상위(parTypeCode null)만 모아서 변환
+    if (hasChildren) {
+      const projectMap = {};
+      const convertNode = (node) => ({
+        code: String(node.typeCode),
+        name: (node.typeName ?? "").trim(),
+        children: (node.children || []).map(convertNode),
+      });
+
+      serverData.forEach((node) => {
+        const pCode = String(node.projectCode);
+        const pName = (node.projectName ?? "기타 프로젝트").trim();
+
+        if (!projectMap[pCode]) {
+          projectMap[pCode] = { code: pCode, name: pName, children: [] };
+        }
+
+        if (!node.parTypeCode) {
+          projectMap[pCode].children.push(convertNode(node));
+        }
+      });
+
+      return Object.values(projectMap).filter((p) => p.children.length > 0);
+    }
+
+    // flat 리스트일 때: parTypeCode로 트리 구성
+    const byProject = {};
+    serverData.forEach((t) => {
+      const pCode = String(t.projectCode);
+      const pName = (t.projectName ?? "기타 프로젝트").trim();
+
+      if (!byProject[pCode]) {
+        byProject[pCode] = {
+          code: pCode,
+          name: pName,
+          nodeMap: new Map(),
+          roots: [],
+        };
+      }
+
+      const node = {
+        code: String(t.typeCode),
+        name: (t.typeName ?? "").trim(),
+        parentCode: t.parTypeCode == null ? null : String(t.parTypeCode),
+        children: [],
+      };
+
+      byProject[pCode].nodeMap.set(node.code, node);
+    });
+
+    Object.values(byProject).forEach((proj) => {
+      proj.nodeMap.forEach((node) => {
+        if (node.parentCode && proj.nodeMap.has(node.parentCode)) {
+          proj.nodeMap.get(node.parentCode).children.push(node);
+        } else {
+          proj.roots.push(node);
+        }
+      });
+
+      // children 정렬이 필요하면 여기서 정렬 가능
+    });
+
+    return Object.values(byProject)
+      .map((p) => ({ code: p.code, name: p.name, children: p.roots }))
+      .filter((p) => p.children.length > 0);
+  };
+
+  const renderTypeTree = (projects, container) => {
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    if (!projects || projects.length === 0) {
+      container.innerHTML =
+        '<div class="p-4 text-center text-muted">결과가 없습니다.</div>';
       return;
     }
 
-    items.forEach((t) => {
-      const tr = document.createElement("tr");
-      tr.style.cursor = "pointer";
+    const createNode = (type) => {
+      const li = document.createElement("li");
 
-      const tdParent = document.createElement("td");
-      tdParent.textContent = t.parentName;
+      const div = document.createElement("div");
+      div.className = "type-item"; // search.js 방식: 부트스트랩 list-group 간섭 방지
+      div.textContent = type.name;
 
-      const tdName = document.createElement("td");
-      tdName.textContent = t.name;
-
-      tr.appendChild(tdParent);
-      tr.appendChild(tdName);
-
-      tr.addEventListener("click", () => {
-        if (ui.typeText) ui.typeText.value = t.label;
-        if (ui.typeValue) ui.typeValue.value = t.code;
+      div.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (ui.typeText) ui.typeText.value = type.name;
+        if (ui.typeValue) ui.typeValue.value = type.code;
         typeModal?.hide();
       });
 
-      ui.typeModalTbody.appendChild(tr);
+      li.appendChild(div);
+
+      if (type.children && type.children.length > 0) {
+        const ul = document.createElement("ul");
+        type.children.forEach((c) => ul.appendChild(createNode(c)));
+        li.appendChild(ul);
+      }
+
+      return li;
+    };
+
+    projects.forEach((p) => {
+      const groupWrapper = document.createElement("div");
+      groupWrapper.className = "type-project-group";
+
+      const projHeader = document.createElement("div");
+      projHeader.className = "type-project-header";
+      projHeader.textContent = p.name;
+      groupWrapper.appendChild(projHeader);
+
+      if (p.children && p.children.length > 0) {
+        const rootUl = document.createElement("ul");
+        p.children.forEach((t) => rootUl.appendChild(createNode(t)));
+        groupWrapper.appendChild(rootUl);
+      }
+
+      container.appendChild(groupWrapper);
     });
+  };
+
+  const filterTypeTree = (projects, q) => {
+    if (!q) return projects;
+
+    const query = q.toLowerCase();
+
+    const filterNode = (node) => {
+      const nameHit = (node.name || "").toLowerCase().includes(query);
+      const childHits = (node.children || [])
+        .map(filterNode)
+        .filter((x) => x != null);
+
+      if (nameHit || childHits.length > 0) {
+        return { ...node, children: childHits };
+      }
+      return null;
+    };
+
+    const filteredProjects = (projects || [])
+      .map((p) => {
+        const children = (p.children || [])
+          .map(filterNode)
+          .filter((x) => x != null);
+        return { ...p, children };
+      })
+      .filter((p) => p.children && p.children.length > 0);
+
+    return filteredProjects;
   };
 
   const openTypeModal = async () => {
@@ -428,10 +543,15 @@
     const ok = await ensureTypeCache();
     if (!ok) return;
 
-    renderTypeTable(typeCache);
+    const treeData = buildTypeTreeForJS(typeCache);
+    renderTypeTree(treeData, ui.typeModalTree);
+
     typeModal.show();
   };
 
+  // -------------------------
+  // 상세 이동
+  // -------------------------
   const goDetail = (tr) => {
     const issueCode = tr.dataset.issueCode;
     if (!issueCode) return;
@@ -517,24 +637,21 @@
     });
   });
 
+  // 타입 모달 검색: 트리 구성 후, 트리에서 검색(가지치기)해서 렌더링
   ui.typeModalSearch?.addEventListener("input", async () => {
     const ok = await ensureTypeCache();
     if (!ok) return;
 
-    const q = ui.typeModalSearch.value.trim().toLowerCase();
-    const list = q
-      ? typeCache.filter((t) =>
-          (t.parentName + " " + t.name).toLowerCase().includes(q),
-        )
-      : typeCache;
+    const q = ui.typeModalSearch.value.trim();
+    const treeData = buildTypeTreeForJS(typeCache);
+    const filtered = filterTypeTree(treeData, q);
 
-    renderTypeTable(list);
+    renderTypeTree(filtered, ui.typeModalTree);
   });
 
   ui.tbody.addEventListener("click", (e) => {
     if (e.target.closest("input, label, button, a")) return;
     const tr = e.target.closest("tr.issueRow");
-    console.log("clicked row dataset:", tr.dataset);
     if (tr && tr.style.display !== "none") goDetail(tr);
   });
 

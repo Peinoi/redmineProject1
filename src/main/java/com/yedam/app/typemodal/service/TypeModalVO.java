@@ -1,5 +1,6 @@
 package com.yedam.app.typemodal.service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import lombok.Data;
@@ -13,4 +14,6 @@ public class TypeModalVO {
 	private Integer projectCode; // 프로젝트별 구분
 	private String projectName;
 	private List<TypeModalVO> children; // 하위 유형 재귀
+	
+	private LocalDate endAt;
 }

@@ -11,4 +11,7 @@ public interface TypeModalService {
 
 	// flatList -> 트리 구조로 변환
 	public List<TypeModalVO> buildTypeTree(List<TypeModalVO> flatList);
+	
+	// 등록 화면용
+	List<TypeModalVO> findTypeModalListForInsert(Integer projectCode);
 }

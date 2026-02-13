@@ -56,4 +56,12 @@ public class TypeModalServiceImpl implements TypeModalService {
 
 		return roots;
 	}
+	
+	// 등록화면용
+	@Override
+	public List<TypeModalVO> findTypeModalListForInsert(Integer projectCode) {
+	  if (projectCode == null) return List.of();
+	  return typeModalMapper.selectTypeModalListForInsert(projectCode);
+	}
+
 }

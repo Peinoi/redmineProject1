@@ -203,13 +203,18 @@
                 readonly
               />
               <div class="form-text">등록일은 오늘 날짜로 자동 설정됩니다.</div>
+              <br />
             </div>
 
             <div class="col-12 col-md-4">
               <label class="form-label">마감기한</label>
               <input type="date" id="dueDateView" class="form-control" />
               <div class="form-text">
-                우선순위로 자동 설정되며 필요 시 수정 가능합니다.
+                우선순위로 자동 설정되며 필요 시 수정할 수 있습니다.
+                <br />
+                <span class="text-muted">유형 종료일: </span>
+                <strong id="typeEndAtView" class="text-muted">-</strong>
+                <span class="text-muted">이후는 선택이 불가능합니다.</span>
               </div>
             </div>
 
@@ -225,7 +230,7 @@
                 step="1"
                 value="0"
               />
-              <div class="form-text">&nbsp;</div>
+              <div class="form-text">&nbsp;<br />&nbsp;</div>
             </div>
           </div>
 
@@ -312,7 +317,6 @@
               type="button"
               class="btn-close"
               data-bs-dismiss="modal"
-              aria-label="Close"
             ></button>
           </div>
           <div class="modal-body">
@@ -320,20 +324,10 @@
               type="text"
               id="typeModalSearch"
               class="form-control mb-2"
-              placeholder="유형명/상위유형명 검색"
+              placeholder="유형명 검색"
             />
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th style="width: 45%">상위유형</th>
-                    <th style="width: 55%">유형</th>
-                  </tr>
-                </thead>
-                <tbody id="typeModalList"></tbody>
-              </table>
-            </div>
+            <div id="typeModalTree" class="type-tree"></div>
+            <!-- 여기가 트리 렌더링 영역 -->
           </div>
         </div>
       </div>

@@ -15,6 +15,7 @@
 
   const typeText = $("#typeText");
   const typeCode = $("#typeCode");
+  const typeEndAtView = $("#typeEndAtView"); // HTML에 추가한 종료일 표시 영역
 
   const parIssueText = $("#parIssueText");
   const parIssueCode = $("#parIssueCode");
@@ -46,7 +47,9 @@
   const projectList = $("#projectModalList");
   const assigneeList = $("#assigneeModalList");
   const parIssueTbody = $("#parIssueModalList");
-  const typeList = $("#typeModalList");
+
+  // HTML은 table(tbody)이 아니라 div 트리 영역임
+  const typeTree = $("#typeModalTree");
 
   const projectSearch = $("#projectModalSearch");
   const assigneeSearch = $("#assigneeModalSearch");
@@ -74,6 +77,52 @@
   const PRIORITY_DAYS = { OA1: 2, OA2: 7, OA3: 14, OA4: 21 };
   const getPriorityDays = () => PRIORITY_DAYS[priority?.value] ?? null;
 
+  /* ====== 유형 종료일 제한 상태 ====== */
+  let selectedTypeEndDate = ""; // "YYYY-MM-DD"
+
+  const normalizeDateOnly = (v) => {
+    if (!v) return "";
+    const s = String(v).trim();
+    if (s.length >= 10 && s[4] === "-" && s[7] === "-") return s.slice(0, 10);
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    return toDate(d);
+  };
+
+  const clampByTypeEndDate = (dateStr) => {
+    if (!dateStr) return dateStr;
+    if (!selectedTypeEndDate) return dateStr;
+    return dateStr > selectedTypeEndDate ? selectedTypeEndDate : dateStr;
+  };
+
+  const applyTypeEndDateLimit = (endDateStr) => {
+    selectedTypeEndDate = endDateStr || "";
+
+    if (typeEndAtView) {
+      typeEndAtView.textContent = selectedTypeEndDate || "-";
+    }
+
+    if (dueView) {
+      if (selectedTypeEndDate) {
+        dueView.max = selectedTypeEndDate;
+      } else {
+        dueView.removeAttribute("max");
+      }
+    }
+
+    if (
+      selectedTypeEndDate &&
+      dueView?.value &&
+      dueView.value > selectedTypeEndDate
+    ) {
+      dueView.value = selectedTypeEndDate;
+      syncDueHidden();
+      showToast(
+        "마감기한이 유형 종료일을 초과할 수 없어 종료일로 조정되었습니다.",
+      );
+    }
+  };
+
   const setCreatedToday = () => {
     const str = toDate(new Date());
     if (createdView) createdView.value = str;
@@ -90,7 +139,9 @@
       return;
     }
 
-    const dueStr = toDate(addDays(new Date(), days));
+    let dueStr = toDate(addDays(new Date(), days));
+    dueStr = clampByTypeEndDate(dueStr);
+
     dueView.value = dueStr;
     dueAt.value = toDT(dueStr);
   };
@@ -104,6 +155,11 @@
       showDueAutoToast();
       setDueByPriority();
       return;
+    }
+
+    if (selectedTypeEndDate && dueView.value > selectedTypeEndDate) {
+      dueView.value = selectedTypeEndDate;
+      showToast("마감기한은 유형 종료일 이후로 설정할 수 없습니다.");
     }
 
     dueAt.value = toDT(dueView.value);
@@ -160,7 +216,7 @@
   let lastDueToastAt = 0;
   const showDueAutoToast = () => {
     const now = Date.now();
-    if (now - lastDueToastAt < 1200) return; // 1.2초 이내 중복 방지
+    if (now - lastDueToastAt < 1200) return;
     lastDueToastAt = now;
     showToast(
       "마감기한이 삭제되어 우선순위 기준으로 자동 설정되어 저장됩니다.",
@@ -243,37 +299,119 @@
     });
   };
 
-  const renderTypeTable = (tbodyEl, items, onPick) => {
-    if (!tbodyEl) return;
-    tbodyEl.innerHTML = "";
+  /* ====== 유형 트리 렌더 (HTML: #typeModalTree) ====== */
+  const escapeHtml = (s) =>
+    String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
 
-    if (!items.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 2;
-      td.className = "text-muted";
-      td.textContent = "결과가 없습니다.";
-      tr.appendChild(td);
-      tbodyEl.appendChild(tr);
-      return;
+  const normalizeTypeNodes = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.list)) return data.list;
+    return [];
+  };
+
+  const getNodeName = (node) => (node?.typeName ?? "").trim();
+  const getNodeCode = (node) => node?.typeCode;
+
+  const filterTypeTree = (nodes, qLower) => {
+    if (!qLower) return nodes;
+
+    const out = [];
+    for (const n of nodes) {
+      const name = getNodeName(n).toLowerCase();
+      const kids = Array.isArray(n.children) ? n.children : [];
+      const filteredKids = filterTypeTree(kids, qLower);
+
+      if (name.includes(qLower) || filteredKids.length) {
+        out.push({
+          ...n,
+          children: filteredKids,
+        });
+      }
+    }
+    return out;
+  };
+
+  const buildTypeTreeDom = (nodes, depth = 0) => {
+    const wrap = document.createElement("div");
+
+    if (!nodes.length) {
+      const empty = document.createElement("div");
+      empty.className = "text-muted";
+      empty.textContent = "결과가 없습니다.";
+      wrap.appendChild(empty);
+      return wrap;
     }
 
-    items.forEach((it) => {
-      const tr = document.createElement("tr");
-      tr.style.cursor = "pointer";
+    for (const n of nodes) {
+      const row = document.createElement("div");
+      row.className = "type-tree-row d-flex align-items-center";
+      row.style.padding = "6px 8px";
+      row.style.cursor = "pointer";
+      row.style.borderBottom = "1px solid rgba(0,0,0,0.06)";
+      row.style.paddingLeft = `${8 + depth * 16}px`;
 
-      const tdParent = document.createElement("td");
-      tdParent.textContent = it.parTypeName || "";
+      const hasChildren = Array.isArray(n.children) && n.children.length > 0;
+      const caret = document.createElement("span");
+      caret.className = "me-2";
+      caret.style.width = "14px";
+      caret.style.display = "inline-block";
+      caret.textContent = hasChildren ? "▸" : "";
+      row.appendChild(caret);
 
-      const tdChild = document.createElement("td");
-      tdChild.textContent = it.typeName;
+      const name = document.createElement("span");
+      name.innerHTML = escapeHtml(getNodeName(n));
+      row.appendChild(name);
 
-      tr.appendChild(tdParent);
-      tr.appendChild(tdChild);
+      row.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const code = getNodeCode(n);
+        if (!code) return;
 
-      tr.addEventListener("click", () => onPick(it));
-      tbodyEl.appendChild(tr);
-    });
+        if (typeText) typeText.value = getNodeName(n);
+        if (typeCode) typeCode.value = String(code);
+
+        // 유형 종료일(endAt) 반영
+        const endDate = normalizeDateOnly(n.endAt);
+        applyTypeEndDateLimit(endDate);
+
+        // 우선순위가 이미 선택돼 있으면, 자동 마감일도 종료일 기준으로 클램프
+        if (priority?.value) setDueByPriority();
+
+        if (typeSearch) typeSearch.value = "";
+        typeModal?.hide();
+      });
+
+      wrap.appendChild(row);
+
+      if (hasChildren) {
+        const childWrap = buildTypeTreeDom(n.children, depth + 1);
+        childWrap.style.display = "none";
+
+        caret.style.cursor = "pointer";
+        caret.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = childWrap.style.display !== "none";
+          childWrap.style.display = isOpen ? "none" : "block";
+          caret.textContent = isOpen ? "▸" : "▾";
+        });
+
+        wrap.appendChild(childWrap);
+      }
+    }
+
+    return wrap;
+  };
+
+  const renderTypeTree = (nodes) => {
+    if (!typeTree) return;
+    typeTree.innerHTML = "";
+    typeTree.appendChild(buildTypeTreeDom(nodes, 0));
   };
 
   const filterBy = (items, q) => {
@@ -288,7 +426,10 @@
 
   let projectCache = [];
   let userCache = [];
-  let typeCache = [];
+
+  // 유형: 프로젝트별 트리 캐시
+  let typeTreeCache = [];
+  let typeCacheProjectCode = "";
 
   // 프로젝트가 바뀌면 담당자 캐시는 다시 받아야 함
   let userCacheProjectCode = "";
@@ -311,7 +452,6 @@
     return true;
   };
 
-  // 수정 핵심: projectCode 기준으로 멤버만 조회
   const ensureUsers = async () => {
     const projCode = projectCode?.value?.trim();
     if (!projCode) {
@@ -319,7 +459,6 @@
       return false;
     }
 
-    // 같은 프로젝트면 캐시 재사용, 프로젝트 바뀌면 새로 받기
     if (userCache.length && userCacheProjectCode === projCode) return true;
 
     const data = await fetchJson(
@@ -337,20 +476,22 @@
   };
 
   const ensureTypes = async () => {
-    if (typeCache.length) return true;
+    const projCode = projectCode?.value?.trim();
+    if (!projCode) {
+      showToast("프로젝트를 먼저 선택해 주세요.");
+      return false;
+    }
+
+    if (typeTreeCache.length && typeCacheProjectCode === projCode) return true;
 
     const data = await fetchJson(
-      "/api/types/modal",
+      `/api/types/modal/by-project?projectCode=${encodeURIComponent(projCode)}`,
       "유형 목록을 불러오지 못했습니다.",
     );
     if (!data) return false;
 
-    typeCache = data.map((t) => ({
-      value: String(t.typeCode),
-      typeName: (t.typeName ?? "").trim(),
-      parTypeName: (t.parTypeName ?? "").trim(),
-    }));
-
+    typeTreeCache = normalizeTypeNodes(data);
+    typeCacheProjectCode = projCode;
     return true;
   };
 
@@ -375,7 +516,6 @@
   };
 
   const clearProjectDependentFields = () => {
-    // 프로젝트 바뀌면: 상위일감/담당자 초기화 + 담당자 캐시도 초기화
     if (parIssueText) parIssueText.value = "";
     if (parIssueCode) parIssueCode.value = "";
     if (parIssueSearch) parIssueSearch.value = "";
@@ -384,8 +524,19 @@
     if (assigneeCode) assigneeCode.value = "";
     if (assigneeSearch) assigneeSearch.value = "";
 
+    if (typeText) typeText.value = "";
+    if (typeCode) typeCode.value = "";
+    if (typeSearch) typeSearch.value = "";
+    if (typeTree) typeTree.innerHTML = "";
+
     userCache = [];
     userCacheProjectCode = "";
+
+    typeTreeCache = [];
+    typeCacheProjectCode = "";
+
+    // 유형 종료일 제한 초기화
+    applyTypeEndDateLimit("");
   };
 
   const openProjectModal = async () => {
@@ -457,40 +608,39 @@
   };
 
   const openTypeModal = async () => {
-    if (!typeModal || !typeList) return;
+    if (!typeModal || !typeTree) return;
+
+    if (!projectCode?.value?.trim()) {
+      showToast("프로젝트를 먼저 선택해 주세요.");
+      return;
+    }
+
     if (!(await ensureTypes())) return;
 
-    renderTypeTable(typeList, typeCache, (picked) => {
-      if (typeText) typeText.value = picked.typeName;
-      if (typeCode) typeCode.value = picked.value;
-
-      if (typeSearch) typeSearch.value = "";
-      typeModal.hide();
-    });
+    const q = (typeSearch?.value || "").trim().toLowerCase();
+    const filteredTree = filterTypeTree(typeTreeCache, q);
+    renderTypeTree(filteredTree);
 
     typeModal.show();
   };
 
-  const refreshTypeList = async () => {
-    if (!typeList) return;
+  const refreshTypeTree = async () => {
+    if (!typeTree) return;
+
+    if (!projectCode?.value?.trim()) {
+      typeTree.innerHTML = "";
+      const empty = document.createElement("div");
+      empty.className = "text-muted";
+      empty.textContent = "프로젝트를 먼저 선택해 주세요.";
+      typeTree.appendChild(empty);
+      return;
+    }
+
     if (!(await ensureTypes())) return;
 
     const q = (typeSearch?.value || "").trim().toLowerCase();
-    const filtered = q
-      ? typeCache.filter((t) => {
-          const p = (t.parTypeName || "").toLowerCase();
-          const c = (t.typeName || "").toLowerCase();
-          return p.includes(q) || c.includes(q);
-        })
-      : typeCache;
-
-    renderTypeTable(typeList, filtered, (picked) => {
-      if (typeText) typeText.value = picked.typeName;
-      if (typeCode) typeCode.value = picked.value;
-
-      if (typeSearch) typeSearch.value = "";
-      typeModal?.hide();
-    });
+    const filteredTree = filterTypeTree(typeTreeCache, q);
+    renderTypeTree(filteredTree);
   };
 
   const refreshProjectList = async () => {
@@ -609,9 +759,15 @@
   projectSearch?.addEventListener("input", refreshProjectList);
   assigneeSearch?.addEventListener("input", refreshAssigneeList);
   parIssueSearch?.addEventListener("input", refreshParIssueTable);
-  typeSearch?.addEventListener("input", refreshTypeList);
 
-  priority?.addEventListener("change", setDueByPriority);
+  // 유형 검색은 트리 갱신
+  typeSearch?.addEventListener("input", refreshTypeTree);
+
+  priority?.addEventListener("change", () => {
+    setDueByPriority();
+    syncDueHidden();
+  });
+
   dueView?.addEventListener("change", syncDueHidden);
   dueView?.addEventListener("input", () => {
     if (!dueView.value) syncDueHidden();
@@ -623,6 +779,7 @@
 
   btnReset?.addEventListener("click", () => {
     form?.reset();
+
     if (projectText) projectText.value = "";
     if (projectCode) projectCode.value = "";
 
@@ -636,9 +793,17 @@
 
     if (typeText) typeText.value = "";
     if (typeCode) typeCode.value = "";
+    if (typeSearch) typeSearch.value = "";
+    if (typeTree) typeTree.innerHTML = "";
 
     userCache = [];
     userCacheProjectCode = "";
+
+    typeTreeCache = [];
+    typeCacheProjectCode = "";
+
+    // 종료일 표시 초기화 + max 제거
+    applyTypeEndDateLimit("");
 
     setCreatedToday();
     setDueByPriority();
@@ -670,11 +835,23 @@
       showToast("우선순위를 선택해 주세요.");
       return;
     }
+
     syncDueHidden();
 
     if (!typeCode?.value) {
       e.preventDefault();
       showToast("유형을 선택해 주세요.");
+      return;
+    }
+
+    // 최종 방어(유형 종료일 제한)
+    if (
+      selectedTypeEndDate &&
+      dueView?.value &&
+      dueView.value > selectedTypeEndDate
+    ) {
+      e.preventDefault();
+      showToast("마감기한은 유형 종료일 이후로 설정할 수 없습니다.");
       return;
     }
 
@@ -690,6 +867,9 @@
     setCreatedToday();
     renderSelectedFileName();
     setCanCreate(false);
+
+    // 최초 화면: 유형 종료일 표시 초기화(HTML에 strong가 있어도 '-'로)
+    applyTypeEndDateLimit("");
 
     const p = projectCode?.value?.trim();
     if (p) await refreshCanCreate(p);

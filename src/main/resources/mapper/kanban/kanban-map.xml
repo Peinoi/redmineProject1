@@ -180,5 +180,26 @@
 		AND
 		i.project_code = #{projectCode}
 	</update>
+	
+	<select id="selectIssueForAuth" resultType="IssueVO">
+    SELECT
+    i.issue_code    AS issueCode,
+    i.project_code  AS projectCode,
+    i.assignee_code AS assigneeCode,
+    s.code_id       AS statusId
+  FROM issues i
+  JOIN status s
+    ON s.status_code  = i.status_code
+   AND s.project_code = i.project_code
+  WHERE i.project_code = #{projectCode}
+    AND i.issue_code   = #{issueCode}
+    AND EXISTS (
+      SELECT 1
+      FROM vw_user_auth v
+      WHERE v.user_code = #{userCode}
+        AND v.project_code = i.project_code
+        AND v.status = 'OD1'
+    )
+</select>
 
 </mapper>
