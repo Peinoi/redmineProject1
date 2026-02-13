@@ -74,8 +74,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 매칭 결과 확인
 		if (uriInfo == null) {
-			//System.out.println("⚠️ 매칭되는 URI 패턴을 찾지 못함!");
-			//System.out.println("========== 권한 체크 종료 (패턴 없음) ==========");
+			// System.out.println("⚠️ 매칭되는 URI 패턴을 찾지 못함!");
+			// System.out.println("========== 권한 체크 종료 (패턴 없음) ==========");
 			return true; // ❌ 문제: 매칭 안 되면 통과시킴!
 		}
 
@@ -110,12 +110,21 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 	// URI 패턴 매칭
 	private UriAccessInfoVO findMatchingUri(String requestUri) {
+		System.out.println("🔍 매칭 시도 URI: " + requestUri);
+		System.out.println("📋 캐시된 패턴 목록:");
+
 		for (Map.Entry<String, UriAccessInfoVO> entry : uriCache.entrySet()) {
 			String pattern = entry.getKey();
-			if (pathMatcher.match(pattern, requestUri)) {
+			boolean matches = pathMatcher.match(pattern, requestUri);
+			System.out.println("  - 패턴: " + pattern + " → 매칭: " + matches);
+
+			if (matches) {
+				System.out.println("✅ 매칭 성공!");
 				return entry.getValue();
 			}
 		}
+
+		System.out.println("❌ 매칭되는 패턴 없음");
 		return null;
 	}
 

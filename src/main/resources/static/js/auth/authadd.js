@@ -34,6 +34,48 @@ function setupSelectAll() {
 			});
 		});
 	});
+
+	// ============================================
+	//  가로(행) 전체 선택 처리
+	// ============================================
+	const rowCheckboxes = document.querySelectorAll('.row-check');
+
+	rowCheckboxes.forEach(rowHeader => {
+		rowHeader.addEventListener('change', function() {
+			const parentRow = this.closest('tr');
+			const rowItems = parentRow.querySelectorAll('input[type="checkbox"]:not(.row-check)');
+
+			rowItems.forEach(item => {
+				item.checked = this.checked;
+				item.dispatchEvent(new Event('change'));
+			});
+		});
+	});
+
+	// ============================================
+	//  표 전체 선택
+	// ============================================
+	const masterCheck = document.querySelector('.all-check');
+	// 테이블 모든 체크박스들 선택
+	const allTableChecks = document.querySelectorAll('#projectTbody input[type="checkbox"]');
+	// 헤더에 있는 체크박스들
+	const columnHeadChecks = document.querySelectorAll('thead input[type="checkbox"]:not(.all-check)');
+
+	if (masterCheck) {
+		masterCheck.addEventListener('change', function() {
+			const isChecked = this.checked;
+
+			allTableChecks.forEach(cb => {
+				cb.checked = isChecked;
+				cb.dispatchEvent(new Event('change'));
+			});
+
+			columnHeadChecks.forEach(cb => {
+				cb.checked = isChecked;
+				cb.indeterminate = false; // '-' 표시 초기화
+			});
+		});
+	}
 }
 
 
