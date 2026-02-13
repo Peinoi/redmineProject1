@@ -267,7 +267,6 @@
 	const transformToGanttFormat = (data) => {
 		const tasks = [];
 		const links = [];
-		let linkId = 1;
 
 		console.log("=== 원본 데이터 ===", data);
 
@@ -316,11 +315,8 @@
 				let start = toValidDate(item.startAt);
 				let end = toValidDate(item.endAt);
 
-				console.log(`TYPE ${item.typeName}: startAt=${item.startAt}, endAt=${item.endAt}`);
-				console.log(`Converted: start=${start}, end=${end}`);
-
-				if (!start) start = new Date();
-				if (!end) end = new Date(start.getTime() + 86400000);
+				/*if (!start) start = new Date();
+				if (!end) end = new Date(start.getTime() + 86400000);*/
 
 				tasks.push({
 					id: id,
@@ -338,37 +334,14 @@
 					typeCode: item.typeCode,
 					parTypeCode: item.parTypeCode
 				});
-				console.log("✅ TYPE 추가:", id, item.typeName);
 			}
 
 			// =========================
 			// ISSUE
 			// =========================
 			else if (item.rowType === "ISSUE") {
-				console.log(`ISSUE ${item.title}:`, {
-					issueStartDate: item.issueStartDate,
-					issueEndDate: item.issueEndDate,
-					startedAt: item.startedAt,
-					dueAt: item.dueAt
-				});
-
 				let start = toValidDate(item.issueStartDate);
 				let end = toValidDate(item.issueEndDate);
-
-				console.log(`Converted: start=${start}, end=${end}`);
-
-				// 날짜가 없으면 기본값 설정
-				if (!start && !end) {
-					console.warn("ISSUE 날짜 없음, 기본값 사용:", item.title);
-					start = new Date();
-					end = new Date(start.getTime() + 86400000);
-				} else if (!start && end) {
-					start = new Date(end.getTime() - 86400000);
-				} else if (start && !end) {
-					end = new Date(start.getTime() + 86400000);
-				}
-
-				if (end < start) end = new Date(start.getTime() + 86400000);
 
 				tasks.push({
 					id: id,
@@ -386,12 +359,8 @@
 					issueCode: item.issueCode,
 					typeCode: item.typeCode
 				});
-				console.log("✅ ISSUE 추가:", id, item.title);
 			}
 		});
-
-		console.log("=== 최종 tasks ===", tasks);
-		console.log("=== 최종 links ===", links);
 
 		return { data: tasks, links };
 	};
