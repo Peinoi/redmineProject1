@@ -28,7 +28,6 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-
 .card-body {
   padding: 0;
   overflow-x: auto;
@@ -95,53 +94,72 @@
 }
 
 /* 현재 테이블 컬럼 순서 기준 폭
-   1: 체크박스
+   1: 번호
    2: 프로젝트명
    3: 일감명
-   4: 상태
-   5: 우선순위
-   6: 담당자
-   7: 등록자
-   8: 생성일
-   9: 마감기한
+   4: 유형
+   5: 상태
+   6: 우선순위
+   7: 담당자
+   8: 등록자
+   9: 생성일
+   10: 마감기한
 */
 #issueTable th:nth-child(1),
-#issueTable td:nth-child(1) { width: 48px; }
+#issueTable td:nth-child(1) {
+  width: 70px;
+}
 
 #issueTable th:nth-child(2),
-#issueTable td:nth-child(2) { min-width: 160px; }
+#issueTable td:nth-child(2) {
+  min-width: 160px;
+}
 
 #issueTable th:nth-child(3),
-#issueTable td:nth-child(3) { min-width: 260px; }
+#issueTable td:nth-child(3) {
+  min-width: 260px;
+}
 
 #issueTable th:nth-child(4),
-#issueTable td:nth-child(4) { width: 120px; }
+#issueTable td:nth-child(4) {
+  width: 140px;
+}
 
 #issueTable th:nth-child(5),
-#issueTable td:nth-child(5) { width: 120px; }
+#issueTable td:nth-child(5) {
+  width: 120px;
+}
 
 #issueTable th:nth-child(6),
-#issueTable td:nth-child(6) { width: 140px; }
+#issueTable td:nth-child(6) {
+  width: 120px;
+}
 
 #issueTable th:nth-child(7),
-#issueTable td:nth-child(7) { width: 140px; }
+#issueTable td:nth-child(7) {
+  width: 140px;
+}
 
 #issueTable th:nth-child(8),
-#issueTable td:nth-child(8) { width: 140px; }
+#issueTable td:nth-child(8) {
+  width: 140px;
+}
 
 #issueTable th:nth-child(9),
-#issueTable td:nth-child(9) { width: 140px; }
+#issueTable td:nth-child(9) {
+  width: 140px;
+}
+
+#issueTable th:nth-child(10),
+#issueTable td:nth-child(10) {
+  width: 140px;
+}
 
 /* 일감명 줄임표 */
 #issueTable td:nth-child(3) {
   max-width: 520px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* 체크박스 정렬 */
-#issueTable .form-check-input {
-  margin: 0;
 }
 
 /* 페이지네이션(회색 톤으로) */
@@ -178,4 +196,84 @@
   margin-top: 4px;
   font-size: 12px;
   color: #6b7280;
+}
+
+/* =========================================================
+   Type Modal Tree (유형 선택 모달 - 트리)
+   - issue-list.html 의 #typeModalTree 렌더링 영역 전용
+   ========================================================= */
+
+/* 유형 모달 전체 컨테이너 */
+#typeModalTree {
+  padding: 0;
+  border: none !important;
+  background-color: #ffffff;
+}
+
+/* 프로젝트 그룹 wrapper */
+.type-project-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px; /* issue 카드 라운딩 톤 맞춤 */
+  overflow: hidden;
+  margin-bottom: 12px;
+  background-color: #f9fafb; /* 검색영역 톤과 맞춤 */
+}
+
+/* 프로젝트 헤더 */
+.type-project-header {
+  background-color: rgb(224, 229, 243); /* 카드 헤더 톤과 맞춤 */
+  color: #111827;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 15px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 트리 구조 ul 기본 스타일 제거 */
+#typeModalTree ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 유형 아이템 */
+.type-item {
+  cursor: pointer;
+  padding: 10px 14px;
+  display: block;
+  font-size: 14px;
+  color: #111827;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eeeeee;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+}
+
+/* hover 효과 */
+.type-item:hover {
+  background-color: #f3f4f6;
+}
+
+/* 마지막 항목 하단선 제거 (깊이 어느 정도 있어도 안전하게) */
+.type-project-group li:last-child > .type-item {
+  border-bottom: none;
+}
+.type-project-group li:last-child > ul li:last-child > .type-item {
+  border-bottom: none;
+}
+
+/* 계층별 들여쓰기 */
+#typeModalTree ul ul .type-item {
+  padding-left: 28px;
+}
+#typeModalTree ul ul ul .type-item {
+  padding-left: 50px;
+}
+#typeModalTree ul ul ul ul .type-item {
+  padding-left: 72px;
+}
+
+/* 검색 결과 없을 때 메시지(렌더링 시 div 사용) */
+#typeModalTree .text-muted {
+  padding: 14px;
 }

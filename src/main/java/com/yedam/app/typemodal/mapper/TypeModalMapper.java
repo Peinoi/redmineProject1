@@ -9,4 +9,7 @@ public interface TypeModalMapper {
 	List<TypeModalVO> selectTypeModalByUser(Integer userCode);
 
 	List<TypeModalVO> selectTypeModalList(Integer projectCode);
+	
+	//등록 화면용
+	List<TypeModalVO> selectTypeModalListForInsert(Integer projectCode);
 }

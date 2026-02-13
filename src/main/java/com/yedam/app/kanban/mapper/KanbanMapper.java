@@ -34,4 +34,8 @@ public interface KanbanMapper {
 	      @Param("issueCode") Long issueCode,
 	      @Param("progress") Integer progress
 	  );
+  
+  IssueVO selectIssueForAuth(@Param("userCode") Integer userCode,
+          @Param("projectCode") Long projectCode,
+          @Param("issueCode") Long issueCode);
 }

@@ -263,5 +263,13 @@ public class KanbanServiceImpl implements KanbanService {
     sb.append("]}");
     return sb.toString();
   }
+  
+  @Override
+  @Transactional(readOnly = true)
+  public IssueVO getIssue(Integer userCode, Long projectCode, Long issueCode) {
+    if (userCode == null || projectCode == null || issueCode == null) return null;
+    return kanbanMapper.selectIssueForAuth(userCode, projectCode, issueCode);
+  }
+
 
 }

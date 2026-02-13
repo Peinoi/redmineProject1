@@ -1,3 +1,4 @@
+// /js/issue/issue-edit.js
 (() => {
   const $ = (s) => document.querySelector(s);
 
@@ -28,7 +29,6 @@
   // --- 일감/프로젝트 정보 ---
   const issueCodeEl = $("#issueCode");
 
-  // 기존 hidden 프로젝트 코드
   const projectCodeEl = $("#projectCode");
   const projectTextEl = $("#projectText");
 
@@ -47,47 +47,8 @@
 
   const toDT = (d) => (d ? `${d}T00:00` : "");
 
-  // --- 유형 모달 ---
-  const typeModalEl = $("#typeSelectModal");
-  const typeModal = typeModalEl ? new bootstrap.Modal(typeModalEl) : null;
-
-  const typeText = $("#typeText");
-
-  // id 중복 방지용: typeCode는 name 기준으로 마지막 하나를 사용
-  const getTypeCodeInput = () => {
-    const list = document.querySelectorAll('input[name="typeCode"]');
-    if (list.length === 0) return $("#typeCode");
-    return list[list.length - 1];
-  };
-  const typeCode = getTypeCodeInput();
-
-  const btnOpenTypeModal = $("#btnOpenTypeModal");
-  const btnClearType = $("#btnClearType");
-
-  const typeTbody = $("#typeModalList");
-  const typeSearchEl = $("#typeModalSearch");
-
-  let typeCache = [];
-
-  // --- 담당자 모달 ---
-  const assigneeModalEl = $("#assigneeSelectModal");
-  const assigneeModal = assigneeModalEl
-    ? new bootstrap.Modal(assigneeModalEl)
-    : null;
-  const assigneeText = $("#assigneeText");
-  const assigneeCode = $("#assigneeCode");
-  const btnOpenAssigneeModal = $("#btnOpenAssigneeModal");
-  const assigneeListEl = $("#assigneeModalList");
-  const assigneeSearchEl = $("#assigneeModalSearch");
-
-  // 프로젝트별 캐시
-  let userCache = [];
-  let userCacheProjectCode = "";
-
-  const parentIssueCacheByProject = new Map();
-
   // -------------------------
-  // Toast 유틸
+  // Toast
   // -------------------------
   const showToast = (message) => {
     const toastId = "commonToast";
@@ -121,7 +82,6 @@
     t.show();
   };
 
-  // 마감기한 자동복구 토스트 중복 방지
   let lastDueToastAt = 0;
   const showDueAutoToast = () => {
     const now = Date.now();
@@ -148,31 +108,6 @@
   const PRIORITY_DAYS = { OA1: 2, OA2: 7, OA3: 14, OA4: 21 };
   const getPriorityDays = () => PRIORITY_DAYS[prioritySel?.value] ?? null;
 
-  const setDueByPriority = () => {
-    if (!dueView || !dueAt || !prioritySel) return;
-
-    const days = getPriorityDays();
-    if (!days) return;
-
-    const dueStr = toDate(addDays(new Date(), days));
-    dueView.value = dueStr;
-    dueAt.value = toDT(dueStr);
-  };
-
-  // 마감기한 삭제 방지 + hidden 동기화
-  const syncDueWithPriority = () => {
-    if (!dueView || !dueAt) return;
-
-    if (!dueView.value) {
-      if (!prioritySel?.value) return;
-      showDueAutoToast();
-      setDueByPriority();
-      return;
-    }
-
-    dueAt.value = toDT(dueView.value);
-  };
-
   // 날짜 비교
   const isBefore = (a, b) => {
     if (!a || !b) return false;
@@ -186,11 +121,99 @@
     return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   };
 
-  // 마감기한 지난지 체크 (due < today)
   const isOverdue = () => {
     const due = (dueView?.value || "").trim();
     if (!due) return false;
     return isBefore(due, todayYmd());
+  };
+
+  // -------------------------
+  // 공통 fetch
+  // -------------------------
+  const fetchJson = async (url, failMsg) => {
+    const res = await fetch(url, { headers: { Accept: "application/json" } });
+    if (!res.ok) {
+      showToast(failMsg);
+      return null;
+    }
+    return res.json();
+  };
+
+  // -------------------------
+  // 유형 종료일 제한
+  // -------------------------
+  const typeEndAtView = $("#typeEndAtView");
+  let selectedTypeEndDate = ""; // "YYYY-MM-DD"
+
+  const normalizeDateOnly = (v) => {
+    if (!v) return "";
+    const s = String(v).trim();
+    if (s.length >= 10 && s[4] === "-" && s[7] === "-") return s.slice(0, 10);
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    return toDate(d);
+  };
+
+  const clampByTypeEndDate = (dateStr) => {
+    if (!dateStr) return dateStr;
+    if (!selectedTypeEndDate) return dateStr;
+    return dateStr > selectedTypeEndDate ? selectedTypeEndDate : dateStr;
+  };
+
+  const applyTypeEndDateLimit = (endDateStr) => {
+    selectedTypeEndDate = endDateStr || "";
+
+    if (typeEndAtView) {
+      typeEndAtView.textContent = selectedTypeEndDate || "-";
+    }
+
+    if (dueView) {
+      if (selectedTypeEndDate) dueView.max = selectedTypeEndDate;
+      else dueView.removeAttribute("max");
+    }
+
+    if (
+      selectedTypeEndDate &&
+      dueView?.value &&
+      dueView.value > selectedTypeEndDate
+    ) {
+      dueView.value = selectedTypeEndDate;
+      syncDueWithPriority();
+      showToast(
+        "마감기한이 유형 종료일을 초과할 수 없어 종료일로 조정되었습니다.",
+      );
+    }
+  };
+
+  const setDueByPriority = () => {
+    if (!dueView || !dueAt || !prioritySel) return;
+
+    const days = getPriorityDays();
+    if (!days) return;
+
+    let dueStr = toDate(addDays(new Date(), days));
+    dueStr = clampByTypeEndDate(dueStr);
+
+    dueView.value = dueStr;
+    dueAt.value = toDT(dueStr);
+  };
+
+  const syncDueWithPriority = () => {
+    if (!dueView || !dueAt) return;
+
+    if (!dueView.value) {
+      if (!prioritySel?.value) return;
+      showDueAutoToast();
+      setDueByPriority();
+      return;
+    }
+
+    if (selectedTypeEndDate && dueView.value > selectedTypeEndDate) {
+      dueView.value = selectedTypeEndDate;
+      showToast("마감기한은 유형 종료일 이후로 설정할 수 없습니다.");
+    }
+
+    dueAt.value = toDT(dueView.value);
   };
 
   // -------------------------
@@ -205,13 +228,17 @@
     due: dueView?.value || "",
     started: startedView?.value || "",
     resolved: resolvedView?.value || "",
-    assigneeName: assigneeText?.value || "",
-    assigneeCode: assigneeCode?.value || "",
+    assigneeName: $("#assigneeText")?.value || "",
+    assigneeCode: $("#assigneeCode")?.value || "",
     parIssueText: parIssueText?.value || "",
     parIssueCode: parIssueCode?.value || "",
     parIssueNameEnabled: parIssueCode?.getAttribute("name") === "parIssueCode",
-    typeText: typeText?.value || "",
-    typeCode: typeCode?.value || "",
+    typeText: $("#typeText")?.value || "",
+    typeCode: (() => {
+      const list = document.querySelectorAll('input[name="typeCode"]');
+      const el = list.length ? list[list.length - 1] : $("#typeCode");
+      return el?.value || "";
+    })(),
     projectCode: projectCodeEl?.value || "",
     projectText: projectTextEl?.value || "",
   };
@@ -221,9 +248,7 @@
   // -------------------------
   const syncHiddenDates = () => {
     if (createdAt && createdView) createdAt.value = toDT(createdView.value);
-
     syncDueWithPriority();
-
     if (startedAt && startedView) startedAt.value = toDT(startedView.value);
 
     if (resolvedAt && resolvedView) {
@@ -233,7 +258,7 @@
   };
 
   // -------------------------
-  // 상태에 따른 UI 제어
+  // 상태 UI 제어 (완료일: OB5에서만 입력 가능)
   // -------------------------
   const toggleResolvedByStatus = () => {
     if (!resolvedView) return;
@@ -244,7 +269,6 @@
     if (!isDone && resolvedAt) resolvedAt.value = "";
   };
 
-  // 마감기한 지난 진척도 잠금
   let lastOverdueToastAt = 0;
   const blockProgressIfOverdue = (withToast = false) => {
     if (!progressInp) return false;
@@ -268,11 +292,9 @@
   const setProgressByStatus = () => {
     if (!statusSel || !progressInp) return;
 
-    // 초기/상태변경 시에는 토스트 없이 잠금만
     if (blockProgressIfOverdue(false)) return;
 
     const s = statusSel.value;
-
     progressInp.readOnly = false;
 
     if (s === "OB1") {
@@ -347,126 +369,260 @@
   };
 
   // -------------------------
-  // 공통 fetch
+  // 유형 모달 (등록 화면과 동일: 트리 렌더)
   // -------------------------
-  const fetchJson = async (url, failMsg) => {
-    const res = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!res.ok) {
-      showToast(failMsg);
-      return null;
-    }
-    return res.json();
+  const typeModalEl = $("#typeSelectModal");
+  const typeModal = typeModalEl ? new bootstrap.Modal(typeModalEl) : null;
+
+  const typeText = $("#typeText");
+  const typeTree = $("#typeModalTree");
+  const typeSearchEl = $("#typeModalSearch");
+  const btnOpenTypeModal = $("#btnOpenTypeModal");
+  const btnClearType = $("#btnClearType"); // HTML에 없으면 null이어도 OK
+
+  const getTypeCodeInput = () => {
+    const list = document.querySelectorAll('input[name="typeCode"]');
+    if (list.length === 0) return $("#typeCode");
+    return list[list.length - 1];
+  };
+  const typeCode = getTypeCodeInput();
+
+  let typeTreeCache = [];
+  let typeCacheProjectCode = "";
+
+  const escapeHtml = (s) =>
+    String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+
+  const normalizeTypeNodes = (data) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data.list)) return data.list;
+    return [];
   };
 
-  // -------------------------
-  // 유형 모달
-  // -------------------------
-  const ensureTypeCache = async () => {
-    if (typeCache.length) return true;
+  const getNodeName = (node) => (node?.typeName ?? "").trim();
+  const getNodeCode = (node) => node?.typeCode;
 
-    const res = await fetch("/api/types/modal", {
-      headers: { Accept: "application/json" },
-    });
+  const filterTypeTree = (nodes, qLower) => {
+    if (!qLower) return nodes;
 
-    if (!res.ok) {
-      showToast("유형 목록을 불러오지 못했습니다.");
-      return false;
+    const out = [];
+    for (const n of nodes) {
+      const name = getNodeName(n).toLowerCase();
+      const kids = Array.isArray(n.children) ? n.children : [];
+      const filteredKids = filterTypeTree(kids, qLower);
+
+      if (name.includes(qLower) || filteredKids.length) {
+        out.push({ ...n, children: filteredKids });
+      }
     }
-
-    const data = await res.json();
-
-    typeCache = data.map((t) => {
-      const parent = (t.parTypeName ?? "").trim();
-      const child = (t.typeName ?? "").trim();
-      return {
-        value: String(t.typeCode),
-        parentName: parent,
-        childName: child,
-      };
-    });
-
-    return true;
+    return out;
   };
 
-  const renderTypeTable = (items) => {
-    if (!typeTbody) return;
-    typeTbody.innerHTML = "";
+  const buildTypeTreeDom = (nodes, depth = 0) => {
+    const wrap = document.createElement("div");
 
-    if (!items.length) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 2;
-      td.className = "text-muted";
-      td.textContent = "결과가 없습니다.";
-      tr.appendChild(td);
-      typeTbody.appendChild(tr);
-      return;
+    if (!nodes.length) {
+      const empty = document.createElement("div");
+      empty.className = "text-muted";
+      empty.textContent = "결과가 없습니다.";
+      wrap.appendChild(empty);
+      return wrap;
     }
 
-    items.forEach((t) => {
-      const tr = document.createElement("tr");
-      tr.style.cursor = "pointer";
+    for (const n of nodes) {
+      const row = document.createElement("div");
+      row.className = "type-tree-row d-flex align-items-center";
+      row.style.padding = "6px 8px";
+      row.style.cursor = "pointer";
+      row.style.borderBottom = "1px solid rgba(0,0,0,0.06)";
+      row.style.paddingLeft = `${8 + depth * 16}px`;
 
-      const tdParent = document.createElement("td");
-      tdParent.textContent = t.parentName || "";
+      const hasChildren = Array.isArray(n.children) && n.children.length > 0;
 
-      const tdChild = document.createElement("td");
-      tdChild.textContent = t.childName || "";
+      const caret = document.createElement("span");
+      caret.className = "me-2";
+      caret.style.width = "14px";
+      caret.style.display = "inline-block";
+      caret.textContent = hasChildren ? "▸" : "";
+      row.appendChild(caret);
 
-      tr.appendChild(tdParent);
-      tr.appendChild(tdChild);
+      const name = document.createElement("span");
+      name.innerHTML = escapeHtml(getNodeName(n));
+      row.appendChild(name);
 
-      tr.addEventListener("click", () => {
-        if (typeText) typeText.value = t.childName;
-        if (typeCode) typeCode.value = t.value;
+      row.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        const code = getNodeCode(n);
+        if (!code) return;
+
+        if (typeText) typeText.value = getNodeName(n);
+        if (typeCode) typeCode.value = String(code);
+
+        const endDate = normalizeDateOnly(n.endAt ?? n.end_at);
+        applyTypeEndDateLimit(endDate);
+
+        if (prioritySel?.value && !dueView?.value) setDueByPriority();
+        syncHiddenDates();
 
         if (typeSearchEl) typeSearchEl.value = "";
         typeModal?.hide();
       });
 
-      typeTbody.appendChild(tr);
-    });
+      wrap.appendChild(row);
+
+      if (hasChildren) {
+        const childWrap = buildTypeTreeDom(n.children, depth + 1);
+        childWrap.style.display = "none";
+
+        caret.style.cursor = "pointer";
+        caret.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isOpen = childWrap.style.display !== "none";
+          childWrap.style.display = isOpen ? "none" : "block";
+          caret.textContent = isOpen ? "▸" : "▾";
+        });
+
+        wrap.appendChild(childWrap);
+      }
+    }
+
+    return wrap;
+  };
+
+  const renderTypeTree = (nodes) => {
+    if (!typeTree) return;
+    typeTree.innerHTML = "";
+    typeTree.appendChild(buildTypeTreeDom(nodes, 0));
+  };
+
+  const getProjectCodeSafe = () => {
+    const v1 = String(projectCodeEl?.value || "").trim();
+    if (v1) return v1;
+
+    const byName = document.querySelector('input[name="projectCode"]');
+    const v2 = String(byName?.value || "").trim();
+    if (v2) return v2;
+
+    const v3 = String(form?.dataset?.projectCode || "").trim();
+    if (v3) return v3;
+
+    return "";
+  };
+
+  const ensureTypes = async () => {
+    const projCode = getProjectCodeSafe();
+    if (!projCode) {
+      showToast("프로젝트 코드가 없어 유형을 불러올 수 없습니다.");
+      return false;
+    }
+
+    if (typeTreeCache.length && typeCacheProjectCode === projCode) return true;
+
+    const data = await fetchJson(
+      `/api/types/modal/by-project?projectCode=${encodeURIComponent(projCode)}`,
+      "유형 목록을 불러오지 못했습니다.",
+    );
+    if (!data) return false;
+
+    typeTreeCache = normalizeTypeNodes(data);
+    typeCacheProjectCode = projCode;
+    return true;
+  };
+
+  const refreshTypeTree = async () => {
+    if (!typeTree) return;
+
+    const ok = await ensureTypes();
+    if (!ok) return;
+
+    const q = (typeSearchEl?.value || "").trim().toLowerCase();
+    const filtered = filterTypeTree(typeTreeCache, q);
+    renderTypeTree(filtered);
   };
 
   const openTypeModal = async () => {
     if (!typeModal) return;
-    const ok = await ensureTypeCache();
-    if (!ok) return;
-
     if (typeSearchEl) typeSearchEl.value = "";
-    renderTypeTable(typeCache);
+    await refreshTypeTree();
     typeModal.show();
   };
 
   const clearType = () => {
     if (typeText) typeText.value = "";
     if (typeCode) typeCode.value = "";
+    applyTypeEndDateLimit("");
+    syncHiddenDates();
   };
 
-  const filterTypes = (items, q) => {
-    const qq = (q || "").trim().toLowerCase();
-    if (!qq) return items;
-    return items.filter((t) => {
-      const p = (t.parentName || "").toLowerCase();
-      const c = (t.childName || "").toLowerCase();
-      return p.includes(qq) || c.includes(qq);
-    });
+  const findTypeNodeByCode = (nodes, codeStr) => {
+    const stack = Array.isArray(nodes) ? [...nodes] : [];
+    while (stack.length) {
+      const n = stack.shift();
+      if (!n) continue;
+
+      const code = String(getNodeCode(n) ?? "");
+      if (code && code === codeStr) return n;
+
+      const kids = Array.isArray(n.children) ? n.children : [];
+      if (kids.length) stack.unshift(...kids);
+    }
+    return null;
+  };
+
+  const applyTypeEndFromCurrentTypeCode = async () => {
+    const cur = String(typeCode?.value || "").trim();
+    if (!cur) {
+      applyTypeEndDateLimit("");
+      return;
+    }
+
+    const ok = await ensureTypes();
+    if (!ok) return;
+
+    const node = findTypeNodeByCode(typeTreeCache, cur);
+    const endDate = normalizeDateOnly(node?.endAt ?? node?.end_at);
+    applyTypeEndDateLimit(endDate);
+
+    syncHiddenDates();
   };
 
   const hydrateTypeTextIfEmpty = async () => {
-    if (!typeCode || !typeText) return;
-    if (!typeCode.value || typeText.value) return;
+    const cur = String(typeCode?.value || "").trim();
+    if (!cur) return;
+    if (!typeText) return;
+    if (typeText.value) return;
 
-    const ok = await ensureTypeCache();
+    const ok = await ensureTypes();
     if (!ok) return;
 
-    const found = typeCache.find((t) => t.value === String(typeCode.value));
-    if (found) typeText.value = found.childName;
+    const node = findTypeNodeByCode(typeTreeCache, cur);
+    if (node) typeText.value = getNodeName(node);
   };
 
   // -------------------------
-  // 담당자 모달(프로젝트 멤버만)
+  // 담당자 모달
   // -------------------------
+  const assigneeModalEl = $("#assigneeSelectModal");
+  const assigneeModal = assigneeModalEl
+    ? new bootstrap.Modal(assigneeModalEl)
+    : null;
+
+  const assigneeText = $("#assigneeText");
+  const assigneeCode = $("#assigneeCode");
+  const btnOpenAssigneeModal = $("#btnOpenAssigneeModal");
+  const assigneeListEl = $("#assigneeModalList");
+  const assigneeSearchEl = $("#assigneeModalSearch");
+
+  let userCache = [];
+  let userCacheProjectCode = "";
+
   const ensureUserCache = async () => {
     const projCode = String(projectCodeEl?.value || "").trim();
     if (!projCode) {
@@ -478,9 +634,7 @@
 
     const res = await fetch(
       `/api/users/modal?projectCode=${encodeURIComponent(projCode)}`,
-      {
-        headers: { Accept: "application/json" },
-      },
+      { headers: { Accept: "application/json" } },
     );
 
     if (!res.ok) {
@@ -544,6 +698,8 @@
   // -------------------------
   // 상위일감 모달
   // -------------------------
+  const parentIssueCacheByProject = new Map();
+
   const ensureParentIssues = async (projectCode) => {
     if (!projectCode) return false;
     if (parentIssueCacheByProject.has(projectCode)) return true;
@@ -659,6 +815,16 @@
 
     syncDueWithPriority();
 
+    if (
+      selectedTypeEndDate &&
+      dueView?.value &&
+      dueView.value > selectedTypeEndDate
+    ) {
+      showToast("마감기한은 유형 종료일 이후로 설정할 수 없습니다.");
+      dueView?.focus();
+      return false;
+    }
+
     if (s && s !== "OB1" && !startedView?.value) {
       showToast("신규가 아닌 상태로 저장하려면 시작일을 입력해야 합니다.");
       startedView?.focus();
@@ -693,7 +859,6 @@
       if (resolvedAt) resolvedAt.value = "";
     }
 
-    // 저장 직전 마감기한 지난 진척도 강제 100%
     if (isOverdue()) {
       if (progressInp) progressInp.value = "100";
     }
@@ -712,23 +877,19 @@
   prioritySel?.addEventListener("change", () => {
     setDueByPriority();
     syncHiddenDates();
-    setProgressByStatus(); // 마감기한 변경에 따른 잠금상태 반영
+    setProgressByStatus();
   });
 
-  // 진척도 수정시도 때 토스트
   progressInp?.addEventListener("input", () => {
     if (blockProgressIfOverdue(true)) return;
-
     clampProgress();
     syncHiddenDates();
   });
 
-  // 클릭 시 토스트
   progressInp?.addEventListener("focus", () => {
     blockProgressIfOverdue(true);
   });
 
-  // 마감기한 변경 시 잠금상태 갱신
   dueView?.addEventListener("change", () => {
     syncHiddenDates();
     setProgressByStatus();
@@ -756,6 +917,7 @@
   assigneeSearchEl?.addEventListener("input", async () => {
     const ok = await ensureUserCache();
     if (!ok) return;
+
     const q = (assigneeSearchEl.value || "").trim().toLowerCase();
     renderUsers(
       q
@@ -781,18 +943,11 @@
 
   btnOpenTypeModal?.addEventListener("click", openTypeModal);
   btnClearType?.addEventListener("click", clearType);
-
-  typeSearchEl?.addEventListener("input", async () => {
-    const ok = await ensureTypeCache();
-    if (!ok) return;
-
-    const q = typeSearchEl.value || "";
-    renderTypeTable(filterTypes(typeCache, q));
-  });
+  typeSearchEl?.addEventListener("input", refreshTypeTree);
 
   btnBack?.addEventListener("click", () => history.back());
 
-  btnReset?.addEventListener("click", () => {
+  btnReset?.addEventListener("click", async () => {
     if (titleInp) titleInp.value = initial.title;
     if (descInp) descInp.value = initial.description;
 
@@ -818,12 +973,17 @@
 
     userCache = [];
     userCacheProjectCode = "";
+    typeTreeCache = [];
+    typeCacheProjectCode = "";
 
     if (parIssueCode) {
       if (initial.parIssueNameEnabled && initial.parIssueCode)
         parIssueCode.setAttribute("name", "parIssueCode");
       else parIssueCode.removeAttribute("name");
     }
+
+    await hydrateTypeTextIfEmpty();
+    await applyTypeEndFromCurrentTypeCode();
 
     onStatusChange();
     syncHiddenDates();
@@ -833,15 +993,23 @@
     if (!validateBeforeSubmit()) e.preventDefault();
   });
 
+  // -------------------------
   // init
-  setProgressByStatus();
-  toggleResolvedByStatus();
-  syncHiddenDates();
+  // -------------------------
+  const init = async () => {
+    setProgressByStatus();
+    toggleResolvedByStatus();
 
-  if (parIssueCode) {
-    const hasValue = String(parIssueCode.value || "").trim().length > 0;
-    if (!hasValue) parIssueCode.removeAttribute("name");
-  }
+    if (parIssueCode) {
+      const hasValue = String(parIssueCode.value || "").trim().length > 0;
+      if (!hasValue) parIssueCode.removeAttribute("name");
+    }
 
-  hydrateTypeTextIfEmpty();
+    await hydrateTypeTextIfEmpty();
+    await applyTypeEndFromCurrentTypeCode();
+
+    syncHiddenDates();
+  };
+
+  init();
 })();

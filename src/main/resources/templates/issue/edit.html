@@ -144,7 +144,6 @@
                 required
                 th:value="${issue.title}"
               />
-              <div class="form-text">&nbsp;</div>
             </div>
           </div>
 
@@ -276,7 +275,9 @@
                 readonly
                 th:value="${issue.createdAt != null ? #temporals.format(issue.createdAt,'yyyy-MM-dd') : ''}"
               />
-              <div class="form-text">등록일은 변경할 수 없습니다.</div>
+              <div class="form-text">
+                등록일은 변경할 수 없습니다.<br />&nbsp;
+              </div>
             </div>
 
             <div class="col-12 col-md-3">
@@ -287,7 +288,13 @@
                 class="form-control"
                 th:value="${issue.dueAt != null ? #temporals.format(issue.dueAt,'yyyy-MM-dd') : ''}"
               />
-              <div class="form-text">&nbsp;</div>
+              <div class="form-text">
+                우선순위 선택 시 자동 설정되며 필요 시 수정할 수 있습니다.
+                <br />
+                <span class="text-muted">유형 종료일: </span>
+                <strong id="typeEndAtView" class="text-muted">-</strong>
+                <span class="text-muted">이후는 선택이 불가능합니다.</span>
+              </div>
             </div>
 
             <div class="col-12 col-md-3">
@@ -298,7 +305,7 @@
                 class="form-control"
                 th:value="${issue.startedAt != null ? #temporals.format(issue.startedAt,'yyyy-MM-dd') : ''}"
               />
-              <div class="form-text">&nbsp;</div>
+              <div class="form-text">&nbsp;<br />&nbsp;</div>
             </div>
 
             <div class="col-12 col-md-3">
@@ -309,7 +316,7 @@
                 class="form-control"
                 th:value="${issue.resolvedAt != null ? #temporals.format(issue.resolvedAt,'yyyy-MM-dd') : ''}"
               />
-              <div class="form-text">&nbsp;</div>
+              <div class="form-text">&nbsp;<br />&nbsp;</div>
             </div>
           </div>
 
@@ -364,7 +371,6 @@
       </div>
     </div>
 
-    <!-- 유형 선택 모달 -->
     <div
       class="modal fade"
       id="typeSelectModal"
@@ -379,7 +385,6 @@
               type="button"
               class="btn-close"
               data-bs-dismiss="modal"
-              aria-label="Close"
             ></button>
           </div>
           <div class="modal-body">
@@ -387,20 +392,10 @@
               type="text"
               id="typeModalSearch"
               class="form-control mb-2"
-              placeholder="유형명/상위유형명 검색"
+              placeholder="유형명 검색"
             />
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle mb-0">
-                <thead>
-                  <tr>
-                    <th style="width: 45%">상위유형</th>
-                    <th style="width: 55%">유형</th>
-                  </tr>
-                </thead>
-                <tbody id="typeModalList"></tbody>
-              </table>
-            </div>
+            <div id="typeModalTree" class="type-tree"></div>
+            <!-- 여기가 트리 렌더링 영역 -->
           </div>
         </div>
       </div>

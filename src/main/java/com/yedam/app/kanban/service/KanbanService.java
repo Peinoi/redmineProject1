@@ -15,4 +15,8 @@ public interface KanbanService {
   
   // 진척도 업데이트
   void updateProgress(Integer userCode, Long projectCode, Long issueCode, Integer progress);
+  
+  public IssueVO getIssue(Integer userCode, Long projectCode, Long issueCode);
+
+
 }
