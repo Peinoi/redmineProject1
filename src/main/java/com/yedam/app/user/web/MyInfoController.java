@@ -102,6 +102,12 @@ public class MyInfoController {
             return "user/modifyPw";
         }
         
+        // 새 비밀번호가 현재 비밀번호와 같으면 금지
+        if (passwordEncoder.matches(newPw, dbUser.getPasswordHash())) {
+            model.addAttribute("errorMsg", "새 비밀번호는 현재 비밀번호와 다르게 입력해주세요.");
+            return "user/modifyPw";
+        }
+        
         // 새 비밀번호와 비밀번호 확인 일치 확인
         if (newPw == null || !newPw.equals(confirmPw)) {
             model.addAttribute("errorMsg", "새 비밀번호가 일치하지 않습니다.");

@@ -10,11 +10,11 @@ public class ProIssStaVO {
 	private String projectName;
 	
 	// 전체
-	private Integer NewIss;
-	private Integer Progress;
-	private Integer Solution;
-	private Integer ReturnIss;
-	private Integer Completion;
+	private Integer newIss;
+	private Integer progress;
+	private Integer solution;
+	private Integer returnIss;
+	private Integer completion;
 
 	// 내 이슈
 	private Integer myNewIss;

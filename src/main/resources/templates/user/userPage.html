@@ -1,0 +1,176 @@
+<!doctype html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}">
+<head>
+<meta charset="UTF-8" />
+<title>사용자 페이지</title>
+<link rel="stylesheet" th:href="@{/css/user/user-page.css}" />
+</head>
+
+<body>
+	<div layout:fragment="Content">
+
+		<div class="x-page-title">
+			<h3 class="page-title">사용자 페이지</h3>
+			<div class="page-title-sub" th:text="|${profile.name} 님의 정보/일감/작업현황|"></div>
+		</div>
+
+		<div class="mb-3">
+			<button type="button" class="btn btn-secondary" id="btnBackUserPage">
+				<i class="fas fa-arrow-left me-1"></i>돌아가기
+			</button>
+		</div>
+
+		<!-- 기본정보 -->
+		<div class="card mb-4">
+			<div class="card-header">
+				<div>
+					<i class="fas fa-user me-1"></i> 기본 정보
+				</div>
+			</div>
+
+			<div class="card-body p-3">
+				<div class="row g-2">
+					<div class="col-12 col-md-6">
+						<div class="info-item">
+							<div class="label">사용자 이름</div>
+							<div class="value" th:text="${profile.name}">-</div>
+						</div>
+					</div>
+					<div class="col-12 col-md-6">
+						<div class="info-item">
+							<div class="label">사원번호</div>
+							<div class="value" th:text="${profile.employeeNo}">-</div>
+						</div>
+					</div>
+
+					<div class="col-12 col-md-6">
+						<div class="info-item">
+							<div class="label">계정 등록일</div>
+							<div class="value"
+								th:text="${profile.createdAt != null ? #dates.format(profile.createdAt,'yyyy-MM-dd') : '-'}">-</div>
+						</div>
+					</div>
+					<div class="col-12 col-md-6">
+						<div class="info-item">
+							<div class="label">마지막 로그인</div>
+							<div class="value"
+								th:text="${profile.lastLoginAt != null ? #dates.format(profile.lastLoginAt,'yyyy-MM-dd HH:mm') : '-'}">-</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- ✅ 일감현황 (메인 스타일/컬럼 그대로) -->
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-tasks me-1"></i> 일감 현황
+				</div>
+				<div class="text-muted small" th:text="|사용자: ${profile.name}|"></div>
+			</div>
+
+			<div class="card-body">
+				<table class="table table-hover mb-0" id="userIssueTable">
+					<thead>
+						<tr>
+							<th style="width: 26%">구분</th>
+							<th class="text-end">신규</th>
+							<th class="text-end">진행</th>
+							<th class="text-end">해결</th>
+							<th class="text-end">반려</th>
+							<th class="text-end">완료</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- ✅ 내가 등록한 일감 -->
+						<tr>
+							<td>내가 등록한 일감</td>
+							<td class="text-end" th:text="${issueStaDual.regNewIss}">0</td>
+							<td class="text-end" th:text="${issueStaDual.regProgress}">0</td>
+							<td class="text-end" th:text="${issueStaDual.regSolution}">0</td>
+							<td class="text-end" th:text="${issueStaDual.regReturnIss}">0</td>
+							<td class="text-end" th:text="${issueStaDual.regCompletion}">0</td>
+						</tr>
+
+						<!-- ✅ 내가 담당자인 일감 -->
+						<tr>
+							<td>내가 담당자인 일감</td>
+							<td class="text-end" th:text="${issueStaDual.assNewIss}">0</td>
+							<td class="text-end" th:text="${issueStaDual.assProgress}">0</td>
+							<td class="text-end" th:text="${issueStaDual.assSolution}">0</td>
+							<td class="text-end" th:text="${issueStaDual.assReturnIss}">0</td>
+							<td class="text-end" th:text="${issueStaDual.assCompletion}">0</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+
+		<!-- 작업현황 -->
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-clock me-1"></i> 작업 현황
+				</div>
+
+				<form class="d-flex align-items-center gap-2"
+					th:action="@{/users/{userCode}(userCode=${profile.userCode})}"
+					method="get">
+					<span class="text-muted small">기간</span> <select
+						class="form-select form-select-sm" name="days"
+						style="width: 120px;">
+						<option value="1" th:selected="${days == 1}">최근 1일</option>
+						<option value="3" th:selected="${days == 3}">최근 3일</option>
+						<option value="7" th:selected="${days == 7}">최근 7일</option>
+						<option value="14" th:selected="${days == 14}">최근 14일</option>
+						<option value="30" th:selected="${days == 30}">최근 30일</option>
+					</select>
+					<button class="btn btn-sm btn-outline-secondary" type="submit">조회</button>
+				</form>
+			</div>
+
+			<div class="card-body p-3">
+				<div th:if="${#maps.isEmpty(workLogsByDay)}" class="text-muted">
+					표시할 작업 내역이 없습니다.</div>
+
+				<div th:each="dayEntry : ${workLogsByDay}">
+					<!-- 2026-02-12 -->
+					<div class="work-day-title" th:text="${dayEntry.key}">2026-02-12</div>
+
+					<div th:each="w : ${dayEntry.value}" class="work-card">
+						<!-- 17:06 / 수정 / 1호군 -->
+						<div class="work-head">
+							<span class="work-time" th:text="${w.time}">17:06</span> <span
+								class="work-slash">/</span> <span class="work-action"
+								th:text="${w.actionLabel}">수정</span> <span class="work-slash">/</span>
+							<span class="work-actor" th:text="${w.actorName}">1호군</span>
+						</div>
+
+						<!-- 프로젝트 이름 / 이슈 이름 -->
+						<div class="work-title"
+							th:text="|${w.projectName} / ${w.issueTitle != null ? w.issueTitle : '-'}|">
+							프로젝트 / 이슈</div>
+
+						<!-- 변경 상세 (줄바꿈 유지) -->
+						<div class="work-detail" th:utext="${w.detailHtml}">
+							상태 : 신규 &gt;&gt; 해결<br>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+	</div>
+
+	<th:block layout:fragment="pageScript">
+		<script th:src="@{/js/user/user-page.js}"></script>
+	</th:block>
+</body>
+</html>

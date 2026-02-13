@@ -19,15 +19,14 @@
 
 		<!-- 돌아가기 버튼 -->
 		<div class="mb-3">
-			<a class="btn btn-secondary" th:href="@{/G2main}"> <i
-				class="fas fa-arrow-left me-1"></i>돌아가기
-			</a>
+			<button type="button" class="btn btn-secondary" id="btnBackMyInfo">
+				<i class="fas fa-arrow-left me-1"></i>돌아가기
+			</button>
 		</div>
 
 		<!-- 알림 -->
-		<div th:if="${msg != null}" id="myInfoServerAlert" 
-			class="alert alert-info py-2 mb-3"
-			th:text="${msg}">메시지</div>
+		<div th:if="${msg != null}" id="myInfoServerAlert"
+			class="alert alert-info py-2 mb-3" th:text="${msg}">메시지</div>
 
 		<!-- 내 정보 수정 폼 -->
 		<form id="myInfoForm" th:action="@{/myInfo}" method="post"

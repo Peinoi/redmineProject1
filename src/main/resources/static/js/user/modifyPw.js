@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const npw = (newPw?.value ?? "").trim();
     const cpw = (confirmPw?.value ?? "").trim();
 
-    // 1) 현재 비밀번호 공백
+    // 현재 비밀번호 공백
     if (!cur) {
       e.preventDefault();
       showAlert("현재 비밀번호를 입력해주세요.");
@@ -43,15 +43,24 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 2) 새 비밀번호 공백
+    // 새 비밀번호 공백
     if (!npw) {
       e.preventDefault();
       showAlert("새 비밀번호를 입력해주세요.");
       newPw?.focus();
       return;
     }
+	
+	// 현재 비밀번호 = 새 비밀번호 금지
+	if (cur === npw) {
+	    e.preventDefault();
+	    showAlert("새 비밀번호는 현재 비밀번호와 다르게 입력해주세요.");
+	    newPw?.focus();
+	    newPw?.select?.();
+	    return;
+	  }
 
-    // 3) 확인 공백
+    // 확인 공백
     if (!cpw) {
       e.preventDefault();
       showAlert("새 비밀번호 확인을 입력해주세요.");
@@ -59,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 4) 새 비밀번호 불일치
+    // 새 비밀번호 불일치
     if (npw !== cpw) {
       e.preventDefault();
       showAlert("새 비밀번호와 확인이 일치하지 않습니다.");
@@ -71,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-  // ✅ 1) 에러 메시지: 1초 뒤 자동 사라짐
+  // 1) 에러 메시지: 1초 뒤 자동 사라짐
   const errorAlert = document.querySelector(".alert-danger");
   if (errorAlert) {
     setTimeout(() => {
@@ -81,7 +90,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 1000);
   }
 
-  // ✅ 2) 성공 시: 부트스트랩 모달 띄우고, 확인/닫기 시 내 정보로 이동
+  // 2) 성공 시: 부트스트랩 모달 띄우고, 확인/닫기 시 내 정보로 이동
   const modalEl = document.getElementById("pwChangeSuccessModal");
   if (modalEl) {
     const modal = new bootstrap.Modal(modalEl, {
