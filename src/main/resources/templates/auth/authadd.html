@@ -105,11 +105,10 @@
 
 			</div>
 
-			<a th:href="@{/auth}" class="btn btn-secondary"
-				style="width: 150px; margin-left: 10px;"> <i
-				class="fas fa-arrow-left me-2"></i>돌아가기
-			</a>
-
+			<button type="button" th:onclick="|location.href='@{/auth}'|"
+				class="btn btn-secondary">
+				<i class="fas fa-arrow-left me-1"></i>돌아가기
+			</button>
 			<script th:src="@{/js/auth/authadd.js}"></script>
 </body>
 </html>
