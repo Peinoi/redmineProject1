@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+
+<head>
+<meta charset="UTF-8">
+<title>일감 유형 관리</title>
+<link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
+<link rel="stylesheet" th:href="@{/css/issuetype/issuetype.css}">
+</head>
+
+<body>
+	<div id="container">
+		<div class="x-page-title">
+			<h3 class="page-title">일감 유형 목록</h3>
+			<div class="page-title-sub">일감 유형 관리 페이지 입니다.</div>
+		</div>
+
+		<div class="issue-filters mb-3 mt-3">
+			<div class="row g-3 align-items-end mb-4">
+
+				<div class="col-auto" style="min-width: 200px;">
+					<label class="form-label fw-bold">유형명</label> <input type="text"
+						id="filterTitle" class="form-control" placeholder="유형명 입력">
+				</div>
+
+				<div class="col-auto" style="min-width: 250px;">
+					<label class="form-label fw-bold">프로젝트</label>
+					<div class="input-group">
+						<input type="text" id="filterProjectText" class="form-control"
+							placeholder="프로젝트 선택" readonly th:value="${projectName}" /> <input
+							type="hidden" id="filterProjectValue" name="projectCode"
+							th:value="${projectCode}" />
+						<button type="button" class="btn btn-secondary"
+							id="btnOpenProjectModal">선택</button>
+					</div>
+				</div>
+
+				<!-- 상태(시작일/종료일) + 기간: 하나의 기능 -->
+				<div class="col-auto" style="min-width: 140px;">
+					<label class="form-label fw-bold">기간 기준</label> <select
+						id="filterDateType" class="form-select">
+						<option value="start">시작일</option>
+						<option value="end">종료일</option>
+					</select>
+				</div>
+
+				<div class="col-auto">
+					<label class="form-label fw-bold">기간 선택</label>
+					<div class="d-flex align-items-center gap-2">
+						<input type="date" id="filterDateFrom" class="form-control"
+							style="width: 145px;" /> <span class="text-muted">~</span> <input
+							type="date" id="filterDateTo" class="form-control"
+							style="width: 145px;" />
+					</div>
+				</div>
+
+				<div
+					class="col-12 d-flex justify-content-between align-items-center mt-4">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-success" id="btnRegisterType">
+							<i class="fas fa-plus me-1"></i> 일감유형 등록
+						</button>
+					</div>
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-secondary"
+							id="btnResetFilters">
+							<i class="fas fa-redo me-1"></i>초기화
+						</button>
+						<button type="button" class="btn btn-primary" id="btnApplyFilters">
+							<i class="fa-solid fa-magnifying-glass"></i> 조회
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-table me-1"></i> 일감 유형 목록
+				</div>
+				<div class="text-muted small" id="issueTypePageInfo"></div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle" id="issueTypeTable"
+						style="table-layout: fixed; width: 100%;">
+						<thead class="table-light">
+							<tr>
+								<th style="width: 60px;">번호</th>
+								<th style="width: 160px;">일감 유형</th>
+								<th style="width: 180px;">프로젝트</th>
+								<th style="width: 160px;">시작일</th>
+								<th style="width: 160px;">종료일</th>
+								<th style="width: 80px;">수정</th>
+								<th style="width: 80px;">삭제</th>
+							</tr>
+						</thead>
+						<tbody id="typeTbody">
+							<tr class="typeRow" th:each="info, status : ${types}"
+								th:data-typecode="${info.typeCode}"
+								th:data-typename="${info.typeName}"
+								th:data-projectcode="${info.projectCode}"
+								th:data-projectname="${info.projectName}"
+								th:data-startat="${info.startAt != null ? #dates.format(info.startAt,'yyyy-MM-dd') : ''}"
+								th:data-endat="${info.endAt != null ? #dates.format(info.endAt,'yyyy-MM-dd') : ''}">
+								<td class="col-no">[[ ${status.index + 1} ]]</td>
+								<td>[[ ${info.typeName} ]]</td>
+								<td>[[ ${info.projectName} ]]</td>
+								<td>[[ ${info.startAt != null ?
+									#dates.format(info.startAt,'yyyy-MM-dd') : '-'} ]]</td>
+								<td>[[ ${info.endAt != null ?
+									#dates.format(info.endAt,'yyyy-MM-dd') : '-'} ]]</td>
+								<td>
+									<button class="btn btn-warning btn-sm edit-btn">
+										<i class="fa-solid fa-pen"></i> 수정
+									</button>
+								</td>
+								<td>
+									<button class="btn btn-danger btn-sm delete-btn">
+										<i class="fa-solid fa-trash"></i> 삭제
+									</button>
+								</td>
+							</tr>
+							<tr th:if="${#lists.isEmpty(types)}" id="emptyRow">
+								<td colspan="7" class="text-center text-muted py-4">등록된
+									유형타입이 없습니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<nav class="d-flex justify-content-center mt-3 mb-3">
+					<ul class="pagination mb-0" id="typePagination"></ul>
+				</nav>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============ 등록/수정 모달 ============ -->
+	<div class="modal fade" id="typeFormModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-md modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="typeFormModalTitle">
+						<i class="fas fa-plus me-2"></i>일감 유형 등록
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="hidden" id="modalTypeCode">
+
+					<!-- 유형명 -->
+					<div class="mb-3">
+						<label class="form-label fw-bold">유형명 <span
+							class="text-danger">*</span></label> <input type="text"
+							id="modalTypeName" class="form-control" placeholder="유형명을 입력하세요"
+							maxlength="100">
+						<div class="invalid-feedback" id="typeNameError"></div>
+					</div>
+
+					<!-- 프로젝트 선택 (등록 시에만 활성화) -->
+					<div class="mb-3" id="projectSelectWrap">
+						<label class="form-label fw-bold">프로젝트 <span
+							class="text-danger">*</span></label>
+						<div class="input-group">
+							<input type="text" id="modalProjectText" class="form-control"
+								placeholder="프로젝트를 선택하세요" readonly> <input type="hidden"
+								id="modalProjectValue">
+							<button type="button" class="btn btn-secondary"
+								id="btnModalOpenProject">선택</button>
+						</div>
+						<div class="invalid-feedback d-block" id="projectError"
+							style="display: none !important;"></div>
+					</div>
+
+					<!-- 기간 -->
+					<div class="mb-3">
+						<label class="form-label fw-bold">시작일 <span
+							class="text-danger">*</span></label> <input type="date" id="modalStartAt"
+							class="form-control">
+						<div class="invalid-feedback" id="startAtError"></div>
+					</div>
+					<div class="mb-3">
+						<label class="form-label fw-bold">종료일 <span
+							class="text-danger">*</span></label> <input type="date" id="modalEndAt"
+							class="form-control">
+						<div class="invalid-feedback" id="endAtError"></div>
+					</div>
+
+					<!-- 기간 겹침 경고 -->
+					<div class="alert alert-danger py-2 mb-0" id="dateOverlapAlert"
+						style="display: none;">
+						<i class="fas fa-exclamation-triangle me-1"></i> <span
+							id="dateOverlapMsg">해당 프로젝트의 다른 유형과 기간이 겹칩니다.</span>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">
+						<i class="fas fa-times me-1"></i>취소
+					</button>
+					<button type="button" class="btn btn-success" id="btnSaveType">
+						<i class="fas fa-check me-1"></i>저장
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============ 프로젝트 선택 모달 (필터용) ============ -->
+	<div class="modal fade" id="projectSelectModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">프로젝트 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="projectModalSearch"
+						class="form-control mb-2" placeholder="프로젝트명 검색">
+					<div class="list-group" id="projectModalList"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- ============ 프로젝트 선택 모달 (모달 폼용) ============ -->
+	<div class="modal fade" id="projectSelectModal2" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">프로젝트 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="projectModalSearch2"
+						class="form-control mb-2" placeholder="프로젝트명 검색">
+					<div class="list-group" id="projectModalList2"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script th:src="@{/js/issuetype/issuetype.js}"></script>
+</body>
+</html>

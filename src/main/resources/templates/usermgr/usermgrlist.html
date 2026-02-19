@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+
+<head>
+<meta charset="UTF-8">
+<title>사용자 관리</title>
+<link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
+<link rel="stylesheet" th:href="@{/css/project/project.css}">
+
+</head>
+<body>
+	<div id="container">
+		<div class="x-page-title">
+			<h3 class="page-title">사용자 목록</h3>
+			<div class="page-title-sub">사용자 관리 페이지 입니다.</div>
+		</div>
+
+		<div class="issue-filters mb-3 mt-3">
+			<div class="row g-2 align-items-end mb-4">
+
+				<div class="col-12 col-md-3">
+					<label class="form-label">이름</label> <input type="text"
+						id="filterTitle" class="form-control" placeholder="이름 입력">
+				</div>
+
+				<div class="col-12 col-md-2">
+					<label class="form-label">상태</label> <select id="filterStatus"
+						class="form-select">
+						<option value="">전체</option>
+						<option value="0">활동</option>
+						<option value="1">비활동</option>
+					</select>
+				</div>
+
+				<div class="col-12 col-md-5">
+					<label class="form-label">입사일</label>
+					<div class="d-flex align-items-center gap-2">
+						<input type="date" id="filterDateFrom" class="form-control" /> <span
+							class="text-muted">~</span> <input type="date" id="filterDateTo"
+							class="form-control" />
+					</div>
+				</div>
+
+				<div class="d-flex justify-content-between align-items-center mt-3">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-success" id="btnRegisterUser">
+							<i class="fas fa-check me-1"></i> 사용자 등록
+						</button>
+					</div>
+					<div class="col-auto d-flex gap-2 ms-auto">
+						<button type="button" class="btn btn-secondary"
+							id="btnResetFilters">
+							<i class="fas fa-redo me-1"></i>초기화
+						</button>
+						<button type="button" class="btn btn-primary" id="btnApplyFilters">
+							<i class="fa-solid fa-magnifying-glass"></i> 조회
+						</button>
+					</div>
+				</div>
+
+			</div>
+		</div>
+
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-table me-1"></i> 사용자 목록
+				</div>
+				<div class="text-muted small" id="userPageInfo"></div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle" id="issueTable"
+						style="table-layout: fixed; width: 100%;">
+						<thead class="table-light">
+							<tr>
+								<th style="width: 60px;">번호</th>
+								<th style="width: 100px;">사번</th>
+								<th style="width: 150px;">이름</th>
+								<th style="width: 220px;">이메일</th>
+								<th style="width: 140px;">전화번호</th>
+								<th style="width: 160px;">등록일</th>
+								<th style="width: 180px;">마지막 로그인</th>
+								<th style="width: 80px;">잠금</th>
+								<th style="width: 80px;">삭제</th>
+							</tr>
+						</thead>
+						<tbody id="userTbody">
+							<tr class="userRow" th:each="info, status : ${users}"
+								th:data-usercode="${info.userCode}"
+								th:data-islock="${info.isLock}" th:data-name="${info.name}"
+								th:data-created="${info.createdAt != null ? #dates.format(info.createdAt,'yyyy-MM-dd') : ''}">
+								<td class="col-no">[[ ${status.index + 1} ]]</td>
+								<td>[[ ${info.employeeNo} ]]</td>
+								<td>[[ ${info.name} ]]</td>
+								<td>[[ ${info.email != null ? info.email : '-'} ]]</td>
+								<td>[[ ${info.phone != null ? info.phone : '-'} ]]</td>
+								<td>[[ ${info.createdAt != null ?
+									#dates.format(info.createdAt,'yyyy-MM-dd HH:mm') : '-'} ]]</td>
+								<td>[[ ${info.lastLoginAt != null ?
+									#dates.format(info.lastLoginAt,'yyyy-MM-dd HH:mm') : '-'} ]]</td>
+								<td>
+									<button class="btn btn-sm lock-btn"
+										th:classappend="${info.isLock == '1'} ? ' btn-danger' : ' btn-success'"
+										th:data-usercode="${info.userCode}"
+										th:data-islock="${info.isLock}">
+										<i
+											th:class="${info.isLock == '1'} ? 'fa-solid fa-lock' : 'fa-solid fa-lock-open'"></i>
+									</button>
+								</td>
+								<td>
+									<button class="btn btn-danger btn-sm delete-btn"
+										th:data-usercode="${info.userCode}"
+										th:data-username="${info.name}">
+										<i class="fa-solid fa-face-dizzy"></i> 삭제
+									</button>
+								</td>
+							</tr>
+							<tr th:if="${#lists.isEmpty(users)}" id="emptyRow">
+								<td colspan="9" class="text-center text-muted py-4">등록된
+									사용자가 없습니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<nav class="d-flex justify-content-center mt-3 mb-3">
+					<ul class="pagination mb-0" id="userPagination"></ul>
+				</nav>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- 사용자 등록 모달 -->
+	<div class="modal fade" id="userRegisterModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-md modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						<i class="fas fa-user-plus me-2"></i>사용자 등록
+					</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+
+					<div class="mb-3">
+						<label class="form-label fw-bold"> 사번 <span
+							class="badge bg-secondary ms-1" style="font-size: 11px;">자동생성</span>
+						</label> <input type="text" id="newEmployeeNo" class="form-control"
+							readonly
+							style="background: #f3f4f6; color: #111827; font-weight: 700; letter-spacing: 1px;">
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label fw-bold">이름 <span
+							class="text-danger">*</span></label> <input type="text" id="newUserName"
+							class="form-control" placeholder="이름을 입력하세요" maxlength="50">
+						<div class="invalid-feedback" id="nameError"></div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label fw-bold">직책 <span
+							class="text-danger">*</span></label> <input type="text" id="newPosition"
+							class="form-control" placeholder="직책을 입력하세요 (예: 팀장, 사원)"
+							maxlength="50">
+						<div class="invalid-feedback" id="jobTitleError"></div>
+					</div>
+
+					<div class="mb-1">
+						<label class="form-label fw-bold"> 초기 비밀번호 <span
+							class="badge bg-secondary ms-1" style="font-size: 11px;">자동설정</span>
+						</label>
+					</div>
+					<div class="alert alert-info py-2 mb-2" style="font-size: 14px;">
+						<i class="fas fa-key me-1"></i> 초기 비밀번호는 <strong id="pwPreview"></strong>
+						으로 자동 설정됩니다. <br> <small class="text-muted">사번(숫자) +
+							123 조합입니다.</small>
+					</div>
+
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary"
+						data-bs-dismiss="modal">
+						<i class="fas fa-times me-1"></i>취소
+					</button>
+					<button type="button" class="btn btn-success" id="btnSaveUser">
+						<i class="fas fa-check me-1"></i>등록
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 페이지 로드 시 채번 결과를 JS로 전달 -->
+	<script th:inline="javascript">
+		/*<![CDATA[*/
+		window.serverData = {
+			nextEmployeeNo : /*[[${nextNo.nextEmployeeNo}]]*/1000
+		};
+		/*]]>*/
+	</script>
+	<script th:src="@{/js/usermgr/usermgr.js}"></script>
+</body>
+</html>

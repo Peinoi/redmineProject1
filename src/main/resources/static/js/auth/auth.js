@@ -142,13 +142,13 @@
 
 			// 리다이렉트 여부 확인
 			if (response.redirected) {
-				alert('삭제 권한이 없습니다.');
+				alert('권한이 없습니다.');
 				return;
 			}
 
 			// 403 상태 코드 확인
 			if (response.status === 403) {
-				alert('삭제 권한이 없습니다.');
+				alert('권한이 없습니다.');
 				return;
 			}
 
@@ -203,13 +203,13 @@
 
 			// 리다이렉트 여부 확인
 			if (response.redirected) {
-				alert('삭제 권한이 없습니다.');
+				alert('권한이 없습니다.');
 				return;
 			}
 
 			// 403 상태 코드 확인
 			if (response.status === 403) {
-				alert('삭제 권한이 없습니다.');
+				alert('권한이 없습니다.');
 				return;
 			}
 

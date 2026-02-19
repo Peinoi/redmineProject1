@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.yedam.app.issuetype.mapper.IssueTypeMapper">
+
+	<!-- 유형 타입 조회 -->
+	<select id="selectAllIssueType" resultType="IssueTypeVO">
+		SELECT
+			t.type_code
+			,t.project_code
+			,p.project_name
+			,t.type_name
+			,t.start_at
+			,t.end_at
+			,t.is_deleted
+		FROM types t
+		JOIN projects p
+		ON t.project_code = p.project_code
+		WHERE
+		t.is_deleted != 1
+		ORDER BY t.type_code
+	</select>
+	
+	<!-- 유형 타입 추가 -->
+	<insert id="addIssueType" parameterType="IssueTypeVO"
+	        useGeneratedKeys="true" keyProperty="typeCode">
+	    INSERT INTO types (project_code, type_name, start_at, end_at, is_deleted)
+	    VALUES (#{projectCode}, #{typeName}, #{startAt}, #{endAt}, '0')
+	</insert>
+	
+	<!-- 유형 타입 수정 -->
+	<update id="modifyIssueType" parameterType="IssueTypeVO">
+	    UPDATE types
+	    SET type_name = #{typeName},
+	        start_at  = #{startAt},
+	        end_at    = #{endAt}
+	    WHERE type_code = #{typeCode}
+	</update>
+	
+	<!-- 유형 타입 삭제 (소프트) -->
+	<update id="deleteIssueType">
+	    UPDATE types
+	    SET is_deleted = '1'
+	    WHERE type_code = #{typeCode}
+	</update>
+</mapper>

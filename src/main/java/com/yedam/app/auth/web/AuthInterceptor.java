@@ -44,64 +44,46 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		String requestUri = request.getRequestURI();
 
-		System.out.println("========== 권한 체크 시작 ==========");
-		System.out.println("요청 URI: " + requestUri);
+		// 1. 제외할 공통 리소스 체크 (필요시 추가)
+		if (requestUri.startsWith("/css") || requestUri.startsWith("/js") || requestUri.equals("/accessDenied")) {
+			return true;
+		}
 
-		// 캐시 내용 확인
-		System.out.println("========== URI 캐시 내용 ==========");
-		/*
-		 * for (Map.Entry<String, UriAccessInfoVO> entry : uriCache.entrySet()) {
-		 * System.out.println("패턴: " + entry.getKey() + " -> 카테고리: " +
-		 * entry.getValue().getCategory() + ", 타입: " + entry.getValue().getType()); }
-		 */
-		System.out.println("====================================");
+		// 2. 해당 URI가 권한 체크가 필요한 '관리 대상'인지 먼저 확인
+		UriAccessInfoVO uriInfo = findMatchingUri(requestUri);
 
-		// 세션에서 사용자 정보 가져오기
+		// [중요] DB(URI_ACCESS_INFO 테이블)에 등록되지 않은 URI는 권한 체크 없이 통과!
+		if (uriInfo == null) {
+			return true;
+		}
+
+		// 3. 권한 체크가 필요한 URI인데 세션에 권한 정보가 없는 경우
 		HttpSession session = request.getSession();
-		UserVO user = (UserVO) session.getAttribute("user");
-
-		// 권한 정보 가져오기
 		@SuppressWarnings("unchecked")
 		List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>) session.getAttribute("userAuth");
 
+		// 권한 데이터가 아예 없으면 (프로젝트 미소속 등) 차단
 		if (userAuths == null || userAuths.isEmpty()) {
+			System.out.println("권한이 필요한 페이지이나 사용자의 권한 정보가 전혀 없음!");
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
 
-		// 해당 URI의 접근 정보 찾기
-		UriAccessInfoVO uriInfo = findMatchingUri(requestUri);
-
-		// 매칭 결과 확인
-		if (uriInfo == null) {
-			// System.out.println("⚠️ 매칭되는 URI 패턴을 찾지 못함!");
-			// System.out.println("========== 권한 체크 종료 (패턴 없음) ==========");
-			return true; // ❌ 문제: 매칭 안 되면 통과시킴!
-		}
-
-		/*
-		 * System.out.println("매칭된 URI: " + uriInfo.getUri());
-		 * System.out.println("카테고리: " + uriInfo.getCategory());
-		 * System.out.println("권한 타입: " + uriInfo.getType());
-		 */
-
-		// 사용자의 해당 카테고리 권한 찾기
+		// 4. 사용자의 해당 카테고리 권한 찾기
 		UserProjectAuthVO userAuth = findUserAuthByCategory(userAuths, uriInfo.getCategory());
 
-		// 해당 카테고리에 대한 권한이 없으면 거부
 		if (userAuth == null) {
-			System.out.println("해당 카테고리의 권한 없음!");
+			System.out.println("해당 카테고리에 대한 권한이 없음!");
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
 
-		// 권한 체크
+		// 5. 상세 권한(읽기/쓰기 등) 체크
 		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth);
-		System.out.println("권한 체크 결과: " + hasPermission);
-		System.out.println("========== 권한 체크 종료 ==========");
 
 		if (!hasPermission) {
-			response.sendRedirect("/accessDenied");
+			System.out.println("상세 권한 부족 (Type: " + uriInfo.getType() + ")");
+			response.sendError(HttpServletResponse.SC_FORBIDDEN, "권한이 없습니다.");
 			return false;
 		}
 

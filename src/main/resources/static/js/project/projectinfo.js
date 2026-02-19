@@ -198,12 +198,12 @@ function initializeChanges() {
 // ============================================
 function validateProjectName(event) {
 	const input = event.target;
-	const value = input.value;
-	const filtered = value.replace(/[^\w\sㄱ-ㅎ가-힣]/g, '').replace(/\s/g, '');
+	const regExp = /[^\wㄱ-ㅎ가-힣]/g;
+	const filtered = value.replace(regExp, '');
 
 	if (value !== filtered) {
 		input.value = filtered;
-		showValidationMessage(input, '특수문자와 공백은 사용할 수 없습니다.');
+		showValidationMessage(input, '특수문자는 사용할 수 없습니다.');
 		return false;
 	}
 
@@ -822,8 +822,8 @@ function handleFormSubmit(event) {
 		return false;
 	}
 
-	if (!/^[\w가-힣ㄱ-ㅎ]+$/.test(projectName)) {
-		alert('프로젝트명에는 특수문자와 공백을 사용할 수 없습니다.');
+	if (!/^[\w가-힣ㄱ-ㅎ\s]+$/.test(projectName)) {
+		alert('프로젝트명에는 특수문자를 사용할 수 없습니다.');
 		projectNameInput.focus();
 		return false;
 	}
@@ -870,8 +870,9 @@ function submitProject(formData) {
 		body: JSON.stringify(formData)
 	})
 		.then(async response => {
+			console.log('수정 권한 상태 : ' + response.status)
 			// 1. 상태 코드 체크
-			if (response.status === 403) {
+			if (response.redirected && response.url.includes('/accessDenied')) {
 				alert('수정 권한이 없습니다.');
 				return null;
 			}

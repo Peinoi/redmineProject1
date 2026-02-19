@@ -20,6 +20,13 @@ public class PruserVO {
 	private String name; // 이름
 	private String phone; // 폰번호
 	private String email; // 이메일
-	private Date created_at; // 입사일
+	private Date createdAt; // 입사일
+	private Date lastLoginAt; // 마지막 로그인
 	private String isLock; // 잠금 상태
+	
+	// 사용자 관리
+	private String  position; // 직책
+    private String  passwordHash; // 비번
+    private Integer nextUserCode;   // 유저코드
+    private Integer nextEmployeeNo; // 사번
 }

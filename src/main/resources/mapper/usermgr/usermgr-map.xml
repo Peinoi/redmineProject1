@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.usermgr.mapper.UsermgrMapper">
+
+    <!-- 사용자 목록 -->
+    <select id="userAll" resultType="PruserVO">
+        SELECT
+            user_code,
+            employee_no,
+            name,
+            phone,
+            email,
+            created_at,
+            last_login_at,
+            is_lock
+        FROM users
+        WHERE name NOT LIKE '%-delete'
+        ORDER BY employee_no
+    </select>
+
+    <!-- next 유저코드, 사번 -->
+    <select id="selectNextNo" resultType="PruserVO">
+        SELECT
+            NVL(MAX(user_code),   0) + 1    AS next_user_code,
+            NVL(MAX(employee_no), 0) + 1000 AS next_employee_no
+        FROM users
+    </select>
+
+    <!-- 사용자 추가
+         job_title 컬럼 없으면 → ALTER TABLE users ADD job_title VARCHAR2(50); -->
+    <insert id="addUser" parameterType="PruserVO">
+        INSERT INTO users
+            (user_code,
+             employee_no,
+             name,
+             position,
+             password_hash,
+             created_at,
+             is_lock)
+        VALUES (
+            #{userCode},
+            #{employeeNo},
+            #{name},
+            #{position},
+            #{passwordHash},
+            SYSDATE,
+            '0'
+        )
+    </insert>
+
+    <!-- 잠금 / 잠금해제  '0'=활성 / '1'=잠금 -->
+    <update id="lockUser">
+        UPDATE users
+        SET    is_lock = #{isLock}
+        WHERE  user_code = #{userCode}
+    </update>
+
+    <!-- 소프트 삭제 -->
+    <update id="deleteUser">
+        UPDATE users
+        SET    name = name || '-delete'
+     			,is_lock = 1   
+        WHERE  user_code = #{userCode}
+    </update>
+
+</mapper>
