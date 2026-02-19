@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.overview.mapper.OverviewMapper">
+<!-- 유저의 프로젝트별 일감 현황 -->
+	<select id="selectProjectIssueStatus" resultType="ProIssStaVO">
+		SELECT
+			/* 프로젝트 전체 이슈 */
+			p.project_code AS projectCode,
+			p.project_name AS projectName,
+			NVL(SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END), 0) AS newIss,
+			NVL(SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END), 0) AS progress,
+			NVL(SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END), 0) AS solution,
+			NVL(SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END), 0) AS returnIss,
+			NVL(SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END), 0) AS completion
+			
+		FROM projects p
+		
+		LEFT JOIN issues i
+		  ON i.project_code = p.project_code
+
+		LEFT JOIN status s
+		  ON s.status_code = i.status_code
+
+		WHERE p.status = 'OD1'
+          AND p.project_code = #{projectCode}
+		GROUP BY p.project_code, p.project_name
+	</select>
+</mapper>

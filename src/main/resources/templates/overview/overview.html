@@ -16,6 +16,133 @@
 			<h3 class="page-title">프로젝트 개요</h3>
 			<div class="page-title-sub">프로젝트 개요입니다.</div>
 		</div>
+
+		<h2 th:text="${project.projectName}">프로젝트명</h2>
+		<p th:text="${project.description}">프로젝트 설명</p>
+
+		<!-- 2x2 대신: 상단 2컬럼 + 하단 2컬럼(카드 높이 균일) -->
+		<div class="main-grid">
+
+			<!-- 1) 일감현황 (프로젝트별) -->
+			<div class="card main-card">
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
+					<div>
+						<i class="fas fa-table me-1"></i>일감현황
+					</div>
+					<div class="text-muted small">프로젝트별 신규/진행/해결/반려/완료</div>
+				</div>
+
+				<div class="card-body p-0">
+					<div class="table-responsive main-table-wrap">
+						<table class="table table-hover align-middle text-center mb-0"
+							id="mainIssueTable">
+							<thead>
+								<tr>
+									<th style="width: 90px;">신규</th>
+									<th style="width: 90px;">진행</th>
+									<th style="width: 90px;">해결</th>
+									<th style="width: 90px;">반려</th>
+									<th style="width: 90px;">완료</th>
+									<th style="width: 100px;">합계</th>
+								</tr>
+							</thead>
+
+							<tbody>
+								<tr th:each="list : ${ProIssStatusList}"
+									th:with="
+      									isAdminProj=${adminProjectList != null and adminProjectList.contains(list.projectCode)},
+      									n=${(isAdminProj ? list.newIss : list.myNewIss) ?: 0},
+      									p=${(isAdminProj ? list.progress : list.myProgress) ?: 0},
+      									s=${(isAdminProj ? list.solution : list.mySolution) ?: 0},
+      									r=${(isAdminProj ? list.returnIss : list.myReturnIss) ?: 0},
+      									c=${(isAdminProj ? list.completion : list.myCompletion) ?: 0},
+      									total=${n + p + s + r + c}
+    									"
+									th:classappend="${isAdminProj} ? 'click-row admin-row' : 'click-row'"
+									th:onclick="|location.href='@{/G2main/{projectCode}/issuesStatus(projectCode=${list.projectCode})}'|">
+
+
+									<td class="text-start"><span class="proj-name"
+										th:text="${list.projectName}">프로젝트</span> <span
+										class="badge admin-badge ms-2" th:if="${isAdminProj}">관리자</span>
+									</td>
+
+									<td th:text="${n}">0</td>
+									<td th:text="${p}">0</td>
+									<td th:text="${s}">0</td>
+									<td th:text="${r}">0</td>
+									<td th:text="${c}">0</td>
+
+									<td class="fw-bold" th:text="${total}">0</td>
+								</tr>
+
+								<tr th:if="${#lists.isEmpty(ProIssStatusList)}"
+									class="no-data-row">
+									<td colspan="7" class="text-center text-muted py-3">표시할
+										데이터가 없습니다.</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					<div class="main-hint">
+						행을 클릭하면 해당 프로젝트의 일감현황으로 이동합니다. <span class="ms-2">관리자면
+							담당자별, 아니면 내 일감현황이 표시됩니다.</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- 2) 공지사항 -->
+			<div class="card main-card">
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
+					<div>
+						<i class="fas fa-bullhorn me-1"></i>공지사항
+					</div>
+					<a class="text-decoration-none small" href="/notice">더보기</a>
+				</div>
+
+				<div class="card-body p-0">
+					<div class="list-group list-group-flush notice-list">
+
+						<!-- ✅ 공지 데이터 있을 때 -->
+						<a th:each="n : ${noticeList}"
+							th:href="@{/notice/{id}(id=${n.noticeId})}"
+							class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
+							<div class="me-2">
+								<div class="notice-title" th:text="${n.title}">공지 제목</div>
+								<div class="notice-meta">
+									<span th:text="${n.writerName}">관리자</span> <span class="mx-1">·</span>
+									<span th:text="${#temporals.format(n.createdAt, 'yyyy-MM-dd')}">2026-02-11</span>
+								</div>
+							</div> <span class="badge rounded-pill notice-badge"
+							th:if="${n.isNew == 'Y'}">NEW</span>
+						</a>
+
+						<!-- ✅ 공지 없을 때 -->
+						<div class="p-3 text-muted"
+							th:if="${noticeList == null or #lists.isEmpty(noticeList)}">
+							등록된 공지사항이 없습니다.</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 3) 구성원 -->
+			<div class="card main-card">
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
+					<div>
+						<i class="fas fa-chart-line me-1"></i>구성원
+					</div>
+					<div class="text-muted small">
+						<span
+							th:text="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+							오늘 </span>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<!-- 프로젝트 개요 스크립트 -->
