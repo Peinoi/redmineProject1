@@ -92,7 +92,7 @@
 						<div class="input-group">
 							<input type="text" id="filterCreatorText" class="form-control"
 								placeholder="등록자 선택" readonly th:value="${creatorName}" /> <input
-								type="hidden" id="filterCreatorValue" name="createdByCode"
+								type="hidden" id="filterCreatorValue" name="createdCode"
 								th:value="${param.createdByCode}" />
 							<button type="button" class="btn btn-secondary"
 								id="btnOpenCreatorModal">선택</button>
@@ -176,7 +176,7 @@
 				<div class="modal-body">
 					<input type="text" id="assigneeModalSearch"
 						class="form-control mb-2" placeholder="담당자명 검색" />
-					<div class="list-group" id="assigneeModalList"></div>
+					<div class="type-tree list-group list-group-flush" id="assigneeModalTree"></div>
 				</div>
 			</div>
 		</div>
@@ -194,7 +194,7 @@
 				<div class="modal-body">
 					<input type="text" id="creatorModalSearch"
 						class="form-control mb-2" placeholder="등록자명 검색" />
-					<div class="list-group" id="creatorModalList"></div>
+					<div class="type-tree list-group list-group-flush" id="creatorModalTree"></div>
 				</div>
 			</div>
 		</div>

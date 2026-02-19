@@ -1,72 +1,43 @@
-package com.yedam.app.gantt.service.impl;
+package com.yedam.app.calendar.service.impl;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.yedam.app.gantt.mapper.GanttMapper;
-import com.yedam.app.gantt.service.GanttService;
-import com.yedam.app.gantt.service.GanttVO;
+import com.yedam.app.calendar.mapper.CalendarMapper;
+import com.yedam.app.calendar.service.CalendarService;
+import com.yedam.app.calendar.service.CalendarVO;
 
 import lombok.RequiredArgsConstructor;
 
-@RequiredArgsConstructor
 @Service
-public class GanttServiceImpl implements GanttService {
+@RequiredArgsConstructor
+public class CalendarServiceImpl implements CalendarService {
 
-	private final GanttMapper ganttMapper;
+	private final CalendarMapper calendarMapper;
 
-	// 전체조회
 	@Override
-	public List<GanttVO> getGanttList(Integer userCode, GanttVO ganttVO) {
-		List<GanttVO> list = ganttMapper.selectGanttList(userCode, ganttVO);
-
-		Map<Integer, LocalDateTime> projectEndDateMap = new HashMap<>();
-
-		calculateProjectEndDates(list, projectEndDateMap);
+	public List<CalendarVO> getCalendarList(Integer userCode, CalendarVO calendarVO) {
+		List<CalendarVO> list = calendarMapper.selectCalendarList(userCode, calendarVO);
 
 		// 1단계: ISSUE 날짜 먼저 계산
-		for (GanttVO vo : list) {
+		for (CalendarVO vo : list) {
 			if ("ISSUE".equals(vo.getRowType())) {
 				vo.setIssueStartDate(issueStartDate(vo));
 				vo.setIssueEndDate(issueEndDate(vo));
-
 			}
 		}
 
 		// 2단계: 나머지 계산 결과 적용
-		applyCalculatedValues(list, projectEndDateMap);
+		applyCalculatedValues(list);
 
 		return list;
 	}
 
-	// 프로젝트 종료일 계산
-	private void calculateProjectEndDates(List<GanttVO> list, Map<Integer, LocalDateTime> projectEndDateMap) {
-		for (GanttVO vo : list) {
-			// 핵심: ISSUE만
-			if (!"ISSUE".equals(vo.getRowType())) {
-				continue;
-			}
-
-			Integer projectCode = vo.getProjectCode();
-			if (projectCode == null)
-				continue;
-
-			LocalDateTime issueEnd = issueEndDate(vo);
-			if (issueEnd == null)
-				continue;
-
-			projectEndDateMap.merge(projectCode, issueEnd,
-					(oldVal, newVal) -> newVal.isAfter(oldVal) ? newVal : oldVal);
-		}
-	}
-
 	// 작업 기간 계산
-	private Integer calculateDuration(GanttVO vo) {
+	private Integer calculateDuration(CalendarVO vo) {
 		String status = vo.getIssueStatus();
 
 		LocalDateTime start = null;
@@ -96,19 +67,9 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// 계산 결과 VO에 넣기
-	private void applyCalculatedValues(List<GanttVO> list, Map<Integer, LocalDateTime> projectEndDateMap) {
-
-		for (GanttVO vo : list) {
-			Integer projectCode = vo.getProjectCode();
-
-			// 1. 프로젝트 종료일 (PROJECT / TYPE / ISSUE 공통)
-			if ("완료".equals(vo.getProjectStatus())) {
-				vo.setProjectEndDate(vo.getCompletedOn());
-			} else {
-				vo.setProjectEndDate(projectEndDateMap.get(projectCode));
-			}
-
-			// 2️. ISSUE만 날짜 계산
+	private void applyCalculatedValues(List<CalendarVO> list) {
+		for (CalendarVO vo : list) {
+			// 1. ISSUE만 날짜 계산
 			if ("ISSUE".equals(vo.getRowType())) {
 				vo.setDuration(calculateDuration(vo));
 			}
@@ -116,7 +77,7 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// ===== 일감 시작일 규칙 =====
-	private LocalDateTime issueStartDate(GanttVO vo) {
+	private LocalDateTime issueStartDate(CalendarVO vo) {
 
 		String status = vo.getIssueStatus();
 		LocalDateTime result = null;
@@ -139,7 +100,7 @@ public class GanttServiceImpl implements GanttService {
 	}
 
 	// ===== 일감 종료일 규칙 =====
-	private LocalDateTime issueEndDate(GanttVO vo) {
+	private LocalDateTime issueEndDate(CalendarVO vo) {
 		LocalDateTime result = null;
 
 		// 완료 → resolvedAt
@@ -152,4 +113,5 @@ public class GanttServiceImpl implements GanttService {
 		// 여기 추가
 		return result == null ? null : result.toLocalDate().atStartOfDay();
 	}
+
 }

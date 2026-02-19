@@ -1,0 +1,33 @@
+<!-- list.html -->
+<!doctype html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+
+<head>
+<meta charset="UTF-8" />
+<title>일정 달력</title>
+<script
+	src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js"></script>
+<link rel="stylesheet" th:href="@{/css/calendar/list.css}" />
+<link rel="stylesheet" th:href="@{/css/gantt/search.css}" />
+</head>
+<body>
+	<div class="calendar-page">
+		<div class="x-page-title">
+			<h3 class="page-title">일정 달력</h3>
+			<div class="page-title-sub">일정 달력 페이지입니다.</div>
+		</div>
+		<!-- 검색조건 -->
+		<div th:replace="~{gantt/search :: searchCondition}"></div>
+
+		<!-- 달력 -->
+		<div class="calendar-wrapper">
+			<div id="calendar"></div>
+		</div>
+	</div>
+	<script th:src="@{/js/calendar/list.js}"></script>
+	<script th:src="@{/js/gantt/search.js}"></script>
+</body>
+</html>

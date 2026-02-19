@@ -18,24 +18,63 @@
      ORDER BY u.name
   </select>
 
-  <!-- 목록: 로그인 사용자가 참여한 프로젝트들의 전체 참여자 -->
-  <select id="selectUsersByMyProjects"
+  <!-- 목록: 로그인 사용자가 참여한 프로젝트들의 전체 담당자들 -->
+  <select id="selectAssigneeByMyProjects"
           parameterType="long"
           resultType="UserModalVO">
     SELECT DISTINCT
-           v2.user_code AS userCode,
-           u.name       AS userName
-      FROM vw_user_auth v2
-      JOIN users u
-        ON u.user_code = v2.user_code
-     WHERE u.is_lock != 1
-       AND EXISTS (
-           SELECT 1
-             FROM vw_user_auth v1
-            WHERE v1.user_code = #{loginUserCode}
-              AND v1.project_code = v2.project_code
-       )
-     ORDER BY u.name
+	       i.assignee_code AS userCode,
+	       u.name          AS userName,
+	       i.project_code  AS projectCode,
+	       p.project_name  AS projectName
+	FROM issues i
+	JOIN users u
+	  ON u.user_code = i.assignee_code
+	JOIN projects p
+	  ON p.project_code = i.project_code
+	WHERE u.is_lock != 1
+	  AND i.assignee_code IS NOT NULL
+	  AND EXISTS (
+	        SELECT 1
+	        FROM vw_user_auth v
+	        WHERE v.user_code = #{loginUserCode}
+	          AND v.project_code = i.project_code
+	          AND (
+                    (v.role_code = 1 AND p.status IN ('OD1','OD3'))
+                 OR (v.role_code = 2 AND p.status = 'OD1')
+              )
+	  )
+	ORDER BY projectCode, userName
+
+  </select>
+  
+  <!-- 목록: 로그인 사용자가 참여한 프로젝트들의 전체 등록자들 -->
+  <select id="selectCreatorByMyProjects"
+          parameterType="long"
+          resultType="UserModalVO">
+    SELECT DISTINCT
+	       i.created_by_code AS userCode,
+	       u.name            AS userName,
+	       i.project_code    AS projectCode,
+	       p.project_name    AS projectName
+	FROM issues i
+	JOIN users u
+	  ON u.user_code = i.created_by_code
+	JOIN projects p
+	  ON p.project_code = i.project_code
+	WHERE u.is_lock != 1
+	  AND EXISTS (
+	        SELECT 1
+	        FROM vw_user_auth v
+	        WHERE v.user_code = #{loginUserCode}
+	          AND v.project_code = i.project_code
+	          AND (
+                    (v.role_code = 1 AND p.status IN ('OD1','OD3'))
+                 OR (v.role_code = 2 AND p.status = 'OD1')
+              )
+	  )
+	ORDER BY projectCode, userName
+
   </select>
 
 </mapper>

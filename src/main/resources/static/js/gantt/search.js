@@ -38,8 +38,8 @@
 		typeModalEl: $("#typeSelectModal"),
 
 		projectModalList: $("#projectModalList"),
-		assigneeModalList: $("#assigneeModalList"),
-		creatorModalList: $("#creatorModalList"),
+		assigneeModalList: $("#assigneeModalTree"),
+		creatorModalList: $("#creatorModalTree"),
 
 		projectModalSearch: $("#projectModalSearch"),
 		assigneeModalSearch: $("#assigneeModalSearch"),
@@ -125,7 +125,8 @@
 	// 캐시
 	// -------------------------
 	let projectCache = [];
-	let userCache = [];
+	let assigneeCache = [];
+	let creatorCache = [];
 	let typeCache = [];
 
 	const ensureProjectCache = async () => {
@@ -136,11 +137,23 @@
 		return true;
 	};
 
-	const ensureUserCache = async () => {
-		if (userCache.length) return true;
-		const res = await fetch("/api/users/modal/my-projects", { headers: { Accept: "application/json" } });
-		if (!res.ok) { showToast("사용자 목록을 불러오지 못했습니다."); return false; }
-		userCache = (await res.json()).map(u => ({ code: String(u.userCode), name: u.userName }));
+	const ensureAssigneeCache = async () => {
+		if (assigneeCache.length) return true;
+
+		const res = await fetch("/api/users/modal/assignees");
+		if (!res.ok) { showToast("담당자 목록을 불러오지 못했습니다."); return false; }
+
+		assigneeCache = await res.json();
+		return true;
+	};
+
+	const ensureCreatorCache = async () => {
+		if (creatorCache.length) return true;
+
+		const res = await fetch("/api/users/modal/creators");
+		if (!res.ok) { showToast("등록자 목록을 불러오지 못했습니다."); return false; }
+
+		creatorCache = await res.json();
 		return true;
 	};
 
@@ -195,29 +208,76 @@
 		renderListButtons(ui.projectModalList, projectCache, (picked) => {
 			ui.projectText.value = picked.name;
 			ui.projectValue.value = picked.code;
+
+			// 프로젝트 변경 시 유형/담당자/등록자 초기화
+			ui.typeText.value = "";
+			ui.typeValue.value = "";
+			ui.assigneeText.value = "";
+			ui.assigneeValue.value = "";
+			ui.creatorText.value = "";
+			ui.creatorValue.value = "";
+
 			projectModal.hide();
 		});
 		projectModal.show();
 	};
 
 	const openUserModal = async (type) => {
-		const modal = type === "assignee" ? assigneeModal : creatorModal;
-		const listEl = type === "assignee" ? ui.assigneeModalList : ui.creatorModalList;
-		const searchEl = type === "assignee" ? ui.assigneeModalSearch : ui.creatorModalSearch;
-		if (!modal) return;
-		searchEl && (searchEl.value = "");
-		const ok = await ensureUserCache();
-		if (!ok) return;
-		renderListButtons(listEl, userCache, (picked) => {
+		let cache;
+		let modal;
+		let listEl;
+		let searchEl;
+
+		if (type === "assignee") {
+			modal = assigneeModal;
+			listEl = ui.assigneeModalList;
+			searchEl = ui.assigneeModalSearch;
+
+			const ok = await ensureAssigneeCache();
+			if (!ok) return;
+
+			cache = assigneeCache;
+
+		} else if (type === "creator") {
+			modal = creatorModal;
+			listEl = ui.creatorModalList;
+			searchEl = ui.creatorModalSearch;
+
+			const ok = await ensureCreatorCache();
+			if (!ok) return;
+
+			cache = creatorCache;
+		}
+
+		// 검색어 초기화
+		if (searchEl) searchEl.value = "";
+
+		// ↓ 프로젝트 선택 시 해당 프로젝트만 필터링
+		const selectedProjectCode = ui.projectValue?.value || "";
+		const filteredCache = selectedProjectCode
+			? cache.filter(p => String(p.projectCode) === String(selectedProjectCode))
+			: cache;
+
+		renderUserTree(filteredCache, listEl, (picked, projectCode) => {
 			if (type === "assignee") {
-				ui.assigneeText.value = picked.name;
-				ui.assigneeValue.value = picked.code;
+				ui.assigneeText.value = picked.userName;
+				ui.assigneeValue.value = picked.userCode;
 			} else {
-				ui.creatorText.value = picked.name;
-				ui.creatorValue.value = picked.code;
+				ui.creatorText.value = picked.userName;
+				ui.creatorValue.value = picked.userCode;
 			}
+
+			// 프로젝트 미선택 상태면 자동 설정
+			if (!ui.projectValue?.value && projectCode) {
+				ui.projectValue.value = projectCode;
+				// 프로젝트명도 표시
+				const projectName = filteredCache.find(p => String(p.projectCode) === String(projectCode))?.projectName || "";
+				ui.projectText.value = projectName;
+			}
+
 			modal.hide();
 		});
+
 		modal.show();
 	};
 
@@ -239,6 +299,11 @@
 				e.stopPropagation();
 				ui.typeText.value = type.name;
 				ui.typeValue.value = type.code;
+				// 유형의 프로젝트 코드/명 자동 설정
+				if (type.projectCode && type.projectName) {
+					ui.projectValue.value = type.projectCode;
+					ui.projectText.value = type.projectName;
+				}
 				if (typeModal) typeModal.hide();
 			});
 
@@ -312,16 +377,109 @@
 		});
 	};
 
+	const renderUserTree = (projects, container, pickHandler) => {
+		if (!container) return;
+		container.innerHTML = "";
+
+		if (!projects || projects.length === 0) {
+			container.innerHTML =
+				'<div class="p-4 text-center text-muted">결과가 없습니다.</div>';
+			return;
+		}
+
+		projects.forEach(p => {
+			// ===== 프로젝트 그룹 =====
+			const groupWrapper = document.createElement("div");
+			groupWrapper.className = "type-project-group";
+
+			const header = document.createElement("div");
+			header.className = "type-project-header";
+			header.textContent = p.projectName;
+
+			const content = document.createElement("div");
+			content.className = "type-project-content";
+			content.style.display = "none";
+
+			// 아코디언
+			header.addEventListener("click", () => {
+				const isOpen = content.style.display === "block";
+
+				document.querySelectorAll(".type-project-content")
+					.forEach(el => el.style.display = "none");
+
+				document.querySelectorAll(".type-project-header")
+					.forEach(el => el.classList.remove("active"));
+
+				if (!isOpen) {
+					content.style.display = "block";
+					header.classList.add("active");
+				}
+			});
+
+			// ===== 사용자 목록 =====
+			const ul = document.createElement("ul");
+
+			(p.children || []).forEach(u => {
+				const li = document.createElement("li");
+				const btn = document.createElement("div");
+
+				btn.className = "type-item";
+				btn.textContent = u.userName;
+
+				btn.addEventListener("click", (e) => {
+					e.stopPropagation();
+					pickHandler(u, p.projectCode);
+				});
+
+				li.appendChild(btn);
+				ul.appendChild(li);
+			});
+
+			content.appendChild(ul);
+			groupWrapper.appendChild(header);
+			groupWrapper.appendChild(content);
+			container.appendChild(groupWrapper);
+		});
+	};
+
+	const filterUserTree = (projects, keyword) => {
+		if (!keyword || !keyword.trim()) {
+			return projects; // 검색어 없으면 전체
+		}
+
+		const q = keyword.trim().toLowerCase();
+		const result = [];
+
+		projects.forEach(p => {
+			// 프로젝트 안에서 keyword에 맞는 사용자만 필터링
+			const matchedUsers = (p.children || []).filter(u => {
+				const name = (u.userName || "").toLowerCase().trim();
+				return name.includes(q);
+			});
+
+			// 검색 결과가 하나도 없으면 프로젝트 제외
+			if (matchedUsers.length > 0) {
+				result.push({
+					projectName: p.projectName,
+					children: matchedUsers
+				});
+			}
+		});
+
+		return result;
+	};
 
 	const buildTypeTreeForJS = (serverData) => {
 		const projectMap = {};
 
 		// 재귀적으로 유형을 변환하는 함수
-		const convertType = (type) => {
+		const convertType = (type, projectCode, projectName) => {
 			return {
 				code: String(type.typeCode),
 				name: type.typeName,
-				children: (type.children || []).map(child => convertType(child))
+				projectCode: projectCode,
+				projectName: projectName,
+				children: (type.children || []).map(child => convertType(child, projectCode, projectName))
 			};
 		};
 
@@ -340,7 +498,7 @@
 
 			// 최상위 유형만 추가 (parTypeCode가 null인 것)
 			if (!type.parTypeCode) {
-				projectMap[pCode].children.push(convertType(type));
+				projectMap[pCode].children.push(convertType(type, pCode, pName));
 			}
 		});
 
@@ -353,9 +511,15 @@
 		const ok = await ensureTypeCache();
 		if (!ok) return;
 
-		// typeCache를 트리 구조로 변환
+		const selectedProjectCode = ui.projectValue?.value || "";
 		const treeData = buildTypeTreeForJS(typeCache);
-		renderTypeTree(treeData, document.getElementById("typeModalTree"));
+
+		// 프로젝트 선택 시 해당 프로젝트 유형만 필터링
+		const filteredTreeData = selectedProjectCode
+			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
+			: treeData;
+
+		renderTypeTree(filteredTreeData, document.getElementById("typeModalTree"));
 		typeModal.show();
 	};
 
@@ -365,13 +529,17 @@
 	ui.btnApply?.addEventListener("click", (e) => {
 		e.preventDefault();
 
+		const filters = getGanttFilters();
+
 		// Gantt 필터 적용
 		if (window.ganttReload) {
-			const filters = getGanttFilters();
-			console.log("적용할 필터:", filters);
+			//console.log("적용할 필터:", filters);
 			window.ganttReload(filters);
-		} else {
-			showToast("Gantt 차트가 아직 초기화되지 않았습니다.");
+		}
+
+		// Calendar
+		if (window.calendarReload) {
+			window.calendarReload(filters);
 		}
 	});
 
@@ -418,33 +586,44 @@
 	});
 
 	ui.assigneeModalSearch?.addEventListener("input", async () => {
-		const ok = await ensureUserCache();
+		const ok = await ensureAssigneeCache();
 		if (!ok) return;
+
 		const q = ui.assigneeModalSearch.value.trim().toLowerCase();
-		renderListButtons(
-			ui.assigneeModalList,
-			userCache.filter(u => u.name.toLowerCase().includes(q)),
-			picked => {
-				ui.assigneeText.value = picked.name;
-				ui.assigneeValue.value = picked.code;
-				assigneeModal?.hide();
-			}
-		);
+		const selectedProjectCode = ui.projectValue?.value || "";
+
+		const projectFiltered = selectedProjectCode
+			? assigneeCache.filter(p => String(p.projectCode) === String(selectedProjectCode))
+			: assigneeCache;
+
+		const filtered = filterUserTree(projectFiltered, q);
+
+		renderUserTree(filtered, ui.assigneeModalList, (picked) => {
+			ui.assigneeText.value = picked.userName;
+			ui.assigneeValue.value = picked.userCode;
+			assigneeModal?.hide();
+		});
+
 	});
 
 	ui.creatorModalSearch?.addEventListener("input", async () => {
-		const ok = await ensureUserCache();
+		const ok = await ensureCreatorCache();
 		if (!ok) return;
+
 		const q = ui.creatorModalSearch.value.trim().toLowerCase();
-		renderListButtons(
-			ui.creatorModalList,
-			userCache.filter(u => u.name.toLowerCase().includes(q)),
-			picked => {
-				ui.creatorText.value = picked.name;
-				ui.creatorValue.value = picked.code;
-				creatorModal?.hide();
-			}
-		);
+		const selectedProjectCode = ui.projectValue?.value || "";
+
+		const projectFiltered = selectedProjectCode
+			? creatorCache.filter(p => String(p.projectCode) === String(selectedProjectCode))
+			: creatorCache;
+
+		const filtered = filterUserTree(projectFiltered, q);
+
+		renderUserTree(filtered, ui.creatorModalList, (picked) => {
+			ui.creatorText.value = picked.userName;
+			ui.creatorValue.value = picked.userCode;
+			creatorModal?.hide();
+		});
 	});
 
 	ui.typeModalSearch?.addEventListener("input", async () => {
@@ -452,36 +631,42 @@
 		if (!ok) return;
 
 		const q = ui.typeModalSearch.value.trim().toLowerCase();
+		// 프로젝트 필터 먼저 적용
+		const treeData = buildTypeTreeForJS(typeCache);
+		const selectedProjectCode = ui.projectValue?.value || "";
+		
+		const projectFiltered = selectedProjectCode
+			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
+			: treeData;
+
 		let filteredTypes;
-
 		if (q) {
-			// 검색어가 있을 때: 재귀적으로 검색
 			const searchInTree = (types) => {
-				const results = [];
-				types.forEach(type => {
-					const nameMatch = type.typeName.toLowerCase().includes(q);
-					const childMatches = type.children && type.children.length > 0
-						? searchInTree(type.children)
-						: [];
+				return types
+					.map(type => {
+						const nameMatch = type.typeName.toLowerCase().includes(q);
+						const childMatches = type.children ? searchInTree(type.children) : [];
 
-					if (nameMatch || childMatches.length > 0) {
-						results.push({
-							...type,
-							children: childMatches.length > 0 ? childMatches : type.children
-						});
-					}
-				});
-				return results;
+						if (nameMatch || childMatches.length > 0) {
+							return { ...type, children: childMatches };
+						}
+						return null;
+					})
+					.filter(Boolean);
 			};
 
-			filteredTypes = searchInTree(typeCache);
+			// 프로젝트별로 필터 적용
+			filteredTypes = projectFiltered.map(proj => ({
+				...proj,
+				children: searchInTree(proj.children || [])
+			})).filter(proj => (proj.children || []).length > 0);
 		} else {
-			filteredTypes = typeCache;
+			filteredTypes = projectFiltered;
 		}
 
-		const treeData = buildTypeTreeForJS(filteredTypes);
-		renderTypeTree(treeData, document.getElementById("typeModalTree"));
+		renderTypeTree(filteredTypes, document.getElementById("typeModalTree"));
 	});
+
 
 	document.addEventListener("DOMContentLoaded", () => {
 		const toggleBtn = document.getElementById("btnToggleSearch");

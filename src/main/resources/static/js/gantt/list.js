@@ -1,4 +1,4 @@
-// list.js
+// /js/gantt/list.js
 /**
  * Gantt Chart Module
  * 담당 기능: 데이터 필터링, 트리 구조 변환, 컬러 피커 에디터, 차트 렌더링
@@ -16,11 +16,11 @@
 	// 그리드 컬럼 정의
 	const mainGridConfig = {
 		columns: [
-			{ name: "text", tree: true, width: 200, label: "작업명" },
+			{ name: "text", tree: true, width: "*", min_width: 200, label: "작업명" },
 			{ name: "priority", label: "우선순위", align: "center", width: 70 },
 			{ name: "status", label: "상태", align: "center", width: 70 },
 			{
-				name: "progress", label: "진척도", align: "center", width: 150,
+				name: "progress", label: "진척도", align: "center", width: 150, min_width: 150,
 				template: (t) => {
 					// 프로젝트인 경우 actualProg(planProg) 표시
 					if (t.type === gantt.config.types.project) {
@@ -33,7 +33,7 @@
 				}
 			},
 			{
-				name: "start_date", label: "시작일", align: "center", width: 110,
+				name: "start_date", label: "시작일", align: "center", width: 110, min_width: 110,
 				template: (t) => {
 					// ISSUE 상태가 "신규"이거나 TYPE 노드인 경우 시작일 빈칸
 					if (t.rowType === "ISSUE" && t.status === "신규") {
@@ -42,9 +42,9 @@
 					return DateUtils.getYYYYMMDD(t.start_date);
 				}
 			},
-			{ name: "end_date", label: "종료일", align: "center", width: 110 },
+			{ name: "end_date", label: "종료일", align: "center", width: 110, min_width: 110 },
 			{ name: "assigneeName", label: "작업자", align: "center", width: 80 },
-			{ name: "add", width: 44 }
+			//{ name: "add", width: 44 }
 		]
 	};
 
@@ -54,7 +54,7 @@
 		rows: [
 			{
 				cols: [
-					{ view: "grid", group: "grids", config: mainGridConfig, scrollY: "scrollVer" },
+					{ view: "grid", group: "grids", width: "*", min_width: 600, config: mainGridConfig, scrollY: "scrollVer" },
 					{ resizer: true, width: 1 },
 					{ view: "timeline", id: "timeline", scrollX: "scrollHor", scrollY: "scrollVer" },
 					{ view: "scrollbar", id: "scrollVer" }
@@ -81,6 +81,13 @@
 	gantt.i18n.setLocale(GANTT_CONFIG.locale);
 	gantt.config.date_format = GANTT_CONFIG.date_format;
 	gantt.config.task_date = GANTT_CONFIG.task_date;
+	gantt.config.server_utc = false;
+
+	gantt.config.autosize = false;
+	gantt.config.grid_resize = true;
+	gantt.config.keep_grid_width = false;
+	gantt.config.fit_tasks = false;
+	gantt.config.min_column_width = 40;
 
 	// 오늘 기준 6개월 범위 설정
 	const today = new Date();
@@ -93,6 +100,11 @@
 	// 모달 완전히 비활성화
 	gantt.config.details_on_dblclick = false;
 	gantt.config.details_on_create = false;
+
+	gantt.config.autosize = false;
+	gantt.config.grid_resize = true;
+	gantt.config.keep_grid_width = false;
+
 
 	// 우선순위별 스타일 클래스 매핑
 	gantt.templates.task_class = (start, end, task) => {
@@ -140,7 +152,7 @@
 	   2. 유틸리티 및 필터 로직 (Business Logic)
 	   ======================================================================== */
 	// data: 전체 Gantt 데이터
-	// filters: { title, type, projectCode, status, priority }
+	// filters: { title, type, projectCode, status, priority, assigneeCode, creatorCode, createdAt, dueAt }
 	const getFilteredDataWithHierarchy = (data, filters) => {
 		const title = filters.title?.trim()?.toLowerCase();
 		const tCode = filters.type?.trim() || "";
@@ -177,13 +189,64 @@
 		const filteredIssues = data.filter(item => {
 			if (item.rowType !== "ISSUE") return false;
 			let ok = true;
-			if (pCode && String(item.projectCode) !== String(pCode)) ok = false;
-			if (filters.status && item.issueStatus !== filters.status) ok = false;
-			if (filters.priority && item.priority !== filters.priority) ok = false;
-			if (title && !(item.title || "").toLowerCase().includes(title)) ok = false;
+			// 프로젝트
+			if (pCode && String(item.projectCode) !== String(pCode)) {
+				ok = false;
+			}
 
-			// 유형 필터: 선택한 유형과 모든 하위 유형 포함
-			if (tCode && !typeCodesSet.has(String(item.typeCode))) ok = false;
+			// 일감
+			if (title && !(item.title || "").toLowerCase().includes(title)) {
+				ok = false;
+			}
+
+			// 유형 (하위 포함)
+			if (tCode && !typeCodesSet.has(String(item.typeCode))) {
+				ok = false;
+			}
+
+			// 상태
+			if (filters.status && item.issueStatus !== filters.status) {
+				ok = false;
+			}
+
+			// 우선순위
+			if (filters.priority && item.priority !== filters.priority) {
+				ok = false;
+			}
+
+			// 담당자 코드
+			if (filters.assigneeCode &&
+				String(item.assigneeCode) !== String(filters.assigneeCode)) {
+				ok = false;
+			}
+
+			// 등록자 코드
+			if (filters.creatorCode &&
+				String(item.creatorCode) !== String(filters.creatorCode)) {
+				ok = false;
+			}
+
+			// 등록일
+			if (filters.createdAt) {
+				const created = toValidDate(item.createdOn);
+				const filterDate = toValidDate(filters.createdAt);
+
+				if (!created || !filterDate ||
+					created.toDateString() !== filterDate.toDateString()) {
+					ok = false;
+				}
+			}
+
+			// 마감기한
+			if (filters.dueAt) {
+				const end = toValidDate(item.issueEndDate);
+				const filterDate = toValidDate(filters.dueAt);
+
+				if (!end || !filterDate ||
+					end.toDateString() !== filterDate.toDateString()) {
+					ok = false;
+				}
+			}
 
 			return ok;
 		});
@@ -194,44 +257,96 @@
 
 		// 3. TYPE map
 		const typeMap = {};
-		data.filter(d => d.rowType === "TYPE").forEach(t => typeMap[t.typeCode] = t);
+		data.filter(d => d.rowType === "TYPE").forEach(t => {
+			typeMap[String(t.typeCode)] = t;  // ← String()으로 감싸기
+		});
 
-		// 4. 여기가 핵심! 하위 ISSUE가 있는 TYPE뿐만 아니라 모든 TYPE 포함
+		// 4. 필터링된 이슈가 속한 TYPE만 (상위 TYPE 포함) 수집
 		const validTypes = new Set();
 
-		// 4-1. 일감이 있는 TYPE의 모든 상위 TYPE 추가
-		filteredIssues.forEach(issue => {
-			let type = typeMap[issue.typeCode];
-			while (type) {
-				validTypes.add(type.typeCode);
-				if (!type.parTypeCode) break;
-				type = typeMap[type.parTypeCode];
-			}
-		});
+		const hasAnyFilter = pCode || title || tCode || filters.status ||
+			filters.priority || filters.assigneeCode ||
+			filters.creatorCode || filters.createdAt || filters.dueAt;
 
-		// 4-2. 모든 TYPE을 추가 (일감 없어도 표시)
-		data.filter(d => d.rowType === "TYPE").forEach(type => {
-			// 필터가 없으면 모든 TYPE 포함
-			if (!pCode || type.projectCode === Number(pCode)) {
-				validTypes.add(type.typeCode);
-			}
-		});
+		if (hasAnyFilter) {
+			// 필터링된 이슈가 속한 TYPE과 그 상위 TYPE 포함
+			filteredIssues.forEach(issue => {
+				let type = typeMap[String(issue.typeCode)];
+				while (type) {
+					validTypes.add(type.typeCode);
+					if (!type.parTypeCode) break;
+					type = typeMap[String(type.parTypeCode)];
+				}
+			});
 
-		// 유형 필터가 적용된 경우
-		if (tCode) {
-			typeCodesSet.forEach(code => {
-				validTypes.add(Number(code));
+			// 유형 필터 선택 시
+			if (tCode) {
+				// 선택한 TYPE + 하위 TYPE 추가
+				typeCodesSet.forEach(code => {
+					const type = typeMap[String(code)];
+					if (type) validTypes.add(type.typeCode);
+				});
+
+				// 상위 TYPE 체인 추가 (렌더링을 위해 필수)
+				typeCodesSet.forEach(code => {
+					let type = typeMap[String(code)];
+					while (type && type.parTypeCode) {
+						const parentType = typeMap[String(type.parTypeCode)];
+						if (parentType) validTypes.add(parentType.typeCode);
+						type = parentType;
+					}
+				});
+
+				// 형제 TYPE 제거: validTypes 중 typeCodesSet에도 없고 상위 체인도 아닌 것 제거
+				// → validTypes에서 "선택한 TYPE의 자손도 아니고 조상도 아닌" TYPE 제거
+				const ancestorTypes = new Set();
+				typeCodesSet.forEach(code => {
+					let type = typeMap[String(code)];
+					while (type && type.parTypeCode) {
+						const parentType = typeMap[String(type.parTypeCode)];
+						if (parentType) ancestorTypes.add(String(parentType.typeCode));
+						type = parentType;
+					}
+				});
+
+				// validTypes 재구성: 선택한 TYPE의 자손 + 조상만 남기고 형제 제거
+				for (const typeCode of [...validTypes]) {
+					const isDescendant = typeCodesSet.has(String(typeCode));
+					const isAncestor = ancestorTypes.has(String(typeCode));
+					if (!isDescendant && !isAncestor) {
+						validTypes.delete(typeCode);
+					}
+				}
+			}
+
+		} else {
+			// 필터가 없을 때: 모든 TYPE 표시 (기존 동작 유지)
+			data.filter(d => d.rowType === "TYPE").forEach(type => {
+				validTypes.add(type.typeCode);
 			});
 		}
 
 		// 5. PROJECT 체크
 		const validProjects = new Set();
 		data.filter(d => d.rowType === "PROJECT").forEach(p => {
-			const hasChild = data.some(item =>
-				(item.rowType === "TYPE" && validTypes.has(item.typeCode) && item.projectCode === p.projectCode) ||
-				(item.rowType === "ISSUE" && issueMap[item.issueCode] && item.projectCode === p.projectCode)
+			const hasValidIssue = data.some(item =>
+				item.rowType === "ISSUE" && issueMap[item.issueCode] && item.projectCode === p.projectCode
 			);
-			if (hasChild) validProjects.add(p.projectCode);
+
+			if (tCode) {
+				// 유형 필터: typeCodesSet에 속한 TYPE이 이 프로젝트 소속인지 확인
+				const hasMatchedType = data.some(item =>
+					item.rowType === "TYPE" &&
+					typeCodesSet.has(String(item.typeCode)) &&
+					item.projectCode === p.projectCode
+				);
+				if (hasMatchedType || hasValidIssue) validProjects.add(p.projectCode);
+			} else {
+				const hasValidType = data.some(item =>
+					item.rowType === "TYPE" && validTypes.has(item.typeCode) && item.projectCode === p.projectCode
+				);
+				if (hasValidIssue || hasValidType) validProjects.add(p.projectCode);
+			}
 		});
 
 		// 6. 최종 필터링
@@ -257,7 +372,12 @@
 		// YYYY-MM-DD 직접 파싱
 		const parts = value.split("-");
 		if (parts.length === 3) {
-			return new Date(parts[0], parts[1] - 1, parts[2]);
+			return new Date(
+				Number(parts[0]),
+				Number(parts[1]) - 1,
+				Number(parts[2]),
+				12, 0, 0
+			);
 		}
 
 		const d = new Date(value);
@@ -267,15 +387,10 @@
 	const transformToGanttFormat = (data) => {
 		const tasks = [];
 		const links = [];
-		let linkId = 1;
-
-		console.log("=== 원본 데이터 ===", data);
 
 		data.forEach(item => {
 			const id = item.nodeId;
 			const parent = item.parentId ? item.parentId : 0;
-
-			console.log(`Processing: ${item.rowType} - ${item.nodeId} - parent: ${parent}`);
 
 			// =========================
 			// PROJECT
@@ -288,7 +403,6 @@
 					start;
 
 				if (!start || !end) {
-					console.warn("PROJECT 날짜 없음:", item);
 					return;
 				}
 
@@ -306,7 +420,6 @@
 					rowType: "PROJECT",
 					projectCode: item.projectCode
 				});
-				console.log("✅ PROJECT 추가:", id);
 			}
 
 			// =========================
@@ -315,12 +428,6 @@
 			else if (item.rowType === "TYPE") {
 				let start = toValidDate(item.startAt);
 				let end = toValidDate(item.endAt);
-
-				console.log(`TYPE ${item.typeName}: startAt=${item.startAt}, endAt=${item.endAt}`);
-				console.log(`Converted: start=${start}, end=${end}`);
-
-				if (!start) start = new Date();
-				if (!end) end = new Date(start.getTime() + 86400000);
 
 				tasks.push({
 					id: id,
@@ -338,37 +445,24 @@
 					typeCode: item.typeCode,
 					parTypeCode: item.parTypeCode
 				});
-				console.log("✅ TYPE 추가:", id, item.typeName);
+
+				// PROJECT → TYPE 링크 생성
+				if (parent && parent !== 0) {
+					links.push({
+						id: `LINK_${parent}_${id}`,
+						source: parent,
+						target: id,
+						type: "1" // finish-to-start
+					});
+				}
 			}
 
 			// =========================
 			// ISSUE
 			// =========================
 			else if (item.rowType === "ISSUE") {
-				console.log(`ISSUE ${item.title}:`, {
-					issueStartDate: item.issueStartDate,
-					issueEndDate: item.issueEndDate,
-					startedAt: item.startedAt,
-					dueAt: item.dueAt
-				});
-
 				let start = toValidDate(item.issueStartDate);
 				let end = toValidDate(item.issueEndDate);
-
-				console.log(`Converted: start=${start}, end=${end}`);
-
-				// 날짜가 없으면 기본값 설정
-				if (!start && !end) {
-					console.warn("ISSUE 날짜 없음, 기본값 사용:", item.title);
-					start = new Date();
-					end = new Date(start.getTime() + 86400000);
-				} else if (!start && end) {
-					start = new Date(end.getTime() - 86400000);
-				} else if (start && !end) {
-					end = new Date(start.getTime() + 86400000);
-				}
-
-				if (end < start) end = new Date(start.getTime() + 86400000);
 
 				tasks.push({
 					id: id,
@@ -386,12 +480,19 @@
 					issueCode: item.issueCode,
 					typeCode: item.typeCode
 				});
-				console.log("✅ ISSUE 추가:", id, item.title);
+
+				// TYPE → ISSUE 링크 생성
+				if (parent && parent !== 0) {
+					links.push({
+						id: `LINK_${parent}_${id}`,
+						source: parent,
+						target: id,
+						type: "1"
+					});
+				}
+
 			}
 		});
-
-		console.log("=== 최종 tasks ===", tasks);
-		console.log("=== 최종 links ===", links);
 
 		return { data: tasks, links };
 	};
@@ -432,18 +533,29 @@
 				tooltip: true
 			});
 
+			gantt.config.show_links = true;
+
 			gantt.config.tooltip_offset_x = 10;
 			gantt.config.tooltip_offset_y = 30;
 
 			gantt.init("e7eGantt");
 
+			const ro = new ResizeObserver(() => {
+				gantt.setSizes();
+				gantt.render();
+			});
+
+			const ganttEl = document.querySelector("#e7eGantt");
+			if (ganttEl) {
+				ro.observe(ganttEl);
+			}
 			// 모든 태스크를 펼친 상태로 표시
 			gantt.config.open_tree_initially = true;
 
 			// 간트 기간 필터링
 			/*gantt.attachEvent("onBeforeTaskDisplay", function(id, task) {
 				if (!window.ganttRange) return true;
-
+	
 				return (
 					task.end_date >= window.ganttRange.start &&
 					task.start_date <= window.ganttRange.end
@@ -471,6 +583,7 @@
 					window.location.href = `/issueInfo?issueCode=${task.issueCode}`;
 					return false; // 기본 클릭 동작 차단
 				}
+
 				return true;
 			});
 
@@ -478,7 +591,10 @@
 			fData();
 		});
 
-		window.addEventListener("resize", () => gantt.setSizes());
+		window.addEventListener("resize", () => {
+			gantt.setSizes()
+			gantt.render();
+		});
 	};
 
 	initApp();

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.calendar.mapper.CalendarMapper">
+	<!-- 전체조회 -->
+	<select id="selectCalendarList" resultType="CalendarVO">
+	    SELECT
+	        gv.row_type,
+		    gv.node_id,
+		    gv.parent_id,
+		
+		    gv.project_code,
+		    gv.project_name,
+		
+		    gv.type_code,
+		    gv.type_name,
+		    gv.type_level,
+		    gv.par_type_code,
+		    gv.par_type_name,
+		
+		    gv.issue_code,
+		    gv.par_issue_code,
+		    gv.title,
+		    gv.priority,
+		    gv.issue_status,
+		    gv.progress,
+		    gv.assignee_code,
+		    gv.assignee_name,
+		    gv.created_at,
+		    gv.started_at,
+		    gv.due_at,
+		    gv.resolved_at
+		    
+		FROM gantt_view gv
+		WHERE EXISTS (
+		    <!-- 로그인 유저 각 프로젝트 참여 여부 확인 -->
+		    SELECT 1
+		    FROM ( 
+		    	SELECT DISTINCT user_code, project_code
+        		FROM VW_USER_PROJECT_AUTH
+		    ) vupa
+		    WHERE vupa.user_code = #{userCode}
+		      AND vupa.project_code = gv.project_code
+		)
+		AND EXISTS (
+			<!-- 권한 / 프로젝트 상태 -->
+		    SELECT 1
+		    FROM VW_USER_AUTH vua
+		    WHERE vua.user_code = #{userCode}
+		      AND vua.project_code = gv.project_code
+		      AND (
+		            (vua.admin_ck = 'Y' AND vua.status IN ('OD1','OD3'))
+		         OR (NVL(vua.admin_ck,'N') = 'N' AND vua.status = 'OD1')
+		      )
+		)
+		
+		START WITH parent_id IS NULL
+	    CONNECT BY PRIOR node_id = parent_id
+	    ORDER SIBLINGS BY
+	        CASE row_type
+	            WHEN 'PROJECT' THEN 1
+	            WHEN 'TYPE' THEN 2
+	            WHEN 'ISSUE' THEN 3
+	        END,
+	        type_code,
+	        issue_code
+	</select>
+</mapper>

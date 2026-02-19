@@ -4,5 +4,6 @@ import java.util.List;
 
 public interface UserModalService {
 	  List<UserModalVO> findUsersByProject(Long projectCode);
-	  List<UserModalVO> findUsersByMyProjects(Long loginUserCode);
+	  List<UserModalVO> findAssigneeByMyProjects(Long loginUserCode);
+	  List<UserModalVO> findCreatorByMyProjects(Long loginUserCode);
 }
