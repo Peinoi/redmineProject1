@@ -15,11 +15,16 @@
 		ON t.par_type_code = p.type_code
 		LEFT OUTER JOIN projects pr
 		ON t.project_code = pr.project_code
-		WHERE t.project_code IN (
-		SELECT DISTINCT project_code
-		FROM VW_USER_PROJECT_AUTH
-		WHERE user_code = #{userCode}
-		)
+		WHERE EXISTS (
+	        SELECT 1
+	        FROM VW_USER_PROJECT_AUTH v
+	        WHERE v.user_code = #{userCode}
+	          AND v.project_code = t.project_code
+	          AND (
+	                (v.role_code = 1 AND pr.status IN ('OD1','OD3'))
+	             OR (v.role_code = 2 AND pr.status = 'OD1')
+	          )
+    	)
 		ORDER BY NVL(p.type_name, t.type_name),
 		t.type_name
 	</select>

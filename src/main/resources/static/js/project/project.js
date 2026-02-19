@@ -256,7 +256,7 @@
 		if (!btn) {
 			const projectCode = row.dataset.projectCode;
 			if (projectCode) {
-				location.href = `/project/${projectCode}`;
+				location.href = `/project/overview/${projectCode}`;
 			}
 			return;
 		}

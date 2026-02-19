@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+
+<head>
+<meta charset="UTF-8">
+<title>프로젝트 상세</title>
+<link rel="stylesheet" th:href="@{/css/overview/overview.css}">
+</head>
+<body>
+	<div id="container">
+		<!-- 개요 -->
+		<div class="x-page-title">
+			<h3 class="page-title">프로젝트 개요</h3>
+			<div class="page-title-sub">프로젝트 개요입니다.</div>
+		</div>
+	</div>
+
+	<!-- 프로젝트 개요 스크립트 -->
+	<script th:src="@{/js/project/overview.js}"></script>
+</body>
+</html>

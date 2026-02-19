@@ -25,10 +25,8 @@
 	min-width: 210px;
 }
 
-/* ========================= */
-/* 공통 트리 컨테이너 */
-/* ========================= */
-.type-tree {
+/* 유형 모달 전체 */
+#typeModalTree {
 	padding: 0;
 	border: none !important;
 	background-color: #fff;
@@ -45,7 +43,7 @@
 }
 
 /* ========================= */
-/* 프로젝트 헤더 */
+/* 프로젝트 헤더 (아이콘 추가) */
 /* ========================= */
 .type-project-header {
 	background-color: #e9ecef;
@@ -65,28 +63,28 @@
 	background-color: #dee2e6;
 }
 
-/* ▶ 기본 (닫힘) */
+/* ▶ 기본 (닫힘 상태) */
 .type-project-header::before {
 	content: "▶";
 	font-size: 12px;
 	transition: transform 0.2s ease;
 }
 
-/* ▼ 열림 */
+/* ▼ 열림 상태 */
 .type-project-header.active::before {
 	content: "▼";
 }
 
 /* ========================= */
-/* 트리 구조 (공통) */
+/* 트리 구조 */
 /* ========================= */
-.type-tree ul {
+#typeModalTree ul {
 	list-style: none;
 	padding: 0;
 	margin: 0;
 }
 
-/* 아이템 */
+/* 유형 아이템 */
 .type-item {
 	cursor: pointer;
 	padding: 10px 14px;
@@ -103,13 +101,11 @@
 	background-color: #e2e6ea;
 }
 
-/* ========================= */
-/* 계층 들여쓰기 (공통) */
-/* ========================= */
-.type-tree ul ul .type-item {
+/* 계층별 들여쓰기 */
+#typeModalTree ul ul .type-item {
 	padding-left: 28px;
 }
 
-.type-tree ul ul ul .type-item {
+#typeModalTree ul ul ul .type-item {
 	padding-left: 50px;
 }

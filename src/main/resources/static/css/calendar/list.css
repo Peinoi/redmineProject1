@@ -1,6 +1,7 @@
-html, body {
+.calendar-page {
 	height: 100%;
 	overflow: auto;
+	font-size: 16px;
 }
 
 /* 타이틀 */
@@ -20,7 +21,7 @@ html, body {
 
 .x-page-title .page-title-sub {
 	margin-top: 4px;
-	font-size: 12px;
+	font-size: 0.8em;
 	color: #6b7280;
 }
 
@@ -62,4 +63,59 @@ html, body {
 
 .fc .fc-event:hover {
 	filter: brightness(0.9);
+}
+
+/* 공휴일 날짜 숫자 빨간색 */
+.fc-holiday-number {
+	color: #e53e3e !important;
+}
+
+/* 일요일 컬럼 헤더 글자색 빨간색 */
+.fc-col-header-cell.fc-day-sun a {
+	color: #e53e3e !important;
+}
+
+/* 일요일 날짜 숫자 빨간색 */
+.fc-day-sun .fc-daygrid-day-number {
+	color: #e53e3e !important;
+}
+
+.calendar-wrapper {
+	display: flex;
+	flex-direction: column;
+}
+
+#calendar {
+	flex: 1;
+	min-height: 0; /* flex 자식이 넘치지 않도록 */
+}
+
+/* FullCalendar 내부 스크롤 제거 */
+.fc .fc-scroller {
+	overflow: hidden !important;
+}
+
+.fc .fc-scroller-liquid-absolute {
+	overflow: hidden !important;
+	position: relative !important;
+}
+
+.calendar-legend {
+	display: flex;
+	gap: 16px;
+	padding: 6px 4px;
+	font-size: 1em;
+	color: #555;
+}
+
+.legend-item {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.legend-dot {
+	display: inline-block;
+
+	border-radius: 50%;
 }
