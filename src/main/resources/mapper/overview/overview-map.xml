@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.overview.mapper.OverviewMapper">
+	<!-- 유저의 프로젝트별 일감 현황 -->
+	<select id="selectProjectIssueStatus" resultType="ProIssStaVO">
+		SELECT
+		/* 프로젝트
+		전체 이슈 */
+		p.project_code AS projectCode,
+		p.project_name AS projectName,
+		NVL(SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END), 0) AS newIss,
+		NVL(SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END), 0) AS
+		progress,
+		NVL(SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END), 0) AS
+		solution,
+		NVL(SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END), 0) AS
+		returnIss,
+		NVL(SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END), 0)
+		AS
+		completion
+
+		FROM projects p
+
+		LEFT JOIN issues i
+		ON i.project_code =
+		p.project_code
+
+		LEFT JOIN status s
+		ON s.status_code = i.status_code
+
+		WHERE
+		p.status = 'OD1'
+		AND p.project_code = #{projectCode}
+		GROUP BY
+		p.project_code,
+		p.project_name
+	</select>
+
+	<!-- 프로젝트별 공지 목록(최신순으로) -->
+	<select id="selectRecentNotices" resultType="MyNoticeDTO">
+		SELECT
+		n.notice_code AS noticeCode,
+		n.project_code AS projectCode,
+		p.project_name AS projectName,
+		n.title AS title,
+		n.created_at AS createdAt
+		FROM projects p
+		JOIN (
+		SELECT pru.project_code
+		FROM project_role_user pru
+		WHERE pru.user_code = #{userCode}
+
+		UNION
+
+		SELECT gpr.project_code
+		FROM "GROUP_MEMBER" gm
+		JOIN "GR_PRO_ROLE" gpr
+		ON gpr.gr_code = gm.gr_code
+		WHERE gm.user_code = #{userCode}
+		) up ON up.project_code = p.project_code
+
+		JOIN notices n
+		ON n.project_code = p.project_code
+
+		WHERE p.status = 'OD1'
+		  AND p.project_code = #{projectCode}
+		ORDER BY n.created_at DESC
+	</select>
+	
+	<select id="selectRecentNotices_COUNT" resultType="int">
+	SELECT COUNT(*)
+	FROM projects p
+	JOIN (
+	    SELECT pru.project_code
+	    FROM project_role_user pru
+	    WHERE pru.user_code = #{userCode}
+	
+	    UNION
+	
+	    SELECT gpr.project_code
+	    FROM "GROUP_MEMBER" gm
+	    JOIN "GR_PRO_ROLE" gpr
+	      ON gpr.gr_code = gm.gr_code
+	    WHERE gm.user_code = #{userCode}
+	) up ON up.project_code = p.project_code
+	JOIN notices n
+	  ON n.project_code = p.project_code
+	WHERE p.status = 'OD1'
+	  AND p.project_code = #{projectCode}
+	</select>
+</mapper>

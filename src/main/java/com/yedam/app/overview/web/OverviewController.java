@@ -6,7 +6,15 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.github.pagehelper.PageInfo;
+import com.yedam.app.login.service.UserVO;
+import com.yedam.app.main.service.MainService;
+import com.yedam.app.main.service.ProIssStaVO;
+import com.yedam.app.mypage.service.MyNoticeDTO;
+import com.yedam.app.overview.service.OverviewService;
 import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
@@ -23,9 +31,36 @@ import lombok.RequiredArgsConstructor;
 public class OverviewController {
 
 	private final ProjectService projectService;
-	
-	@GetMapping("project/overview/{projectCode}")
-	public String projectDetail(@PathVariable Integer projectCode, Model model, HttpSession session) {
+	private final OverviewService overviewService;
+	private final MainService mainService;
+
+	@GetMapping("/project/overview/{projectCode}/notices")
+	@ResponseBody
+	public PageInfo<MyNoticeDTO> getNoticeList(@PathVariable Integer projectCode, 
+			                                HttpSession session,
+			                                @RequestParam(defaultValue = "1", required = false) Integer pageNum) {
+		// 로그인 사용자 정보
+		UserVO user = (UserVO) session.getAttribute("user");
+		
+		Integer userCode = user.getUserCode();
+
+		// 내가 참여한 프로젝트별 공지 목록
+		PageInfo<MyNoticeDTO> noticeList = overviewService.getRecentNotices(userCode, projectCode, pageNum);
+		
+		return noticeList;
+	}
+
+	@GetMapping("/project/overview/{projectCode}")
+	public String projectDetail(@PathVariable Integer projectCode, Model model, HttpSession session,
+			@RequestParam(defaultValue = "1", required = false) Integer pageNum) {
+
+		// 로그인 사용자 정보
+		UserVO user = (UserVO) session.getAttribute("user");
+		if (user == null) {
+			return "login/login"; // 로그인 안 되어 있으면 로그인 페이지로
+		}
+
+		Integer userCode = user.getUserCode();
 
 		// 프로젝트 상세 정보 조회
 		ProjectDetailVO project = projectService.getProjectDetail(projectCode);
@@ -45,12 +80,28 @@ public class OverviewController {
 		// 전체 그룹 목록
 		List<GroupVO> allGroups = projectService.groupFindAll();
 
+		// 프로젝트 일감 현황
+		List<ProIssStaVO> issueStatusList = overviewService.getProjectIssueStatus(projectCode);
+
+		// 본인이 관리자인 프로젝트 목록
+		List<Integer> adminProList = mainService.findAdminProByUserCode(userCode);
+
+		// 내가 참여한 프로젝트별 공지 목록
+		//PageInfo<MyNoticeDTO> noticeList = overviewService.getRecentNotices(userCode, projectCode, pageNum);
+
+		// 프로젝트 기준 관리자 여부
+		boolean isAdmin = mainService.findIsAdminInProject(userCode, projectCode);
+
 		model.addAttribute("project", project);
 		model.addAttribute("members", members);
 		model.addAttribute("groups", groups);
 		model.addAttribute("users", allUsers);
 		model.addAttribute("roles", allRoles);
 		model.addAttribute("allGroups", allGroups);
+		model.addAttribute("issueStatusList", issueStatusList);
+		model.addAttribute("adminProjectList", adminProList != null ? adminProList : List.of());
+		//model.addAttribute("noticeList", noticeList);
+		model.addAttribute("isAdmin", isAdmin);
 
 		return "overview/overview";
 	}

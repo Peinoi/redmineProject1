@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org/"
 	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
 	layout:decorate="~{common/layouts/default_layout}"
@@ -6,19 +5,158 @@
 
 <head>
 <meta charset="UTF-8">
-<title>프로젝트 상세</title>
+<title>프로젝트 개요</title>
 <link rel="stylesheet" th:href="@{/css/overview/overview.css}">
 </head>
 <body>
-	<div id="container">
-		<!-- 개요 -->
+
+	<div id="container" class="container-fluid">
+
+		<!-- 페이지 제목 -->
 		<div class="x-page-title">
 			<h3 class="page-title">프로젝트 개요</h3>
 			<div class="page-title-sub">프로젝트 개요입니다.</div>
 		</div>
+
+		<div class="mb-3">
+			<h2 class="mb-2 fw-bold" th:text="${project.projectName}"></h2>
+			<p class="text-muted small mb-0 ms-1"
+				th:utext="${project.description}"></p>
+		</div>
+
+		<!-- Bootstrap Grid -->
+		<div class="row g-3 mt-2">
+
+			<!-- 1. 일감현황 -->
+			<div class="col-lg-6">
+				<div class="card h-100 shadow-sm">
+					<div
+						class="card-header d-flex justify-content-between align-items-center">
+						<div>
+							<i class="fas fa-table me-1"></i>일감현황
+						</div>
+						<div class="text-muted small">신규/진행/해결/반려/완료</div>
+					</div>
+
+					<div class="card-body p-0">
+						<div class="table-responsive">
+							<table class="table table-hover align-middle text-center mb-0"
+								id="mainIssueTable">
+								<thead>
+									<tr>
+										<th>신규</th>
+										<th>진행</th>
+										<th>해결</th>
+										<th>반려</th>
+										<th>완료</th>
+										<th>합계</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="list : ${issueStatusList}"
+										th:with="
+					                      n=${list.newIss ?: 0},
+					                      p=${list.progress ?: 0},
+					                      s=${list.solution ?: 0},
+					                      r=${list.returnIss ?: 0},
+					                      c=${list.completion ?: 0},
+					                      total=${n + p + s + r + c}
+					                    "
+										class="click-row"
+										th:attr="data-url=@{|/G2main/${list.projectCode}/issuesStatus|}">
+
+										<td th:text="${n}">0</td>
+										<td th:text="${p}">0</td>
+										<td th:text="${s}">0</td>
+										<td th:text="${r}">0</td>
+										<td th:text="${c}">0</td>
+										<td class="fw-bold" th:text="${total}">0</td>
+									</tr>
+
+									<tr th:if="${#lists.isEmpty(issueStatusList)}">
+										<td colspan="6" class="text-center text-muted py-3">표시할
+											데이터가 없습니다.</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- 2. 구성원 -->
+			<div class="col-lg-6">
+				<div class="card h-100 shadow-sm">
+					<div
+						class="card-header d-flex justify-content-between align-items-center">
+						<div>
+							<i class="fas fa-users me-1"></i>구성원/그룹
+						</div>
+						<div class="text-muted small"
+							th:text="${#temporals.format(#temporals.createNow(), 'yyyy-MM-dd')}">
+							오늘</div>
+					</div>
+
+					<ul class="list-group list-group-flush">
+
+						<!-- 개인 -->
+						<li th:each="m : ${members}"
+							class="list-group-item d-flex justify-content-between align-items-center"
+							th:classappend="${isAdmin} ? ' list-group-item-action' : ' disabled'"
+							th:onclick="${isAdmin} ? |window.location='@{/users/{userCode}(userCode=${m.userCode})}'| : null">
+
+							<div
+								class="w-100 d-flex justify-content-between align-items-center">
+								<div>
+									👤 <span class="fw-semibold" th:text="${m.userName}"></span> <small
+										class="text-muted ms-2" th:text="${m.roleName}"></small>
+								</div>
+								<span class="text-muted small" th:text="${m.email}"></span>
+							</div>
+						</li>
+
+						<!-- 그룹 -->
+						<li th:each="g : ${groups}"
+							class="list-group-item d-flex justify-content-between align-items-center"
+							th:classappend="${isAdmin} ? ' list-group-item-action' : ' disabled'"
+							th:onclick="${isAdmin} ? |window.location='@{/groups/{grCode}(grCode=${g.grCode})}'| : null">
+
+							<div>
+								👥 <span class="fw-semibold" th:text="${g.grName}"></span> <small
+									class="text-muted ms-2" th:text="${g.roleName}"></small>
+							</div> <span class="text-muted small" th:text="${g.grCode}"></span>
+						</li>
+
+						<li th:if="${#lists.isEmpty(members) and #lists.isEmpty(groups)}"
+							class="list-group-item text-center text-muted py-3">구성원이나
+							그룹이 없습니다.</li>
+
+					</ul>
+				</div>
+			</div>
+
+			<!-- 3. 공지사항 -->
+			<div class="col-12">
+				<div class="card shadow-sm">
+					<div
+						class="card-header d-flex justify-content-between align-items-center">
+						<div>
+							<i class="fas fa-bullhorn me-1"></i>공지사항
+						</div>
+						<a class="text-decoration-none small" href="/noticeList">더보기</a>
+					</div>
+					<div id="noticeList" class="list-group list-group-flush"></div>
+					<div id="noticePaging"
+						class="card-footer d-flex justify-content-center"></div>
+				</div>
+			</div>
+
+		</div>
 	</div>
 
-	<!-- 프로젝트 개요 스크립트 -->
-	<script th:src="@{/js/project/overview.js}"></script>
+	<script th:inline="javascript">
+            const projectCode = [[${project.projectCode}]];
+        </script>
+	<script th:src="@{/js/overview/overview.js}"></script>
 </body>
 </html>
