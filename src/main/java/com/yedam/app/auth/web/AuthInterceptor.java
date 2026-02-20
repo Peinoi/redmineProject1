@@ -127,6 +127,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 	// 권한 체크
 	private boolean checkPermission(String type, UserProjectAuthVO userAuth) {
+		// admin이면 모든 권한 허용
+	    if (userAuth.getAdmin() == 1) {
+	        return true;
+	    }
+		
 		switch (type) {
 		case "read":
 			return "Y".equals(userAuth.getRdRol());

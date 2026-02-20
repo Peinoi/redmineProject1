@@ -188,7 +188,7 @@ function checkEmptyMember() {
 // 프로젝트 처리
 // ============================================
 function markProjectDelete(grProCode, row) {
-	if (!confirm('해당 프로젝트 매핑을 삭제하시겠습니까?')) return;
+	if (!confirm('해당 프로젝트를 삭제하시겠습니까?')) return;
 	const item = projectChanges.find(p => p.grProCode === grProCode);
 	if (item) item.action = 'delete';
 	row.remove();
@@ -294,7 +294,7 @@ function openEditNewProject(btn, projectCode) {
 }
 
 function removeNewProject(btn, projectCode) {
-	if (!confirm('해당 프로젝트 매핑을 삭제하시겠습니까?')) return;
+	if (!confirm('해당 프로젝트를 삭제하시겠습니까?')) return;
 	const idx = projectChanges.findLastIndex(p => p.projectCode === projectCode && p.action === 'add');
 	if (idx !== -1) projectChanges.splice(idx, 1);
 	btn.closest('tr').remove();
@@ -304,7 +304,7 @@ function removeNewProject(btn, projectCode) {
 function checkEmptyProject() {
 	const tbody = document.getElementById('projectTbody');
 	if (!tbody.querySelectorAll('tr').length) {
-		tbody.innerHTML = `<tr id="noProjectRow"><td colspan="4" class="text-center text-muted">매핑된 프로젝트가 없습니다.</td></tr>`;
+		tbody.innerHTML = `<tr id="noProjectRow"><td colspan="4" class="text-center text-muted">추가된 프로젝트가 없습니다.</td></tr>`;
 	}
 }
 
