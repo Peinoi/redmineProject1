@@ -119,7 +119,7 @@
 						<li th:each="g : ${groups}"
 							class="list-group-item d-flex justify-content-between align-items-center"
 							th:classappend="${isAdmin} ? ' list-group-item-action' : ' disabled'"
-							th:onclick="${isAdmin} ? |window.location='@{/groups/{grCode}(grCode=${g.grCode})}'| : null">
+							th:onclick="${isAdmin} ? |window.location='@{/groupmgr/{grCode}(grCode=${g.grCode})}'| : null">
 
 							<div>
 								👥 <span class="fw-semibold" th:text="${g.grName}"></span> <small

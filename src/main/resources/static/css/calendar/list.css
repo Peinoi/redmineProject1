@@ -1,6 +1,6 @@
 .calendar-page {
 	height: 100%;
-	overflow: auto;
+	overflow: hidden;
 	font-size: 16px;
 }
 
@@ -81,23 +81,34 @@
 }
 
 .calendar-wrapper {
+	width: 100%;
+	overflow-x: hidden;
 	display: flex;
 	flex-direction: column;
 }
 
+/* 달력 전체 높이 고정 */
 #calendar {
-	flex: 1;
-	min-height: 0; /* flex 자식이 넘치지 않도록 */
+	width: 100%;
+    min-width: 0;
+	height: 600px; /* 원하는 높이로 조절 */
 }
 
-/* FullCalendar 내부 스크롤 제거 */
-.fc .fc-scroller {
-	overflow: hidden !important;
+/* 날짜 칸 높이 고정 + 넘치면 스크롤 */
+.fc .fc-daygrid-day-frame {
+	min-height: 80px !important;
+	max-height: 110px !important;
+	overflow-y: auto !important;
 }
 
-.fc .fc-scroller-liquid-absolute {
-	overflow: hidden !important;
-	position: relative !important;
+/* 스크롤바 스타일 (선택사항) */
+.fc .fc-daygrid-day-frame::-webkit-scrollbar {
+	width: 3px;
+}
+
+.fc .fc-daygrid-day-frame::-webkit-scrollbar-thumb {
+	background-color: #d1d5db;
+	border-radius: 3px;
 }
 
 .calendar-legend {
@@ -116,6 +127,5 @@
 
 .legend-dot {
 	display: inline-block;
-
 	border-radius: 50%;
 }
