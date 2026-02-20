@@ -135,7 +135,8 @@
 			const response = await fetch(`/api/auth/${roleCode}/delete`, {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
 				}
 			});
 
@@ -197,7 +198,8 @@
 			const response = await fetch(`/api/auth/${adminCk}/${roleCode}/adminmodify`, {
 				method: 'POST',
 				headers: {
-					'Content-Type': 'application/json'
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
 				}
 			});
 

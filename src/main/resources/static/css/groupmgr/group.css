@@ -1,0 +1,23 @@
+table thead, tbody {
+	text-align: center;
+}
+
+a {
+	text-decoration: none;
+} /* 화면 작을 때 덜 중요한 컬럼 숨김 */
+@media ( max-width : 768px) {
+	.table th:nth-child(4), /* 설명 컬럼 */ .table td:nth-child(4) {
+		display: none;
+	}
+}
+.memberRow {
+    cursor: pointer;
+}
+
+.memberRow:hover {
+    background-color: #f8f9fa; 
+}
+
+.memberRow button {
+    cursor: default;
+}

@@ -152,10 +152,16 @@
 		try {
 			const res = await fetch("/useradd", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 				body: JSON.stringify({ name, position }),
 			});
+
+			if (res.status === 403) {
+				showToast('권한이 없습니다.', true);
+				return;
+			}
 			const data = await res.json();
+
 			if (data.success) {
 				alert(data.message || "사용자가 등록되었습니다.");
 				bootstrap.Modal.getInstance($("#userRegisterModal"))?.hide();
@@ -180,9 +186,13 @@
 		try {
 			const res = await fetch("/userlock", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 				body: JSON.stringify({ userCode: parseInt(userCode), isLock: newLock }),
 			});
+			if (res.status === 403) {
+				showToast('권한이 없습니다.', true);
+				return;
+			}
 			const data = await res.json();
 
 			if (data.success) {
@@ -215,9 +225,14 @@
 		try {
 			const res = await fetch("/userdelete", {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 				body: JSON.stringify({ userCode: parseInt(userCode) }),
 			});
+			if (res.status === 403) {
+				showToast('권한이 없습니다.', true);
+				return;
+			}
+
 			const data = await res.json();
 
 			if (data.success) {
@@ -246,10 +261,16 @@
 		if (lockBtn) {
 			e.stopPropagation();
 			toggleLock(lockBtn.dataset.usercode, lockBtn.dataset.islock, lockBtn);
+			return;
 		}
 		if (deleteBtn) {
 			e.stopPropagation();
 			deleteUser(deleteBtn.dataset.usercode, deleteBtn.dataset.username, deleteBtn);
+			return;
+		}
+		const row = e.target.closest(".userRow");
+		if (row) {
+			window.location.href = `/users/${row.dataset.usercode}`;
 		}
 	});
 

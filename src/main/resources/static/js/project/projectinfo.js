@@ -865,7 +865,8 @@ function submitProject(formData) {
 	fetch(`/project/${formData.projectCode}/update`, {
 		method: 'POST',
 		headers: {
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'X-Requested-With': 'XMLHttpRequest'
 		},
 		body: JSON.stringify(formData)
 	})

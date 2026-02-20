@@ -60,7 +60,10 @@ public class ProjectServiceImpl implements ProjectService {
 	public List<ProjectPrVO> progFindAll() {
 		return projectMapper.projPrAll();
 	}
-
+	@Override
+	public List<ProjectVO> findAllProject() {
+		return projectMapper.ProjectAll();
+	}
 	// 프로젝트 등록
 	@Override
 	public int projectAdd(ProjectAddVO projectAddVO) {
@@ -264,4 +267,6 @@ public class ProjectServiceImpl implements ProjectService {
 
 		return result;
 	}
+
+	
 }

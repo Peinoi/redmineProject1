@@ -40,7 +40,7 @@
 		typeFormModalTitle: $("#typeFormModalTitle"),
 		modalTypeCode: $("#modalTypeCode"),
 		modalTypeName: $("#modalTypeName"),
-		modalProjectText: $("#modalProjectText"),
+		//modalProjectText: $("#modalProjectText"),
 		modalProjectValue: $("#modalProjectValue"),
 		modalStartAt: $("#modalStartAt"),
 		modalEndAt: $("#modalEndAt"),
@@ -55,10 +55,14 @@
 		projectModalSearch: $("#projectModalSearch"),
 		projectModalList: $("#projectModalList"),
 
+		// 폼용 프로젝트 셀렉트
+		projectSelectBox: $("#projectSelectBox"),
+		projectSelectWrap: $("#projectSelectWrap"),
+
 		// 폼용 프로젝트 모달
-		projectSelectModal2: $("#projectSelectModal2"),
+		/*projectSelectModal2: $("#projectSelectModal2"),
 		projectModalSearch2: $("#projectModalSearch2"),
-		projectModalList2: $("#projectModalList2"),
+		projectModalList2: $("#projectModalList2"),*/
 	};
 
 	if (!ui.tbody) return;
@@ -249,7 +253,7 @@
 		if (projectCache.length > 0) return true;
 
 		const res = await fetch("/api/projects/modal", {
-			headers: { Accept: "application/json" },
+			headers: { Accept: "application/json",'X-Requested-With': 'XMLHttpRequest' },
 		});
 
 		if (!res.ok) {
@@ -261,7 +265,9 @@
 		projectCache = data.map((p) => ({
 			code: String(p.projectCode),
 			name: p.projectName,
+			day: p.createdOn,
 		}));
+		//console.log(data);
 
 		return true;
 	};
@@ -292,31 +298,49 @@
 	// ============================================
 	// 폼용 프로젝트 모달 열기
 	// ============================================
-	const formProjectModal = ui.projectSelectModal2
-		? new bootstrap.Modal(ui.projectSelectModal2)
-		: null;
-
-	const openFormProjectModal = async () => {
-		if (!formProjectModal) return;
-
-		ui.projectModalSearch2.value = "";
-		const ok = await ensureProjectCache();
+	// 셀렉트 버전
+	// 셀렉트 박스에 프로젝트 목록을 채우는 함수
+	const fillProjectSelect = async () => {
+		const ok = await ensureProjectCache(); // 기존에 작성하신 캐시 로드 함수 활용
 		if (!ok) return;
 
-		renderListButtons(ui.projectModalList2, projectCache, (picked) => {
-			ui.modalProjectText.value = picked.name;
-			ui.modalProjectValue.value = picked.code;
-			// 프로젝트 변경 시 날짜 및 경고 초기화
-			ui.modalStartAt.value = "";
-			ui.modalEndAt.value = "";
-			ui.dateOverlapAlert.style.display = "none";
-			clearFieldError(ui.modalProjectText, "projectError");
-			formProjectModal.hide();
-		});
+		// 초기화 (첫 번째 옵션 제외)
+		ui.projectSelectBox.innerHTML = '<option value="">-- 프로젝트 선택 --</option>';
 
-		formProjectModal.show();
+		projectCache.forEach(p => {
+			const option = document.createElement("option");
+			option.value = p.code;
+			const dateDisplay = p.day ? `(${p.day.substring(0, 10)})` : "";
+			option.textContent = `${p.name || '이름 없음'} ${dateDisplay}`;
+			ui.projectSelectBox.appendChild(option);
+		});
 	};
 
+	/*	const formProjectModal = ui.projectSelectModal2
+			? new bootstrap.Modal(ui.projectSelectModal2)
+			: null;
+	
+		const openFormProjectModal = async () => {
+			if (!formProjectModal) return;
+	
+			ui.projectModalSearch2.value = "";
+			const ok = await ensureProjectCache();
+			if (!ok) return;
+	
+			renderListButtons(ui.projectModalList2, projectCache, (picked) => {
+				//ui.modalProjectText.value = picked.name;
+				ui.modalProjectValue.value = picked.code;
+				// 프로젝트 변경 시 날짜 및 경고 초기화
+				ui.modalStartAt.value = "";
+				ui.modalEndAt.value = "";
+				ui.dateOverlapAlert.style.display = "none";
+				clearFieldError(ui.modalProjectText, "projectError");
+				formProjectModal.hide();
+			});
+	
+			formProjectModal.show();
+		};
+	*/
 	// ============================================
 	// 필터 프로젝트 모달 검색
 	// ============================================
@@ -377,7 +401,8 @@
 	// 날짜 변경 시 실시간 겹침 체크
 	// ============================================
 	const checkDatesOnChange = () => {
-		const pCode = ui.modalProjectValue?.value;
+		//const pCode = ui.modalProjectValue?.value;
+		const pCode = ui.projectSelectBox?.value;
 		const tCode = ui.modalTypeCode?.value || null;
 		const start = ui.modalStartAt?.value;
 		const end = ui.modalEndAt?.value;
@@ -402,7 +427,12 @@
 			ui.dateOverlapAlert.style.display = "none";
 		}
 	};
-
+	ui.projectSelectBox?.addEventListener("change", () => {
+		ui.modalStartAt.value = "";
+		ui.modalEndAt.value = "";
+		ui.dateOverlapAlert.style.display = "none";
+		clearFieldError(ui.projectSelectBox, "projectError");
+	});
 	ui.modalStartAt?.addEventListener("change", checkDatesOnChange);
 	ui.modalEndAt?.addEventListener("change", checkDatesOnChange);
 
@@ -434,7 +464,7 @@
 	// 모달 에러 전체 초기화
 	// ============================================
 	const clearAllErrors = () => {
-		["modalTypeName", "modalProjectText", "modalStartAt", "modalEndAt"].forEach(
+		["modalTypeName", "projectSelectBox", "modalStartAt", "modalEndAt"].forEach(
 			(id) => document.getElementById(id)?.classList.remove("is-invalid")
 		);
 		["typeNameError", "projectError", "startAtError", "endAtError"].forEach(
@@ -456,21 +486,21 @@
 		? new bootstrap.Modal(ui.typeFormModal)
 		: null;
 
-	const openRegisterModal = () => {
+	const openRegisterModal = async () => {
 		clearAllErrors();
-
+		await fillProjectSelect();
 		ui.modalTypeCode.value = "";
 		ui.modalTypeName.value = "";
-		ui.modalProjectText.value = "";
-		ui.modalProjectValue.value = "";
+		//ui.modalProjectText.value = "";
+		//ui.modalProjectValue.value = "";
 		ui.modalStartAt.value = "";
 		ui.modalEndAt.value = "";
-
+		ui.projectSelectBox.value = ""; // 셀렉트 박스 초기화
 		ui.typeFormModalTitle.innerHTML =
 			'<i class="fas fa-plus me-2"></i>일감 유형 등록';
 
 		// 등록 시 프로젝트 선택 활성화
-		ui.btnModalOpenProject.style.display = "";
+		//ui.btnModalOpenProject.style.display = "";
 		ui.projectSelectWrap.style.display = "";
 
 		typeFormModalInstance?.show();
@@ -479,23 +509,23 @@
 	// ============================================
 	// 수정 모달 열기
 	// ============================================
-	const openEditModal = (tr) => {
+	const openEditModal = async (tr) => {
 		clearAllErrors();
+		await fillProjectSelect();
 		const d = tr.dataset;
 
 		ui.modalTypeCode.value = d.typecode;
 		ui.modalTypeName.value = d.typename || "";
-		ui.modalProjectText.value = d.projectname || "";
-		ui.modalProjectValue.value = d.projectcode || "";
+		//ui.modalProjectText.value = d.projectname || "";
+		//ui.modalProjectValue.value = d.projectcode || "";
 		ui.modalStartAt.value = d.startat || "";
 		ui.modalEndAt.value = d.endat || "";
-
+		ui.projectSelectBox.value = d.projectcode || "";
 		ui.typeFormModalTitle.innerHTML =
 			'<i class="fas fa-pen me-2"></i>일감 유형 수정';
 
 		// 수정 시 프로젝트 고정
-		ui.btnModalOpenProject.style.display = "none";
-
+		//ui.btnModalOpenProject.style.display = "none";
 		typeFormModalInstance?.show();
 	};
 
@@ -507,7 +537,8 @@
 
 		const typeCode = ui.modalTypeCode.value || null;
 		const typeName = ui.modalTypeName.value.trim();
-		const projectCode = ui.modalProjectValue.value.trim();
+		//	const projectCode = ui.modalProjectValue.value.trim();
+		const projectCode = ui.projectSelectBox.value;
 		const startAt = ui.modalStartAt.value;
 		const endAt = ui.modalEndAt.value;
 
@@ -517,10 +548,14 @@
 			setFieldError(ui.modalTypeName, "typeNameError", "유형명을 입력하세요.");
 			hasError = true;
 		}
-		if (!typeCode && !projectCode) {
-			setFieldError(ui.modalProjectText, "projectError", "프로젝트를 선택하세요.");
+		if (!projectCode) {
+			setFieldError(ui.projectSelectBox, "projectError", "프로젝트를 선택하세요.");
 			hasError = true;
 		}
+		/*	if (!typeCode && !projectCode) {
+				setFieldError(ui.modalProjectText, "projectError", "프로젝트를 선택하세요.");
+				hasError = true;
+			}*/
 		if (!startAt) {
 			setFieldError(ui.modalStartAt, "startAtError", "시작일을 선택하세요.");
 			hasError = true;
@@ -555,10 +590,13 @@
 		try {
 			const res = await fetch(url, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
+				headers: { "Content-Type": "application/json",'X-Requested-With': 'XMLHttpRequest' },
 				body: JSON.stringify(body),
 			});
-
+			if (res.status === 403) {
+			    showToast('권한이 없습니다.', true);
+			    return;
+			}
 			const data = await res.json();
 
 			if (data.success) {
@@ -582,8 +620,12 @@
 		try {
 			const res = await fetch(`/api/issuetype/${typeCode}/delete`, {
 				method: "POST",
+				headers:{'X-Requested-With': 'XMLHttpRequest'},
 			});
-
+			if (res.status === 403) {
+			    showToast('권한이 없습니다.', true);
+			    return;
+			}
 			const data = await res.json();
 
 			if (data.success) {
@@ -618,7 +660,9 @@
 	ui.btnRegister?.addEventListener("click", openRegisterModal);
 	ui.btnModalOpenProject?.addEventListener("click", openFormProjectModal);
 	ui.btnSaveType?.addEventListener("click", saveType);
-
+	ui.typeFormModal?.addEventListener("hidden.bs.modal", () => {
+		ui.projectSelectBox.disabled = false;
+	});
 	// 테이블 수정/삭제 버튼 이벤트 (이벤트 위임)
 	ui.tbody.addEventListener("click", (e) => {
 		const editBtn = e.target.closest(".edit-btn");

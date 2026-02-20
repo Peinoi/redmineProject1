@@ -52,7 +52,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 		// 2. 해당 URI가 권한 체크가 필요한 '관리 대상'인지 먼저 확인
 		UriAccessInfoVO uriInfo = findMatchingUri(requestUri);
 
-		// [중요] DB(URI_ACCESS_INFO 테이블)에 등록되지 않은 URI는 권한 체크 없이 통과!
+		// DB(URI_ACCESS_INFO 테이블)에 등록되지 않은 URI는 권한 체크 없이 통과
 		if (uriInfo == null) {
 			return true;
 		}
@@ -82,8 +82,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth);
 
 		if (!hasPermission) {
-			System.out.println("상세 권한 부족 (Type: " + uriInfo.getType() + ")");
-			response.sendError(HttpServletResponse.SC_FORBIDDEN, "권한이 없습니다.");
+			String contentType = request.getHeader("Content-Type");
+			if (contentType != null && contentType.contains("application/json")) {
+			    response.sendError(HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다.");
+			} else {
+			    response.sendRedirect("/accessDenied");
+			}
 			return false;
 		}
 
@@ -123,6 +127,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 	// 권한 체크
 	private boolean checkPermission(String type, UserProjectAuthVO userAuth) {
+		// admin이면 모든 권한 허용
+	    if (userAuth.getAdmin() == 1) {
+	        return true;
+	    }
+		
 		switch (type) {
 		case "read":
 			return "Y".equals(userAuth.getRdRol());

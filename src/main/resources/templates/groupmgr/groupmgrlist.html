@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}"
+	layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title>그룹 목록</title>
+<link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
+<link rel="stylesheet" th:href="@{/css/project/project.css}">
+<link rel="stylesheet" th:href="@{/css/groupmgr/group.css}">
+</head>
+<body>
+	<div id="container">
+		<div class="x-page-title">
+			<h3 class="page-title">그룹 목록</h3>
+			<div class="page-title-sub">그룹 기본 정보를 조회할 수 있습니다.</div>
+		</div>
+		<div class="issue-filters mb-3 mt-3">
+			<div class="row g-2 align-items-end">
+				<div class="col-12 col-md-3">
+					<label class="form-label">그룹명</label> <input type="text"
+						id="filterTitle" class="form-control" placeholder="그룹명 입력">
+				</div>
+				<div class="d-flex justify-content-between align-items-center mt-3">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-success">
+							<a th:href="@{/groupadd}"> <i class="fas fa-check me-1"></i>
+								그룹 등록
+							</a>
+						</button>
+
+					</div>
+					<div class="col-auto d-flex gap-2 ms-auto">
+						<button type="button" class="btn btn-secondary"
+							id="btnResetFilters">
+							<i class="fas fa-redo me-1"></i>초기화
+						</button>
+						<button type="button" class="btn btn-primary" id="btnApplyFilters">
+							<i class="fa-solid fa-magnifying-glass"></i> 조회
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="card mb-4">
+			<div
+				class="card-header d-flex align-items-center justify-content-between">
+				<div>
+					<i class="fas fa-users me-1"></i> 그룹 목록
+				</div>
+				<div class="text-muted small" id="groupPageInfo"></div>
+			</div>
+			<div class="card-body">
+				<div class="table-responsive">
+					<table class="table table-hover align-middle" id="issueTable"
+						style="table-layout: fixed; width: 100%;">
+						<thead class="table-light">
+							<tr>
+								<th style="width: 60px;">번호</th>
+								<th>그룹명</th>
+								<th style="width: 80px;">인원수</th>
+								<th style="width: 800px;">설명</th>
+								<th style="width: 150px;">삭제</th>
+							</tr>
+						</thead>
+						<tbody id="groupTbody">
+							<tr class="groupRow" th:each="info, status : ${groups}"
+								th:data-group-code="${info.groupCode}" style="cursor: pointer;">
+								<td th:text="${status.index + 1}"></td>
+								<td th:text="${info.grName}"></td>
+								<td th:text="${info.memberCount}"></td>
+								<td th:text="${info.description}"></td>
+								<td>
+									<button class="btn btn-danger btn-sm btn-delete-group"
+										th:data-group-code="${info.groupCode}"
+										onclick="event.stopPropagation()">
+										<i class="fa-solid fa-face-dizzy"></i> 삭제
+									</button>
+								</td>
+							</tr>
+							<tr th:if="${#lists.isEmpty(groups)}">
+								<td colspan="5" class="text-center text-muted py-3">등록된 그룹이
+									없습니다.</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<nav class="d-flex justify-content-center mt-3 mb-3">
+					<ul class="pagination mb-0" id="groupPagination"></ul>
+				</nav>
+			</div>
+		</div>
+	</div>
+	<script th:src="@{/js/groupmgr/groupmgrlist.js}"></script>
+</body>
+</html>

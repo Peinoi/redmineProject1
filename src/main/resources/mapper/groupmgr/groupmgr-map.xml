@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.groupmgr.mapper.GroupMapper">
+
+	<!-- 그룹 전체 조회 (소프트 삭제된 것 제외) -->
+    <select id="groupAll" resultType="GroupMgrVO">
+        SELECT
+            g.group_code,
+            g.gr_name,
+            g.description,
+            COUNT(gm.user_code) AS memberCount
+        FROM "GROUP" g
+        LEFT JOIN group_member gm ON g.group_code = gm.gr_code
+        WHERE g.group_code > 0
+        GROUP BY g.group_code, g.gr_name, g.description
+        ORDER BY g.group_code
+    </select>
+
+    <!-- 그룹 단건 상세 조회 -->
+    <select id="selectGroupDetail" resultType="GroupMgrVO">
+        SELECT
+            g.group_code,
+            g.gr_name,
+            g.description,
+            COUNT(gm.user_code) AS member_count
+        FROM "GROUP" g
+        LEFT JOIN group_member gm ON g.group_code = gm.gr_code
+        WHERE g.group_code = #{groupCode}
+        GROUP BY g.group_code, g.gr_name, g.description
+    </select>
+
+    <!-- 그룹 구성원 목록 조회 -->
+    <select id="selectGroupMembers" resultType="GroupMemberVO">
+        SELECT
+            gm.gr_mem_code,
+            gm.gr_code,
+            gm.user_code,
+            u.name AS user_name,
+            u.email
+        FROM group_member gm
+        JOIN users u ON gm.user_code = u.user_code
+        WHERE gm.gr_code = #{groupCode}
+        ORDER BY gm.gr_mem_code
+    </select>
+
+    <!-- 그룹 프로젝트 목록 조회 (소프트 삭제 제외) -->
+    <select id="selectGroupProjects" resultType="GroupProjectVO">
+        SELECT
+            gpr.gr_pro_code,
+            gpr.gr_code,
+            gpr.project_code,
+            p.project_name,
+            gpr.role_code,
+            r.role_name
+        FROM gr_pro_role gpr
+        JOIN projects p ON gpr.project_code = p.project_code
+        JOIN role r ON gpr.role_code = r.role_code
+        WHERE gpr.gr_code = #{groupCode}
+          AND gpr.project_code > 0
+        ORDER BY gpr.gr_pro_code
+    </select>
+
+    <!-- 그룹 등록 -->
+    <insert id="groupInsert" parameterType="GroupMgrVO">
+        <selectKey keyProperty="groupCode" resultType="Integer" order="BEFORE">
+            SELECT NVL(MAX(group_code), 0) + 1 FROM "GROUP"
+        </selectKey>
+        INSERT INTO "GROUP" (
+            group_code,
+            gr_name,
+            description
+        ) VALUES (
+            #{groupCode},
+            #{grName},
+            #{description}
+        )
+    </insert>
+
+    <!-- 그룹 구성원 등록 -->
+    <insert id="groupMemberInsert" parameterType="GroupMemberVO">
+        <selectKey keyProperty="grMemCode" resultType="Integer" order="BEFORE">
+            SELECT NVL(MAX(gr_mem_code), 0) + 1 FROM group_member
+        </selectKey>
+        INSERT INTO group_member (
+            gr_mem_code,
+            gr_code,
+            user_code
+        ) VALUES (
+            #{grMemCode},
+            #{grCode},
+            #{userCode}
+        )
+    </insert>
+
+    <!-- 그룹 프로젝트 매핑 등록 -->
+    <insert id="groupProjectInsert" parameterType="GroupProjectVO">
+        <selectKey keyProperty="grProCode" resultType="Integer" order="BEFORE">
+            SELECT NVL(MAX(gr_pro_code), 0) + 1 FROM gr_pro_role
+        </selectKey>
+        INSERT INTO gr_pro_role (
+            gr_pro_code,
+            gr_code,
+            project_code,
+            role_code
+        ) VALUES (
+            #{grProCode},
+            #{grCode},
+            #{projectCode},
+            #{roleCode}
+        )
+    </insert>
+
+    <!-- 그룹 기본 정보 수정 -->
+    <update id="updateGroup" parameterType="GroupMgrVO">
+        UPDATE "GROUP"
+        SET gr_name    = #{grName},
+            description = #{description}
+        WHERE group_code = #{groupCode}
+    </update>
+
+    <!-- 그룹 구성원 삭제 (물리 삭제) -->
+    <delete id="deleteGroupMember">
+        DELETE FROM group_member
+        WHERE gr_mem_code = #{grMemCode}
+    </delete>
+
+    <!-- 그룹 프로젝트 소프트 삭제 (project_code 음수 변환) -->
+    <update id="softDeleteGroupProject">
+        UPDATE gr_pro_role
+        SET project_code = project_code * -1
+        WHERE gr_pro_code = #{grProCode}
+          AND project_code > 0
+    </update>
+
+    <!-- 소프트 삭제된 그룹 프로젝트 조회 -->
+    <select id="findDeletedGroupProject" resultType="GroupProjectVO">
+        SELECT
+            gr_pro_code,
+            gr_code,
+            project_code,
+            role_code
+        FROM gr_pro_role
+        WHERE gr_code = #{grCode}
+          AND project_code = #{projectCode} * -1
+    </select>
+
+    <!-- 그룹 프로젝트 복원 -->
+    <update id="restoreGroupProject">
+        UPDATE gr_pro_role
+        SET project_code = ABS(project_code),
+            role_code    = #{roleCode}
+        WHERE gr_pro_code = #{grProCode}
+    </update>
+
+    <!-- 그룹 소프트 삭제 (해당 그룹의 모든 프로젝트 매핑 음수 처리) -->
+    <update id="softDeleteGroup">
+        UPDATE gr_pro_role
+        SET project_code = project_code * -1
+        WHERE gr_code = #{groupCode}
+          AND project_code > 0
+    </update>
+</mapper>

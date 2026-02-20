@@ -54,6 +54,16 @@
 	    ORDER BY role_code
 	</select>
 	
+	<!-- 진행중인 프로젝트 불려오기 -->
+	<select id="ProjectAll" resultType="ProjectVO">
+		SELECT 
+		    project_code
+		    ,project_name
+		    ,created_on
+		FROM projects
+		WHERE status = 'OD1'
+		ORDER BY project_code
+	</select>
 	
 	
 	<!-- 유저 리스트(잠금이 아닌사람만) -->

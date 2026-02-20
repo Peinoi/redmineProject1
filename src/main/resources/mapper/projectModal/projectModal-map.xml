@@ -6,7 +6,8 @@
           resultType="ProjectModalVO">
     SELECT DISTINCT
            project_code AS projectCode,
-           project_name AS projectName
+           project_name AS projectName,
+           created_on AS createdOn
       FROM vw_user_auth
      WHERE user_code = #{userCode}
        AND ( status = 'OD1'

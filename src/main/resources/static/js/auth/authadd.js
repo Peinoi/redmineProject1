@@ -123,12 +123,20 @@ function registerRole() {
 	fetch('/api/auth/register', {
 		method: 'POST',
 		headers: {
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'X-Requested-With': 'XMLHttpRequest'
 		},
 		body: JSON.stringify(requestData)
 	})
-		.then(response => response.json())
+		.then(response => {
+			if (response.status === 403) {
+				alert('권한이 없습니다.');
+				return null;
+			}
+			return response.json();
+		})
 		.then(data => {
+			if (!data) return;  
 			if (data.success) {
 				alert(data.message);
 				window.location.href = '/auth'; // 역할 목록 페이지로 이동

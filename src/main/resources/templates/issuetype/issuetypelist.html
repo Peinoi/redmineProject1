@@ -19,7 +19,7 @@
 		</div>
 
 		<div class="issue-filters mb-3 mt-3">
-			<div class="row g-3 align-items-end mb-4">
+			<div class="row g-3 align-items-end">
 
 				<div class="col-auto" style="min-width: 200px;">
 					<label class="form-label fw-bold">유형명</label> <input type="text"
@@ -61,7 +61,7 @@
 					class="col-12 d-flex justify-content-between align-items-center mt-4">
 					<div class="d-flex gap-2">
 						<button type="button" class="btn btn-success" id="btnRegisterType">
-							<i class="fas fa-plus me-1"></i> 일감유형 등록
+							<i class="fas fa-check me-1"></i> 일감유형 등록
 						</button>
 					</div>
 					<div class="d-flex gap-2">
@@ -87,13 +87,13 @@
 			</div>
 			<div class="card-body">
 				<div class="table-responsive">
-					<table class="table table-hover align-middle" id="issueTypeTable"
+					<table class="table table-hover align-middle" id="issueTable"
 						style="table-layout: fixed; width: 100%;">
 						<thead class="table-light">
 							<tr>
 								<th style="width: 60px;">번호</th>
-								<th style="width: 160px;">일감 유형</th>
 								<th style="width: 180px;">프로젝트</th>
+								<th style="width: 160px;">일감 유형</th>
 								<th style="width: 160px;">시작일</th>
 								<th style="width: 160px;">종료일</th>
 								<th style="width: 80px;">수정</th>
@@ -109,20 +109,20 @@
 								th:data-startat="${info.startAt != null ? #dates.format(info.startAt,'yyyy-MM-dd') : ''}"
 								th:data-endat="${info.endAt != null ? #dates.format(info.endAt,'yyyy-MM-dd') : ''}">
 								<td class="col-no">[[ ${status.index + 1} ]]</td>
-								<td>[[ ${info.typeName} ]]</td>
 								<td>[[ ${info.projectName} ]]</td>
+								<td>[[ ${info.typeName} ]]</td>
 								<td>[[ ${info.startAt != null ?
 									#dates.format(info.startAt,'yyyy-MM-dd') : '-'} ]]</td>
 								<td>[[ ${info.endAt != null ?
 									#dates.format(info.endAt,'yyyy-MM-dd') : '-'} ]]</td>
 								<td>
-									<button class="btn btn-warning btn-sm edit-btn">
-										<i class="fa-solid fa-pen"></i> 수정
+									<button class="btn btn-success btn-sm edit-btn">
+										<i class="fa-regular fa-face-meh"></i> 수정
 									</button>
 								</td>
 								<td>
 									<button class="btn btn-danger btn-sm delete-btn">
-										<i class="fa-solid fa-trash"></i> 삭제
+										<i class="fa-solid fa-face-dizzy"></i> 삭제
 									</button>
 								</td>
 							</tr>
@@ -168,16 +168,11 @@
 					<!-- 프로젝트 선택 (등록 시에만 활성화) -->
 					<div class="mb-3" id="projectSelectWrap">
 						<label class="form-label fw-bold">프로젝트 <span
-							class="text-danger">*</span></label>
-						<div class="input-group">
-							<input type="text" id="modalProjectText" class="form-control"
-								placeholder="프로젝트를 선택하세요" readonly> <input type="hidden"
-								id="modalProjectValue">
-							<button type="button" class="btn btn-secondary"
-								id="btnModalOpenProject">선택</button>
-						</div>
-						<div class="invalid-feedback d-block" id="projectError"
-							style="display: none !important;"></div>
+							class="text-danger">*</span></label> <select id="projectSelectBox"
+							class="form-select">
+							<option value="">-- 프로젝트 선택 --</option>
+						</select>
+						<div class="invalid-feedback" id="projectError">프로젝트를 선택하세요.</div>
 					</div>
 
 					<!-- 기간 -->
@@ -233,7 +228,7 @@
 		</div>
 	</div>
 
-	<!-- ============ 프로젝트 선택 모달 (모달 폼용) ============ -->
+	<!-- 	 ============ 프로젝트 선택 모달 (모달 폼용) ============ 
 	<div class="modal fade" id="projectSelectModal2" tabindex="-1"
 		aria-hidden="true">
 		<div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -250,7 +245,7 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</div> -->
 
 	<script th:src="@{/js/issuetype/issuetype.js}"></script>
 </body>

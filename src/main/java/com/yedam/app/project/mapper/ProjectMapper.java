@@ -28,6 +28,8 @@ public interface ProjectMapper {
 
 	public List<ProjectPrVO> projPrAll();
 
+	public List<ProjectVO> ProjectAll();
+	
 	// 프로젝트 등록
 	public int projectInsert(ProjectAddVO projectAddVO);
 
