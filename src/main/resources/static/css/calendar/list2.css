@@ -1,0 +1,133 @@
+.calendar-page {
+    height: 100%;
+    overflow-x: visible;
+    overflow-y: auto;
+    font-size: 16px;
+}
+
+/* 타이틀 */
+.x-page-title {
+	margin: 14px 0 12px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.x-page-title .page-title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 800;
+	color: #111827;
+	letter-spacing: -0.2px;
+}
+
+.x-page-title .page-title-sub {
+	margin-top: 4px;
+	font-size: 0.8em;
+	color: #6b7280;
+}
+
+/* ===================== */
+/* list.html (calendar) 전용 */
+/* ===================== */
+
+/* ===== FullCalendar 이벤트 글씨 검정 ===== */
+.fc .fc-event-title, .fc .fc-event-time, .fc .fc-event-main {
+	color: #111827 !important; /* 검정 */
+}
+
+/* dayGrid에서 링크 색 방지 */
+.fc .fc-daygrid-event {
+	color: #111827 !important;
+}
+
+.fc .fc-daygrid-event .fc-event-title {
+	color: #111827 !important;
+	font-weight: 600;
+}
+
+/* ===== 달력 날짜/요일 링크 스타일 제거 ===== */
+.fc .fc-col-header-cell a, .fc .fc-daygrid-day-number {
+	color: #111827 !important; /* 검정 */
+	text-decoration: none !important; /* 밑줄 제거 */
+}
+
+/* hover 시에도 파란색 안 나오게 */
+.fc .fc-col-header-cell a:hover, .fc .fc-daygrid-day-number:hover {
+	color: #111827 !important;
+	text-decoration: none !important;
+}
+
+.fc .fc-event {
+	cursor: pointer;
+	transition: filter 0.15s ease;
+}
+
+.fc .fc-event:hover {
+	filter: brightness(0.9);
+}
+
+/* 공휴일 날짜 숫자 빨간색 */
+.fc-holiday-number {
+	color: #e53e3e !important;
+}
+
+/* 일요일 컬럼 헤더 글자색 빨간색 */
+.fc-col-header-cell.fc-day-sun a {
+	color: #e53e3e !important;
+}
+
+/* 일요일 날짜 숫자 빨간색 */
+.fc-day-sun .fc-daygrid-day-number {
+	color: #e53e3e !important;
+}
+
+.calendar-wrapper {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+/* 달력 전체 높이 고정 */
+#calendar {
+	width: 100%;
+    min-width: 0;
+}
+
+/* 날짜 칸 높이 고정 + 넘치면 스크롤 */
+.fc .fc-daygrid-day-frame {
+    min-height: 80px !important;
+    /* max-height, overflow-y 삭제 */
+}
+
+/* 스크롤바 스타일 (선택사항) */
+.fc .fc-daygrid-day-frame::-webkit-scrollbar {
+	width: 3px;
+}
+
+.fc .fc-daygrid-day-frame::-webkit-scrollbar-thumb {
+	background-color: #d1d5db;
+	border-radius: 3px;
+}
+
+.calendar-legend {
+	display: flex;
+	gap: 16px;
+	padding: 6px 4px;
+	font-size: 1em;
+	color: #555;
+}
+
+.legend-item {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.legend-dot {
+	display: inline-block;
+	border-radius: 50%;
+}
+
+#layoutSidenav_content {
+    overflow: visible !important;
+}

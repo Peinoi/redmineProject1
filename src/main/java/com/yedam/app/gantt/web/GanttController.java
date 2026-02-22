@@ -16,9 +16,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Controller
 public class GanttController {
-	
+
 	private final GanttService ganttService;
-	
+
 	@GetMapping("ganttData")
 	@ResponseBody
 	public List<GanttVO> ganttData(HttpSession session, GanttVO ganttVO) {
@@ -26,11 +26,11 @@ public class GanttController {
 		Integer userCode = user.getUserCode();
 		return ganttService.getGanttList(userCode, ganttVO);
 	}
-	
+
 	@GetMapping("ganttChart")
 	public String ganttList() {
+
 		return "gantt/list";
 	}
-	
 
 }

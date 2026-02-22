@@ -20,6 +20,7 @@ public class GanttVO {
 	 @JsonFormat(pattern = "yyyy-MM-dd", timezone = "Asia/Seoul")
 	private LocalDateTime completedOn; // 프로젝트 종료일 - 종료
 	private String projectStatus; // 프로젝트 상태
+	private String projectCreatorName; // 프로젝트 생성자명
 
 	// 타입
 	private Integer typeCode; // 타입 코드

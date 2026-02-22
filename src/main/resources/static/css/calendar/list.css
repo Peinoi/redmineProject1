@@ -1,133 +1,88 @@
-.calendar-page {
-    height: 100%;
-    overflow-x: visible;
-    overflow-y: auto;
-    font-size: 16px;
-}
-
-/* 타이틀 */
+/* ===== Page Title ===== */
 .x-page-title {
 	margin: 14px 0 12px;
 	padding-bottom: 10px;
 	border-bottom: 1px solid #e5e7eb;
 }
 
-.x-page-title .page-title {
+.page-title {
 	margin: 0;
 	font-size: 20px;
 	font-weight: 800;
 	color: #111827;
-	letter-spacing: -0.2px;
 }
 
-.x-page-title .page-title-sub {
+.page-title-sub {
 	margin-top: 4px;
-	font-size: 0.8em;
+	font-size: 12px;
 	color: #6b7280;
 }
 
-/* ===================== */
-/* list.html (calendar) 전용 */
-/* ===================== */
-
-/* ===== FullCalendar 이벤트 글씨 검정 ===== */
-.fc .fc-event-title, .fc .fc-event-time, .fc .fc-event-main {
-	color: #111827 !important; /* 검정 */
-}
-
-/* dayGrid에서 링크 색 방지 */
-.fc .fc-daygrid-event {
-	color: #111827 !important;
-}
-
-.fc .fc-daygrid-event .fc-event-title {
-	color: #111827 !important;
+.fc .fc-event-title {
 	font-weight: 600;
-}
-
-/* ===== 달력 날짜/요일 링크 스타일 제거 ===== */
-.fc .fc-col-header-cell a, .fc .fc-daygrid-day-number {
-	color: #111827 !important; /* 검정 */
-	text-decoration: none !important; /* 밑줄 제거 */
-}
-
-/* hover 시에도 파란색 안 나오게 */
-.fc .fc-col-header-cell a:hover, .fc .fc-daygrid-day-number:hover {
-	color: #111827 !important;
-	text-decoration: none !important;
+	font-size: 0.85rem;
 }
 
 .fc .fc-event {
 	cursor: pointer;
-	transition: filter 0.15s ease;
+	transition: filter .15s ease, transform .05s ease;
 }
 
 .fc .fc-event:hover {
-	filter: brightness(0.9);
+	filter: brightness(0.95);
+	transform: translateY(-1px);
 }
 
-/* 공휴일 날짜 숫자 빨간색 */
-.fc-holiday-number {
-	color: #e53e3e !important;
+/* 달력 타이틀 (2026년 2월) 크기 */
+.fc .fc-toolbar-title {
+	font-size: 2rem !important;
+	font-weight: 800 !important;
+	color: #111827 !important;
 }
 
-/* 일요일 컬럼 헤더 글자색 빨간색 */
-.fc-col-header-cell.fc-day-sun a {
-	color: #e53e3e !important;
+.fc .fc-more-link:hover {
+    color: #111827 !important;
 }
 
-/* 일요일 날짜 숫자 빨간색 */
-.fc-day-sun .fc-daygrid-day-number {
-	color: #e53e3e !important;
-}
-
-.calendar-wrapper {
-	width: 100%;
-	display: flex;
-	flex-direction: column;
-}
-
-/* 달력 전체 높이 고정 */
-#calendar {
-	width: 100%;
-    min-width: 0;
-}
-
-/* 날짜 칸 높이 고정 + 넘치면 스크롤 */
+/* 셀 최소 높이 고정 */
 .fc .fc-daygrid-day-frame {
-    min-height: 80px !important;
-    /* max-height, overflow-y 삭제 */
+    min-height: 120px !important;
 }
 
-/* 스크롤바 스타일 (선택사항) */
-.fc .fc-daygrid-day-frame::-webkit-scrollbar {
-	width: 3px;
+/* 네비게이션 버튼 - 비즈니스 톤 */
+.fc .fc-button {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #374151 !important;
+    border-radius: 4px !important;
+    font-weight: 500 !important;
+    font-size: 0.83rem !important;
+    padding: 5px 11px !important;
+    transition: all 0.1s ease !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
 }
 
-.fc .fc-daygrid-day-frame::-webkit-scrollbar-thumb {
-	background-color: #d1d5db;
-	border-radius: 3px;
+.fc .fc-button:hover {
+    background-color: #f9fafb !important;
+    border-color: #9ca3af !important;
+    color: #111827 !important;
 }
 
-.calendar-legend {
-	display: flex;
-	gap: 16px;
-	padding: 6px 4px;
-	font-size: 1em;
-	color: #555;
+/* today / 활성 버튼 */
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-today-button {
+    background-color: #1e3a5f !important;
+    border-color: #1e3a5f !important;
+    color: #fff !important;
 }
 
-.legend-item {
-	display: flex;
-	align-items: center;
-	gap: 5px;
+/* month/week/day 그룹 */
+.fc .fc-button-group .fc-button {
+    border-radius: 0 !important;
 }
-
-.legend-dot {
-	display: inline-block;
-	border-radius: 50%;
+.fc .fc-button-group .fc-button:first-child {
+    border-radius: 4px 0 0 4px !important;
 }
-
-#layoutSidenav_content {
-    overflow: visible !important;
+.fc .fc-button-group .fc-button:last-child {
+    border-radius: 0 4px 4px 0 !important;
 }
