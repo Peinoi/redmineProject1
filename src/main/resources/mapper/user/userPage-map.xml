@@ -57,9 +57,9 @@
   		WHERE p.status = 'OD1'
 	</select>
   
-  	<!-- 작업현황(활동 로그) -->
-  	<select id="selectWorkLogs" resultType="UserWorkLogVO">
-    	SELECT
+  	<!-- 작업현황(활동 로그) : ✅ ISSUE(일감)만 -->
+	<select id="selectWorkLogs" resultType="UserWorkLogVO">
+  		SELECT
     		l.log_code     AS logCode,
     		l.project_code AS projectCode,
     		p.project_name AS projectName,
@@ -68,30 +68,31 @@
     		l.target_type  AS targetType,
     		l.target_code  AS targetCode,
 
-    		/* ISSUE인 경우만 이슈 제목 표시 */
-    		CASE
-      			WHEN l.target_type = 'ISSUE' THEN i.title
-      			ELSE NULL
-    			END AS issueTitle,
+    		/* ✅ ISSUE만 제목 */
+    		i.title        AS issueTitle,
 
     		l.created_at   AS createdAt,
     		l.meta         AS meta
   		FROM logs l
-  		
+
   		JOIN projects p
     	ON p.project_code = l.project_code
-    	
+
+  		/* ✅ ISSUE만 남길 거라 단순 조인 */
   		LEFT JOIN issues i
-    	ON l.target_type = 'ISSUE'
-   		AND i.issue_code  = l.target_code
-   		
+    	ON i.issue_code = l.target_code
+
   		WHERE l.user_code = #{userCode}
-    		<if test="from != null">
-      			AND l.created_at &gt;= #{from}
-    		</if>
-    		<if test="to != null">
-      			AND l.created_at &lt;= #{to}
-    		</if>
+    	AND l.target_type = 'ISSUE'
+    	AND i.issue_code IS NOT NULL
+
+    	<if test="from != null">
+      		AND l.created_at &gt;= #{from}
+    	</if>
+    	<if test="to != null">
+      		AND l.created_at &lt;= #{to}
+    	</if>
+
   		ORDER BY l.created_at DESC
 	</select>
 </mapper>

@@ -230,3 +230,129 @@
   background: linear-gradient(90deg, #3b9ff6, #6366f1);
   transition: width 0.4s ease;
 }
+
+/* =========================
+   MAIN 최근공지(내페이지 방식) - pager + badge
+   ========================= */
+
+.block-inner{
+  height: 100%;
+  display:flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.block-inner > ul{
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.block-spacer{
+  flex: 0 0 8px;
+}
+
+/* pager */
+.block-pager{
+  flex: 0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  margin-top: 8px;
+  padding-bottom: 2px;
+}
+
+.block-pager .pager-pages{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  flex-wrap: wrap;
+}
+
+.pager-pages .pager-page{
+  padding: 3px 9px;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 8px;
+}
+
+.pager-pages .pager-page.is-active{
+  background: #111827;
+  color: #fff;
+  border-color: #111827;
+}
+
+/* badge link (내페이지 톤) */
+.x-badge-link{
+  display:inline-flex;
+  align-items:center;
+  max-width: 100%;
+  font-size: 13px;
+  font-weight: 900;
+  height: 22px;
+  line-height: 22px;
+  padding: 0 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border: 1px solid transparent;
+  text-decoration:none;
+}
+
+.x-badge-notice{
+  background: #eef7ff;
+  color: #12324a;
+  border-color: #d6eaff;
+}
+
+.x-badge-notice:hover{
+  filter: brightness(0.98);
+  text-decoration:none;
+}
+
+/* ✅ 프로젝트명: 뱃지 X, 그냥 텍스트(14px) */
+.notice-project{
+  display:inline-block;
+  margin-right: 8px;
+  font-size: 14px;      /* ✅ 요구사항 */
+  font-weight: 800;
+  color:#111827;
+
+  /* ✅ 뱃지 스타일 제거 */
+  background: transparent;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* dummy li */
+.pager-dummy-li{
+  height: 44px;
+  border-color: transparent !important;
+  background: transparent !important;
+  pointer-events: none;
+}
+
+/* ✅ 메인 최근공지 레이아웃: 목록이 페이저 영역 침범하지 않게 */
+[data-main-recent-notice="1"]{
+  height: 100%;
+  display:flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden; /* ✅ card-body 밖으로 튀는 거 차단 */
+}
+
+/* ul(목록)이 남은 공간만 먹고 넘치면 스크롤/숨김 */
+[data-main-recent-notice="1"] .list-group{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden; /* ✅ 스크롤 원하면 auto로 바꿔도 됨 */
+}
+
+/* li 높이 살짝 안정화(원하면) */
+[data-main-recent-notice="1"] .list-group-item{
+  padding-top: 10px;
+  padding-bottom: 10px;
+}

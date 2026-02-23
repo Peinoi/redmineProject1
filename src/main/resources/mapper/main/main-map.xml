@@ -256,4 +256,38 @@
   	]]>
 	</select>
 	
+	<!-- ======================= 메인 최근공지(내페이지와 동일) ======================= -->
+	<select id="selectRecentNoticesForMain" resultType="com.yedam.app.mypage.service.MyNoticeDTO">
+  		SELECT *
+  		FROM (
+    		SELECT
+      			n.notice_code AS noticeCode,
+      			n.project_code AS projectCode,
+      			p.project_name AS projectName,
+      			n.title AS title,
+      			n.created_at AS createdAt
+    		FROM projects p
+    		JOIN (
+      			SELECT pru.project_code
+      			FROM project_role_user pru
+      			WHERE pru.user_code = #{userCode}
+
+      			UNION
+
+      			SELECT gpr.project_code
+      			FROM "GROUP_MEMBER" gm
+      			JOIN "GR_PRO_ROLE" gpr
+        		ON gpr.gr_code = gm.gr_code
+      			WHERE gm.user_code = #{userCode}
+    		) up ON up.project_code = p.project_code
+
+    		JOIN notices n
+      		ON n.project_code = p.project_code
+
+    		WHERE p.status = 'OD1'
+    		ORDER BY n.created_at DESC
+  		)
+  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+	</select>
+	
 </mapper>
