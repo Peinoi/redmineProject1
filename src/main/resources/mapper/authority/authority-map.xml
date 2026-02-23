@@ -39,4 +39,11 @@
   FROM dual
 </select>
 
+
+<select id="existsIssueCreatorOrAssignee" resultType="int">
+  SELECT CASE WHEN COUNT(*) > 0 THEN 1 ELSE 0 END AS cnt
+  FROM issues i
+  WHERE i.issue_code = #{issueCode}
+    AND (i.created_by_code = #{userCode} OR i.assignee_code = #{userCode})
+</select>
 </mapper>

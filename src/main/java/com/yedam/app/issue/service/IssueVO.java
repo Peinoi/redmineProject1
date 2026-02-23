@@ -47,6 +47,8 @@ public class IssueVO {
 	private LocalDateTime uploadedAt;
 	
 	private String projectName;
+	private String projectStatusName;
+	private String projectStatus;
 	
 	private String statusName; // 신규...
 	private String priorityName;

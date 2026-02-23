@@ -7,6 +7,7 @@
 		i.issue_code,
 		i.project_code,
 		i.status_code,
+		s.code_id AS status_id,
 		i.title,
 		i.description,
 		i.priority,
@@ -27,6 +28,8 @@
 		i.file_code,
 
 		p.project_name,
+		p.status AS project_status,
+		cps.code_name AS project_status_name,
 
 		cs.code_name AS status_name,
 		cp.code_name AS priority_name,
@@ -37,7 +40,7 @@
 		i.type_code,
 		t.type_name
 
-		FROM issues i
+		FROM issues i 
 		LEFT JOIN projects p ON p.project_code = i.project_code
 		JOIN status s ON s.status_code = i.status_code
 
@@ -48,6 +51,10 @@
 		LEFT JOIN common_code cp
 		ON cp.code_id = i.priority
 		AND cp.group_code = 'OA'
+		
+		LEFT JOIN common_code cps
+		ON p.status = cps.code_id
+		AND cp.group_code = 'OD'
 
 		LEFT JOIN users ua ON ua.user_code = i.assignee_code
 		LEFT JOIN users uc ON uc.user_code = i.created_by_code

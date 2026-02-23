@@ -61,57 +61,80 @@
         작업내역
       </a>
 
-			<a class="nav-link" th:href="@{/my}">
-				<div class="sb-nav-link-icon">
-					<i class="fa-solid fa-user"></i>
-				</div> 내 페이지
-			</a>
-			<!--  <a class="nav-link" th:href="@{/admin}"> th:if="${role == 'ADMIN'}
+      <a class="nav-link" th:href="@{/worklogs}">
+        <div class="sb-nav-link-icon">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        소요시간
+      </a>
+
+      <a class="nav-link" th:href="@{/my}">
+        <div class="sb-nav-link-icon">
+          <i class="fa-solid fa-user"></i>
+        </div>
+        내 페이지
+      </a>
+      <!--  <a class="nav-link" th:href="@{/admin}"> th:if="${role == 'ADMIN'}
 				<div class="sb-nav-link-icon">
 					<i class="fa-solid fa-gear"></i>
 				</div> 관리
 			</a> -->
 
-
-			<!-- 아코디언 -->
-			<a class="nav-link collapsed" data-bs-toggle="collapse"
-				data-bs-target="#collapseSettings" aria-expanded="false"
-				aria-controls="collapseSettings">
-				<div class="sb-nav-link-icon">
-					<i class="fa-solid fa-gear"></i>
-				</div> 관리
-				<div class="sb-sidenav-collapse-arrow">
-					<i class="fas fa-angle-down"></i>
-				</div>
-			</a>
-			<div class="collapse" id="collapseSettings"
-				aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
-				<nav class="sb-sidenav-menu-nested nav">
-					<a class="nav-link" th:href="@{/projects}">
-						<div class="sb-nav-link-icon">
-							<i class="fa-solid fa-diagram-project"></i>
-						</div> 프로젝트 관리
-					</a> <a class="nav-link" th:href="@{/usermgr}">
-						<div class="sb-nav-link-icon">
-							<i class="fa-solid fa-user-plus"></i>
-						</div> 사용자 관리
-					</a> <a class="nav-link" th:href="@{/groupmgrs}">
-						<div class="sb-nav-link-icon">
-							<i class="fas fa-users me-1"></i>
-						</div> 그룹 관리
-					</a> <a class="nav-link" th:href="@{/auth}">
-						<div class="sb-nav-link-icon">
-							<i class="fas fa-check me-1"></i>
-						</div> 역할권한 관리
-					</a> <a class="nav-link" th:href="@{/issuetype}">
-						<div class="sb-nav-link-icon">
-							<i class="fa-solid fa-clipboard-list"></i>
-						</div> 일감 유형
-					</a>
-				</nav>
-			</div>
-
-		</div>
-	</div>
-
+      <!-- 아코디언 -->
+      <a
+        class="nav-link collapsed"
+        data-bs-toggle="collapse"
+        data-bs-target="#collapseSettings"
+        aria-expanded="false"
+        aria-controls="collapseSettings"
+      >
+        <div class="sb-nav-link-icon">
+          <i class="fa-solid fa-gear"></i>
+        </div>
+        관리
+        <div class="sb-sidenav-collapse-arrow">
+          <i class="fas fa-angle-down"></i>
+        </div>
+      </a>
+      <div
+        class="collapse"
+        id="collapseSettings"
+        aria-labelledby="headingOne"
+        data-bs-parent="#sidenavAccordion"
+      >
+        <nav class="sb-sidenav-menu-nested nav">
+          <a class="nav-link" th:href="@{/projects}">
+            <div class="sb-nav-link-icon">
+              <i class="fa-solid fa-diagram-project"></i>
+            </div>
+            프로젝트 관리
+          </a>
+          <a class="nav-link" th:href="@{/usermgr}">
+            <div class="sb-nav-link-icon">
+              <i class="fa-solid fa-user-plus"></i>
+            </div>
+            사용자 관리
+          </a>
+          <a class="nav-link" th:href="@{/groupmgrs}">
+            <div class="sb-nav-link-icon">
+              <i class="fas fa-users me-1"></i>
+            </div>
+            그룹 관리
+          </a>
+          <a class="nav-link" th:href="@{/auth}">
+            <div class="sb-nav-link-icon">
+              <i class="fas fa-check me-1"></i>
+            </div>
+            역할권한 관리
+          </a>
+          <a class="nav-link" th:href="@{/issuetype}">
+            <div class="sb-nav-link-icon">
+              <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+            일감 유형
+          </a>
+        </nav>
+      </div>
+    </div>
+  </div>
 </nav>

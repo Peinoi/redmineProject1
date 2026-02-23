@@ -421,3 +421,11 @@
 #parIssueModalTree .type-item.pi-item.pi-parent-item {
   font-weight: 800;
 }
+
+/* required star */
+.form-label .req {
+  color: #ef4444;
+  font-weight: 900;
+  margin-left: 4px;
+  line-height: 1;
+}

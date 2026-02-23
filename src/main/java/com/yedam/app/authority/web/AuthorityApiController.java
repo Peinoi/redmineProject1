@@ -89,5 +89,50 @@ public class AuthorityApiController {
     return Map.of("success", true, "canWrite", canWrite);
   }
 
+  @GetMapping("/api/authority/issue/menuPerms")
+  public Map<String, Object> issueMenuPerms(@RequestParam("projectCode") Long projectCode,
+                                           @RequestParam("issueCode") Long issueCode,
+                                           HttpSession session) {
+
+    UserVO user = (UserVO) session.getAttribute("user");
+    if (user == null || user.getUserCode() == null) {
+      return Map.of(
+        "success", false,
+        "canEdit", false,
+        "canDelete", false,
+        "message", "LOGIN_REQUIRED"
+      );
+    }
+
+    Integer userCode = user.getUserCode();
+
+    // 관리자 여부
+    AuthorityVO auth = authorityService.getProjectAuth(userCode, projectCode);
+    boolean isAdmin = (auth != null) && "Y".equalsIgnoreCase(auth.getAdminCk());
+
+    // 등록자/담당자 여부
+    boolean isCreatorOrAssignee =
+        authorityService.isIssueCreatorOrAssignee(issueCode, userCode);
+
+    // 역할 권한
+    boolean hasModifyRole = authorityService.canModify(projectCode, userCode, "일감");
+    boolean hasDeleteRole = authorityService.canDelete(projectCode, userCode, "일감");
+
+    // 수정 가능: 관리자 OR (수정권한 && (등록자 or 담당자))
+    boolean canEdit = isAdmin || (hasModifyRole && isCreatorOrAssignee);
+
+    // 삭제 가능: 관리자 OR (삭제권한 && (등록자 or 담당자))
+    boolean canDelete = isAdmin || (hasDeleteRole && isCreatorOrAssignee);
+
+    return Map.of(
+      "success", true,
+      "canEdit", canEdit,
+      "canDelete", canDelete,
+      "isAdmin", isAdmin,
+      "hasModifyRole", hasModifyRole,
+      "hasDeleteRole", hasDeleteRole,
+      "isCreatorOrAssignee", isCreatorOrAssignee
+    );
+  }
 
 }

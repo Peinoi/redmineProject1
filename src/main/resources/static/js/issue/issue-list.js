@@ -55,11 +55,11 @@
 
   if (!ui.tbody) return;
 
-  // form submit 자체 방지 (원래 코드 유지)
+  // form submit 자체 방지
   ui.filterForm?.addEventListener("submit", (e) => e.preventDefault());
 
   // -------------------------
-  // 목록/페이지네이션 (원래 코드 유지)
+  // 목록/페이지네이션
   // -------------------------
   const rows = () => $$("#issueTbody tr.issueRow");
   const visibleRows = () => rows().filter((tr) => tr.dataset.filtered !== "1");
@@ -120,7 +120,7 @@
         if (disabled) return;
         page = nextPage;
         render();
-        closeMenusHard(); // 추가: 페이지 바뀌면 메뉴 닫기
+        closeMenusHard();
       });
 
       li.appendChild(btn);
@@ -160,7 +160,7 @@
     }
   };
 
-  // 조회 버튼 눌렀을 때만 필터 적용 (원래 코드 유지)
+  // 조회 버튼 눌렀을 때만 필터 적용
   const applyFiltersClient = () => {
     const pCode = ui.projectValue?.value?.trim() || "";
     const pName = ui.projectText?.value?.trim() || "";
@@ -197,11 +197,11 @@
 
     page = 1;
     render();
-    closeMenusHard(); // 추가: 조회 후 메뉴 닫기
+    closeMenusHard();
   };
 
   // -------------------------
-  // 토스트 (원래 코드 유지)
+  // 토스트
   // -------------------------
   const showToast = (message) => {
     const toastId = "commonToast";
@@ -256,7 +256,7 @@
   };
 
   // -------------------------
-  // 모달 인스턴스 (원래 코드 유지)
+  // 모달 인스턴스
   // -------------------------
   const projectModal = ui.projectModalEl
     ? new bootstrap.Modal(ui.projectModalEl)
@@ -270,7 +270,7 @@
   const typeModal = ui.typeModalEl ? new bootstrap.Modal(ui.typeModalEl) : null;
 
   // -------------------------
-  // 캐시 (원래 코드 유지)
+  // 캐시
   // -------------------------
   let projectCache = [];
   let assigneeCache = [];
@@ -340,7 +340,7 @@
   };
 
   // -------------------------
-  // 프로젝트 모달 (원래 코드 유지)
+  // 프로젝트 모달
   // -------------------------
   const openProjectModal = async () => {
     if (!projectModal) return;
@@ -353,7 +353,6 @@
       ui.projectText.value = picked.name;
       ui.projectValue.value = picked.code;
 
-      // 프로젝트 변경 시 의존 필드 초기화
       ui.typeText.value = "";
       ui.typeValue.value = "";
       ui.assigneeText.value = "";
@@ -365,7 +364,7 @@
     });
 
     projectModal.show();
-    closeMenusHard(); // 추가: 모달 열 때 메뉴 닫기
+    closeMenusHard();
   };
 
   ui.projectModalSearch?.addEventListener("input", async () => {
@@ -381,7 +380,6 @@
         ui.projectText.value = picked.name;
         ui.projectValue.value = picked.code;
 
-        // 검색으로 골라도 동일하게 의존 필드 초기화
         ui.typeText.value = "";
         ui.typeValue.value = "";
         ui.assigneeText.value = "";
@@ -395,7 +393,7 @@
   });
 
   // -------------------------
-  // 사용자(담당자/등록자) 모달: 트리 + 프로젝트 필터 + 검색 (원래 코드 유지)
+  // 사용자(담당자/등록자) 모달
   // -------------------------
   const renderUserTree = (projects, container, pickHandler) => {
     if (!container) return;
@@ -498,7 +496,6 @@
 
     const cache = mode === "assignee" ? assigneeCache : creatorCache;
 
-    // 프로젝트 선택 시 해당 프로젝트만 보여주기
     const selectedProjectCode = ui.projectValue?.value || "";
     const projectFiltered = selectedProjectCode
       ? cache.filter(
@@ -518,7 +515,6 @@
           ui.creatorValue.value = picked.userCode;
         }
 
-        // 프로젝트 미선택 상태라면 자동 설정
         if (!ui.projectValue?.value && projectCode) {
           ui.projectValue.value = projectCode;
           ui.projectText.value = projectName || "";
@@ -529,7 +525,7 @@
     );
 
     modal.show();
-    closeMenusHard(); // 추가: 모달 열 때 메뉴 닫기
+    closeMenusHard();
   };
 
   ui.assigneeModalSearch?.addEventListener("input", async () => {
@@ -595,7 +591,7 @@
   });
 
   // -------------------------
-  // 타입 모달: 프로젝트 그룹 아코디언 + 트리 + 프로젝트 선택 필터 + 검색 (원래 코드 유지)
+  // 타입 모달
   // -------------------------
   const buildTypeTreeForJS = (serverData) => {
     const projectMap = {};
@@ -618,7 +614,6 @@
         projectMap[pCode] = { code: pCode, name: pName, children: [] };
       }
 
-      // 최상위 유형만 추가
       if (!type.parTypeCode) {
         projectMap[pCode].children.push(convertType(type, pCode, pName));
       }
@@ -643,7 +638,6 @@
         ui.typeText.value = type.name;
         ui.typeValue.value = type.code;
 
-        // 유형 선택 시 프로젝트 자동 설정
         if (type.projectCode && type.projectName) {
           ui.projectValue.value = type.projectCode;
           ui.projectText.value = type.projectName;
@@ -728,7 +722,7 @@
     renderTypeTree(filteredTreeData, ui.typeModalTree);
 
     typeModal.show();
-    closeMenusHard(); // 추가: 모달 열 때 메뉴 닫기
+    closeMenusHard();
   };
 
   ui.typeModalSearch?.addEventListener("input", async () => {
@@ -748,7 +742,6 @@
       return;
     }
 
-    // 트리 가지치기 검색 (type.name 기준)
     const searchInTree = (nodes) =>
       (nodes || [])
         .map((node) => {
@@ -768,22 +761,53 @@
   });
 
   // -------------------------
-  // 상세 이동 (원래 코드 유지)
+  // 상세 이동
   // -------------------------
   const goDetail = (tr) => {
     const issueCode = tr.dataset.issueCode;
     if (!issueCode) return;
-    closeMenusHard(); // 추가: 이동 전에 메뉴 닫기
+    closeMenusHard();
     location.href = `/issueInfo?issueCode=${encodeURIComponent(issueCode)}`;
   };
 
   // -------------------------
-  // ============ 컨텍스트 메뉴 추가 ============
-  // - Bootstrap dropdown 기본 위치 깨지는 문제 해결: 메뉴를 body로 옮겨 fixed로 배치
-  // - 서브메뉴는 왼쪽으로 펼침(prefer left)
-  // - 뒤로가기(BFCache)/페이지 이동/submit/모달 열기 전에 무조건 닫기
-  // - delete는 issue-info.js처럼 /issueDelete 폼 POST로 처리
-  // ==========================================
+  // 컨텍스트 메뉴 (수정/삭제만)
+  // -------------------------
+
+  // -------------------------
+  // 메뉴 권한 조회 (projectCode + issueCode)
+  // -------------------------
+  const permCache = new Map(); // key: `${projectCode}:${issueCode}` -> { canEdit, canDelete }
+
+  const fetchIssueMenuPerms = async (projectCode, issueCode) => {
+    const p = String(projectCode || "").trim();
+    const i = String(issueCode || "").trim();
+    const key = `${p}:${i}`;
+
+    if (!p || !i) return { canEdit: false, canDelete: false };
+
+    const cached = permCache.get(key);
+    if (cached) return cached;
+
+    const qs = new URLSearchParams({ projectCode: p, issueCode: i });
+
+    const res = await fetch(`/api/authority/issue/menuPerms?${qs.toString()}`, {
+      headers: { Accept: "application/json" },
+    });
+
+    if (!res.ok) throw new Error("권한 조회에 실패했습니다.");
+
+    const data = await res.json();
+
+    const perms = {
+      canEdit: data?.success === true && data?.canEdit === true,
+      canDelete: data?.success === true && data?.canDelete === true,
+    };
+
+    permCache.set(key, perms);
+    return perms;
+  };
+
   const MOVED = new WeakMap();
 
   const rememberAndMoveToBody = (el) => {
@@ -815,7 +839,7 @@
   const placeFixedBelowRight = (btn, menu, gap = 4) => {
     const rect = btn.getBoundingClientRect();
     const w = menu.offsetWidth || 220;
-    const h = menu.offsetHeight || 320;
+    const h = menu.offsetHeight || 260;
 
     let left = rect.right - w;
     let top = rect.bottom + gap;
@@ -831,42 +855,11 @@
     menu.style.top = `${top}px`;
   };
 
-  const placeFixedSubmenuPreferLeft = (li, sub, gap = 6) => {
-    const rect = li.getBoundingClientRect();
-    const w = sub.offsetWidth || 220;
-    const h = sub.offsetHeight || 320;
-
-    let left = rect.left - w - gap;
-    let top = rect.top;
-
-    if (left < 8 && window.innerWidth - rect.right > w + gap)
-      left = rect.right + gap;
-    if (window.innerHeight - rect.top < h && rect.bottom > h)
-      top = rect.bottom - h;
-
-    if (left < 8) left = 8;
-    if (top < 8) top = 8;
-
-    sub.style.position = "fixed";
-    sub.style.zIndex = "10000";
-    sub.style.left = `${left}px`;
-    sub.style.top = `${top}px`;
-  };
-
-  const closeSubmenus = (except = null) => {
-    $$(".issue-submenu-menu.show").forEach((m) => {
-      if (m === except) return;
-      m.classList.remove("show");
-      restoreEl(m);
-    });
-  };
-
   const closeAll = () => {
     $$('.issue-dropdown [data-bs-toggle="dropdown"]').forEach((btn) => {
       const inst = bootstrap.Dropdown.getInstance(btn);
       if (inst) inst.hide();
     });
-    closeSubmenus(null);
   };
 
   const closeMenusHard = () => {
@@ -890,6 +883,40 @@
     form.appendChild(input);
     document.body.appendChild(form);
     form.submit();
+  };
+
+  const setDisabled = (el, disabled) => {
+    if (!el) return;
+    if (disabled) {
+      el.classList.add("disabled");
+      el.setAttribute("aria-disabled", "true");
+      el.setAttribute("tabindex", "-1");
+    } else {
+      el.classList.remove("disabled");
+      el.removeAttribute("aria-disabled");
+      el.removeAttribute("tabindex");
+    }
+  };
+
+  const getPermsFromRow = (tr) => {
+    const adminCk = (tr?.dataset?.adminCk || "N").toUpperCase() === "Y";
+    const canModify = (tr?.dataset?.canModify || "N").toUpperCase() === "Y";
+    const statusId = tr?.dataset?.statusId || "";
+    return { adminCk, canModify, statusId };
+  };
+
+  const applyMenuRules = (menu, perms) => {
+    if (!menu) return;
+
+    const editBtn = menu.querySelector(
+      'button.dropdown-item[data-action="edit"]',
+    );
+    const deleteBtn = menu.querySelector(
+      'button.dropdown-item[data-action="delete"]',
+    );
+
+    setDisabled(editBtn, !(perms?.canEdit === true));
+    setDisabled(deleteBtn, !(perms?.canDelete === true));
   };
 
   // 뒤로가기(BFCache) 복귀 시 강제 닫기
@@ -930,7 +957,6 @@
   window.addEventListener("scroll", closeAll, true);
   window.addEventListener("resize", closeAll);
 
-  // dropdown show/hide 핸들링 (body로 옮기고 fixed 위치 지정)
   document.addEventListener("show.bs.dropdown", (e) => {
     const dropdown = e.target;
     const btn = dropdown?.querySelector('[data-bs-toggle="dropdown"]');
@@ -940,20 +966,35 @@
     bootstrap.Dropdown.getOrCreateInstance(btn, { autoClose: "outside" });
 
     const tr = dropdown.closest("tr.issueRow");
-    if (tr?.dataset?.issueCode)
-      menu.dataset.ownerIssueCode = tr.dataset.issueCode;
+    const issueCode = tr?.dataset?.issueCode || "";
+    const projectCode = tr?.dataset?.projectCode || "";
 
-    requestAnimationFrame(() => {
+    if (issueCode) menu.dataset.ownerIssueCode = issueCode;
+
+    requestAnimationFrame(async () => {
       rememberAndMoveToBody(menu);
       menu.style.display = "block";
       placeFixedBelowRight(btn, menu, 4);
       menu.classList.add("show");
+
+      // 1) 기본은 잠금(권한 조회 전까지)
+      applyMenuRules(menu, { canEdit: false, canDelete: false });
+
+      // 2) 완료면 무조건 잠금 유지
+      if ((tr?.dataset?.statusId || "") === "OB5") return;
+
+      // 3) 서버 권한 조회해서 반영
+      try {
+        const perms = await fetchIssueMenuPerms(projectCode, issueCode);
+        applyMenuRules(menu, perms);
+      } catch (err) {
+        showToast(err?.message || "권한 정보를 불러오지 못했습니다.");
+        applyMenuRules(menu, { canEdit: false, canDelete: false });
+      }
     });
   });
 
   document.addEventListener("hide.bs.dropdown", (e) => {
-    closeSubmenus(null);
-
     const dropdown = e.target;
     const menu = dropdown?.querySelector(".issue-dropdown-menu");
     if (!menu) return;
@@ -966,71 +1007,40 @@
   document.addEventListener("click", (e) => {
     const inside =
       e.target.closest(".issue-dropdown") ||
-      e.target.closest(".issue-dropdown-menu") ||
-      e.target.closest(".issue-submenu-menu");
+      e.target.closest(".issue-dropdown-menu");
     if (!inside) closeAll();
   });
 
-  // 서브메뉴 토글
-  document.addEventListener("click", (e) => {
-    const toggle = e.target.closest(".issue-submenu-toggle");
-    if (!toggle) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    const li = toggle.closest(".issue-submenu");
-    const sub = li?.querySelector(".issue-submenu-menu");
-    if (!li || !sub) return;
-
-    const willOpen = !sub.classList.contains("show");
-    if (!willOpen) {
-      sub.classList.remove("show");
-      restoreEl(sub);
-      return;
-    }
-
-    closeSubmenus(sub);
-
-    rememberAndMoveToBody(sub);
-    sub.style.display = "block";
-    sub.style.visibility = "hidden";
-    sub.style.opacity = "0";
-    sub.classList.add("show");
-
-    requestAnimationFrame(() => {
-      placeFixedSubmenuPreferLeft(li, sub, 6);
-      sub.style.visibility = "visible";
-      sub.style.opacity = "1";
-    });
-  });
-
-  // 액션 처리 (edit / delete / status / priority / progress)
-  const API = {
-    status: "/api/issues/status",
-    priority: "/api/issues/priority",
-    progress: "/api/issues/progress",
+  // -------------------------
+  // 액션 처리 (edit / delete만)
+  // -------------------------
+  const isDisabledItem = (btn) => {
+    if (!btn) return true;
+    return (
+      btn.classList.contains("disabled") ||
+      btn.getAttribute("aria-disabled") === "true"
+    );
   };
 
-  const postJson = async (url, body) => {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error("처리에 실패했습니다.");
-    return res.json().catch(() => null);
+  const findRowByIssueCode = (issueCode) => {
+    if (!issueCode) return null;
+    return $(
+      `#issueTbody tr.issueRow[data-issue-code="${CSS.escape(String(issueCode))}"]`,
+    );
   };
 
   document.addEventListener("click", async (e) => {
     const item = e.target.closest(".dropdown-item[data-action]");
     if (!item) return;
-    if (item.classList.contains("issue-submenu-toggle")) return;
 
     e.stopPropagation();
 
+    if (isDisabledItem(item)) {
+      showToast("권한이 없거나 변경할 수 없는 상태입니다.");
+      return;
+    }
+
     const action = item.dataset.action;
-    const value = item.dataset.value;
 
     const tr = e.target.closest("tr.issueRow");
     let issueCode = tr?.dataset?.issueCode || "";
@@ -1045,6 +1055,33 @@
     }
     if (!issueCode) return;
 
+    const ownerTr = findRowByIssueCode(issueCode) || tr;
+    const rowInfo = getPermsFromRow(ownerTr);
+    if (rowInfo.statusId === "OB5") {
+      showToast("완료된 일감은 더 이상 변경할 수 없습니다.");
+      return;
+    }
+
+    // 서버 권한 최종 확인
+    const projectCode = String(ownerTr?.dataset?.projectCode || "").trim();
+
+    let perms;
+    try {
+      perms = await fetchIssueMenuPerms(projectCode, issueCode);
+    } catch (err) {
+      showToast(err?.message || "권한 조회에 실패했습니다.");
+      return;
+    }
+
+    if (action === "edit" && !perms.canEdit) {
+      showToast("수정 권한이 없습니다.");
+      return;
+    }
+    if (action === "delete" && !perms.canDelete) {
+      showToast("삭제 권한이 없습니다.");
+      return;
+    }
+
     try {
       if (action === "edit") {
         closeMenusHard();
@@ -1058,37 +1095,13 @@
         submitDeleteForm(issueCode);
         return;
       }
-
-      if (action === "status") {
-        await postJson(API.status, { issueCode, statusId: value });
-        showToast("상태가 변경되었습니다.");
-        closeSubmenus(null);
-        return;
-      }
-
-      if (action === "priority") {
-        await postJson(API.priority, { issueCode, priority: value });
-        showToast("우선순위가 변경되었습니다.");
-        closeSubmenus(null);
-        return;
-      }
-
-      if (action === "progress") {
-        await postJson(API.progress, { issueCode, progress: Number(value) });
-        showToast("진척도가 변경되었습니다.");
-        closeSubmenus(null);
-        return;
-      }
-
-      closeSubmenus(null);
     } catch (err) {
       showToast(err?.message || "처리에 실패했습니다.");
-      closeSubmenus(null);
     }
   });
 
   // -------------------------
-  // 이벤트 바인딩 (원래 코드 유지 + 메뉴 닫기만 추가)
+  // 이벤트 바인딩
   // -------------------------
   ui.btnApply?.addEventListener("click", (e) => {
     e.preventDefault();
@@ -1115,7 +1128,7 @@
     rows().forEach((tr) => (tr.dataset.filtered = "0"));
     page = 1;
     render();
-    closeMenusHard(); // 추가
+    closeMenusHard();
   });
 
   ui.btnProjectModal?.addEventListener("click", openProjectModal);
@@ -1125,15 +1138,12 @@
   ui.btnCreatorModal?.addEventListener("click", () => openUserModal("creator"));
   ui.btnTypeModal?.addEventListener("click", openTypeModal);
 
-  // 상세 (원래 코드 유지: 컨텍스트 메뉴 영역 클릭은 막음)
   ui.tbody.addEventListener("click", (e) => {
-    // 컨텍스트 메뉴/버튼/링크 클릭은 상세 이동 금지
     if (
       e.target.closest("input, label, button, a") ||
       e.target.closest(".issue-actions") ||
       e.target.closest(".issue-dropdown") ||
-      e.target.closest(".issue-dropdown-menu") ||
-      e.target.closest(".issue-submenu-menu")
+      e.target.closest(".issue-dropdown-menu")
     ) {
       return;
     }
@@ -1142,7 +1152,6 @@
     if (tr && tr.style.display !== "none") goDetail(tr);
   });
 
-  // Enter로 submit 방지 (원래 코드 유지)
   [
     ui.title,
     ui.createdAt,

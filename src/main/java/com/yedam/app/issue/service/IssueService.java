@@ -26,4 +26,5 @@ public interface IssueService {
  	List<IssueVO> findRejectHistory(Long issueCode);
  	// 해결 + 첨부
  	Map<String, Object> resolveIssue(Long issueCode, Integer userCode, MultipartFile uploadFile);
+ 	
 }

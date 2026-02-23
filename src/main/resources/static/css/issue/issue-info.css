@@ -29,7 +29,8 @@ button {
 
 .issue-summary,
 .issue-desc,
-.issue-history {
+.issue-history,
+.worklog-history {
   margin-top: 16px;
 }
 
@@ -305,6 +306,77 @@ ul,
 ol {
   margin: 0;
   padding-left: 0;
+}
+
+/* ===== bottom area layout (history + worklogs) ===== */
+.issue-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 992px) {
+  .issue-bottom-grid {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
+
+/* ===== worklog panel ===== */
+.worklog-history .section-title {
+  font-weight: 800;
+}
+.worklog-history {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.worklog-box {
+  margin-top: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--subtle);
+  padding: 18px;
+  min-height: 140px;
+  font-size: 16px;
+}
+
+.worklog-item {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+  border: 0;
+}
+
+.worklog-item:last-child {
+  border-bottom: 0;
+}
+
+.worklog-item + .worklog-item {
+  margin-top: 0;
+}
+
+.worklog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.worklog-sub {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.worklog-min {
+  font-weight: 800;
 }
 
 #rejectHistoryModal .modal-body {

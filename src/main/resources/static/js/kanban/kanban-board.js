@@ -1100,7 +1100,7 @@
     try {
       isSaving.value = true;
 
-      const res = await fetch("/api/issues/progress", {
+      const res = await fetch("/api/kanban/progress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,0 +1,364 @@
+<!doctype html>
+<html
+  xmlns:th="https://www.thymeleaf.org/"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{common/layouts/default_layout}"
+  layout:fragment="Content"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <title>소요시간 목록</title>
+    <link rel="stylesheet" th:href="@{/css/worklog/worklog-list.css}" />
+  </head>
+
+  <body>
+    <div class="x-page-title">
+      <h3 class="page-title">소요시간 목록</h3>
+      <div class="page-title-sub">
+        프로젝트별 소요시간을 조회하고 관리할 수 있습니다.
+      </div>
+    </div>
+
+    <form id="worklogFilterForm" th:action="@{/worklogList}" method="get">
+      <div class="issue-filters mb-3 mt-3">
+        <div class="row g-2 align-items-end">
+          <!-- 프로젝트 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">프로젝트</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterProjectText"
+                class="form-control"
+                placeholder="프로젝트 선택"
+                readonly
+                th:value="${projectName}"
+              />
+              <input
+                type="hidden"
+                id="filterProjectValue"
+                name="projectCode"
+                th:value="${projectCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenProjectModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+
+          <!-- 유형 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">유형</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterTypeText"
+                class="form-control"
+                placeholder="유형 선택"
+                readonly
+                th:value="${typeLabel}"
+              />
+              <input
+                type="hidden"
+                id="filterTypeValue"
+                name="typeCode"
+                th:value="${param.typeCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenTypeModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+
+          <!-- 일감명 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">일감명</label>
+            <input
+              type="text"
+              id="filterIssueTitle"
+              name="issueTitle"
+              class="form-control"
+              placeholder="일감명 입력"
+              th:value="${param.issueTitle}"
+            />
+          </div>
+
+          <!-- 작업자 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">작업자</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterWorkerText"
+                class="form-control"
+                placeholder="작업자 선택"
+                readonly
+                th:value="${workerName}"
+              />
+              <input
+                type="hidden"
+                id="filterWorkerValue"
+                name="workerCode"
+                th:value="${param.workerCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenWorkerModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1">
+          <!-- 작업일 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">작업일</label>
+            <input
+              type="date"
+              id="filterWorkDate"
+              name="workDate"
+              class="form-control"
+              th:value="${param.workDate}"
+            />
+          </div>
+
+          <!-- 시간 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">소요시간(시/분)</label>
+            <div class="d-flex gap-2">
+              <!-- 시간 -->
+              <input
+                type="number"
+                id="filterWorkHour"
+                class="form-control"
+                placeholder="시"
+                min="0"
+                max="999"
+                inputmode="numeric"
+              />
+
+              <!-- 분 -->
+              <input
+                type="number"
+                id="filterWorkMinute"
+                class="form-control"
+                placeholder="분"
+                min="0"
+                max="59"
+                inputmode="numeric"
+              />
+            </div>
+
+            <!-- 서버로 보낼 값(HH:mm) -->
+            <input
+              type="hidden"
+              id="filterWorkTime"
+              name="workTime"
+              th:value="${param.workTime}"
+            />
+          </div>
+
+          <!-- 오른쪽 버튼 영역 -->
+          <div
+            class="col-12 col-md-12 d-flex justify-content-between align-items-center mt-2"
+          >
+            <div class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-success"
+                id="btnOpenWorklogInsert"
+              >
+                <i class="fa-solid fa-plus"></i>소요시간 등록
+              </button>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnResetFilters"
+              >
+                <i class="fas fa-redo me-1"></i>초기화
+              </button>
+
+              <button
+                type="submit"
+                class="btn btn-primary"
+                id="btnApplyFilters"
+              >
+                <i class="fa-solid fa-magnifying-glass"></i>조회
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <!-- 목록 테이블 -->
+    <div class="card mb-4">
+      <div
+        class="card-header d-flex align-items-center justify-content-between"
+      >
+        <div><i class="fas fa-table me-1"></i> 소요시간 목록</div>
+        <div class="text-muted small" id="worklogPageInfo"></div>
+      </div>
+
+      <div class="card-body">
+        <div class="table-responsive">
+          <table
+            class="table table-hover align-middle text-center"
+            id="worklogTable"
+          >
+            <thead class="table-light">
+              <tr>
+                <th style="width: 70px">번호</th>
+                <th>프로젝트명</th>
+                <th>유형명</th>
+                <th>일감명</th>
+                <th style="width: 140px">작업자</th>
+                <th style="width: 130px">작업일</th>
+                <th style="width: 110px">시간(시/분)</th>
+              </tr>
+            </thead>
+
+            <tbody id="worklogTbody">
+              <tr th:if="${list == null or #lists.isEmpty(list)}">
+                <td colspan="7" class="text-muted">데이터가 없습니다.</td>
+              </tr>
+
+              <tr
+                class="worklogRow"
+                th:each="row : ${list}"
+                th:attr="
+                  data-worklog-code=${row.workLogCode},
+                  data-issue-code=${row.issueCode},
+                  data-project-code=${row.projectCode},
+                  data-worker-code=${row.workerCode},
+                  data-type-code=${row.typeCode}"
+              >
+                <td class="col-no"></td>
+                <td th:text="${row.projectName}"></td>
+                <td th:text="${row.typeName != null ? row.typeName : '-'}"></td>
+                <td th:text="${row.issueTitle}"></td>
+                <td th:text="${row.workerName}"></td>
+                <td
+                  th:text="${row.workDate != null ? #temporals.format(row.workDate, 'yyyy-MM-dd') : ''}"
+                ></td>
+                <td
+                  th:text="${row.spentMinutes != null ? row.spentMinutes : 0}"
+                ></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <nav class="d-flex justify-content-center mt-3 mb-3">
+          <ul class="pagination mb-0" id="worklogPagination"></ul>
+        </nav>
+      </div>
+    </div>
+
+    <!-- 프로젝트 선택 모달 -->
+    <div
+      class="modal fade"
+      id="projectSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">프로젝트 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="projectModalSearch"
+              class="form-control mb-2"
+              placeholder="프로젝트명 검색"
+            />
+            <div class="list-group" id="projectModalList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 유형 선택 모달 -->
+    <div
+      class="modal fade"
+      id="typeSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">유형 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="typeModalSearch"
+              class="form-control mb-2"
+              placeholder="유형명 검색"
+            />
+            <div id="typeModalTree" class="type-tree"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 작업자 선택 모달 -->
+    <div
+      class="modal fade"
+      id="workerSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">작업자 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="workerModalSearch"
+              class="form-control mb-2"
+              placeholder="작업자명 검색"
+            />
+            <div id="workerModalTree" class="type-tree"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script th:src="@{/js/worklog/worklog-list.js}"></script>
+  </body>
+</html>
