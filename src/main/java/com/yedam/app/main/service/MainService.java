@@ -2,6 +2,8 @@ package com.yedam.app.main.service;
 
 import java.util.List;
 
+import com.yedam.app.mypage.service.MyNoticeDTO;
+
 public interface MainService {
 	// 프로젝트 현황 select
 	public List<MainProjectStatusVO> findCodeNameCnt(Integer userCode);
@@ -26,4 +28,6 @@ public interface MainService {
 	
 	// 본인 이슈 Top 5
 	public List<MyTopIssueVO> findMyTopIssues(Integer projectCode, Integer userCode);
+	
+	public List<MyNoticeDTO> findRecentNoticesForMain(Integer userCode, int limit);
 }

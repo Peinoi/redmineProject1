@@ -628,3 +628,14 @@
   background: transparent !important;
   pointer-events: none;
 }
+
+/* =========================
+   ASSIGNED / REGISTERED / NOTICE
+   프로젝트명: 14px + bold
+   ========================= */
+.my-block[data-block-type="ASSIGNED"] .my-table tbody td:first-child,
+.my-block[data-block-type="REGISTERED"] .my-table tbody td:first-child,
+.my-block[data-block-type="NOTICE"] .notice-project{
+  font-size: 14px;
+  font-weight: 900;
+}

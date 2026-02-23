@@ -10,6 +10,7 @@ import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MainService;
 import com.yedam.app.main.service.MyTopIssueVO;
 import com.yedam.app.main.service.ProIssStaVO;
+import com.yedam.app.mypage.service.MyNoticeDTO;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,6 +58,11 @@ public class MainServiceImpl implements MainService{
 	@Override
 	public List<MyTopIssueVO> findMyTopIssues(Integer projectCode, Integer userCode) {
 		return mainMapper.selectMyTopIssues(projectCode, userCode);
+	}
+	
+	@Override
+	public List<MyNoticeDTO> findRecentNoticesForMain(Integer userCode, int limit) {
+	  return mainMapper.selectRecentNoticesForMain(userCode, limit);
 	}
 
 }

@@ -13,6 +13,7 @@ import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MainService;
 import com.yedam.app.main.service.MyTopIssueVO;
 import com.yedam.app.main.service.ProIssStaVO;
+import com.yedam.app.mypage.service.MyNoticeDTO;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -39,10 +40,14 @@ public class MainController {
 		List<Integer> adminProList = mainService.findAdminProByUserCode(userCode);
 		Integer todayProRate = mainService.findTodayProgressRate(userCode);
 		
+		int limit = 8;
+		List<MyNoticeDTO> recentNotices = mainService.findRecentNoticesForMain(userCode, limit);
+		
 		model.addAttribute("statusListCnt", listCnt != null ? listCnt : List.of());
 	    model.addAttribute("ProIssStatusList", proIssList != null ? proIssList : List.of());
 	    model.addAttribute("adminProjectList", adminProList != null ? adminProList : List.of());
 	    model.addAttribute("todayProgressRate", todayProRate != null ? todayProRate : 0);
+	    model.addAttribute("noticeList", recentNotices != null ? recentNotices : List.of());
 		
 		return "main/main";
 	}

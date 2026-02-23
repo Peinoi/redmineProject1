@@ -112,14 +112,14 @@
 
 
 		<!-- 작업현황 -->
-		<div class="card mb-4">
+		<div class="card mb-4" data-user-worklog-card="1">
 			<div
 				class="card-header d-flex align-items-center justify-content-between">
 				<div>
-					<i class="fas fa-clock me-1"></i> 작업 현황
+					<i class="fas fa-clock me-1"></i>일감 작업 현황
 				</div>
 
-				<form class="d-flex align-items-center gap-2"
+				<form class="d-flex align-items-center gap-2 user-worklog-range"
 					th:action="@{/users/{userCode}(userCode=${profile.userCode})}"
 					method="get">
 					<span class="text-muted small">기간</span> <select

@@ -112,33 +112,46 @@
 				<div
 					class="card-header d-flex align-items-center justify-content-between">
 					<div>
-						<i class="fas fa-bullhorn me-1"></i>공지사항
+						<i class="fas fa-bullhorn me-1"></i>최근공지
 					</div>
-					<a class="text-decoration-none small" href="/notice">더보기</a>
+					<!-- 필요하면 프로젝트 공지 리스트 페이지로 -->
+					<!-- <a class="text-decoration-none small" href="/notice">더보기</a> -->
 				</div>
 
 				<div class="card-body p-0">
-					<div class="list-group list-group-flush notice-list">
+					<div class="p-3 block-inner" data-main-recent-notice="1">
+						<div th:if="${#lists.isEmpty(noticeList)}" class="text-muted">
+							최근 공지가 없습니다.</div>
 
-						<!-- ✅ 공지 데이터 있을 때 -->
-						<a th:each="n : ${noticeList}"
-							th:href="@{/notice/{id}(id=${n.noticeId})}"
-							class="list-group-item list-group-item-action d-flex justify-content-between align-items-start">
-							<div class="me-2">
-								<div class="notice-title" th:text="${n.title}">공지 제목</div>
-								<div class="notice-meta">
-									<span th:text="${n.writerName}">관리자</span> <span class="mx-1">·</span>
-									<span th:text="${#temporals.format(n.createdAt, 'yyyy-MM-dd')}">2026-02-11</span>
+						<ul th:if="${!#lists.isEmpty(noticeList)}"
+							class="list-group list-group-flush">
+							<li class="list-group-item px-0" th:each="n : ${noticeList}">
+								<div class="d-flex justify-content-between gap-2">
+									<div class="text-truncate">
+										<span class="notice-project" th:text="${n.projectName}">프로젝트명</span>
+
+										<a class="x-badge-link x-badge-notice"
+											th:href="@{/noticeInfo(noticeCode=${n.noticeCode})}"
+											th:text="${n.title}">공지</a>
+									</div>
+
+									<div class="text-muted small"
+										th:text="${n.createdAt != null ? #dates.format(n.createdAt,'MM-dd') : ''}">
+										02-19</div>
 								</div>
-							</div> <span class="badge rounded-pill notice-badge"
-							th:if="${n.isNew == 'Y'}">NEW</span>
-						</a>
+							</li>
+						</ul>
 
-						<!-- ✅ 공지 없을 때 -->
-						<div class="p-3 text-muted"
-							th:if="${noticeList == null or #lists.isEmpty(noticeList)}">
-							등록된 공지사항이 없습니다.</div>
+						<div class="block-spacer"></div>
 
+						<!-- ✅ 내페이지와 동일한 페이저 -->
+						<div class="block-pager" data-pager-for="MAIN_NOTICE">
+							<button type="button"
+								class="btn btn-sm btn-outline-secondary pager-prev">이전</button>
+							<div class="pager-pages"></div>
+							<button type="button"
+								class="btn btn-sm btn-outline-secondary pager-next">다음</button>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -184,64 +197,12 @@
 	<th:block layout:fragment="pageScript">
 		<script src="https://www.gstatic.com/charts/loader.js"></script>
 
+		<!-- ✅ Thymeleaf가 치환할 수 있는 영역에서 데이터만 주입 -->
 		<script th:inline="javascript">
-  google.charts.load("current", { packages: ["corechart"] });
-  google.charts.setOnLoadCallback(initChart);
+			window.__statusListCnt = /*[[${statusListCnt}]]*/[];
+		</script>
 
-  let chart, data;
-
-  function initChart() {
-    const statusListCnt = /*[[${statusListCnt}]]*/ [];
-    if (!statusListCnt || statusListCnt.length === 0) {
-    	  document.getElementById("donutchart").innerHTML =
-    	    "<div class='text-muted text-center py-5'>표시할 데이터가 없습니다.</div>";
-    	  return;
-    	}
-    const reversed = [...statusListCnt].reverse();
-
-    data = new google.visualization.DataTable();
-    data.addColumn("string", "상태");
-    data.addColumn("number", "개수");
-    data.addColumn({ type: "string", role: "tooltip" });
-
-    reversed.forEach((item) => {
-      const value = Number(item.codeNameCnt);
-      data.addRow([item.codeName, value, `${item.codeName}: ${value}개`]);
-    });
-
-    chart = new google.visualization.PieChart(document.getElementById("donutchart"));
-    drawChart();
-
-    // ✅ 리사이즈는 "디바운스"로 한 박자 늦춰서(계산 안정)
-    let t;
-    window.addEventListener("resize", () => {
-      clearTimeout(t);
-      t = setTimeout(drawChart, 120);
-    });
-  }
-
-  function drawChart() {
-    const el = document.getElementById("donutchart");
-    const w = el.getBoundingClientRect().width;
-
-    const options = {
-      pieHole: 0.4,
-      colors: ["#3b9ff6", "#a3a3a3"],
-      legend: { position: "top", textStyle: { fontSize: 13 } },
-      pieSliceText: "value",
-      pieSliceTextStyle: { fontSize: 16, bold: true },
-      // ✅ 컨테이너 폭에 맞춰 chartArea를 픽셀로 재계산
-      chartArea: {
-      	left: 10,
-      	top: 55,
-      	width: Math.max(w - 20, 0),
-      	height: "75%"   // <- 58~65% 사이에서 취향대로 조절
-    	}
-    };
-
-    chart.draw(data, options);
-  }
-</script>
+		<script th:src="@{/js/main/main.js}"></script>
 
 	</th:block>
 </body>
