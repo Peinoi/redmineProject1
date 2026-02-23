@@ -6,31 +6,38 @@
 	<!-- 유형 타입 조회 -->
 	<select id="selectAllIssueType" resultType="IssueTypeVO">
 		SELECT
-			t.type_code
-			,t.project_code
-			,p.project_name
-			,t.type_name
-			,t.start_at
-			,t.end_at
-			,t.is_deleted
+			t.type_code,
+			t.project_code,
+			p.project_name,
+			t.type_name,
+			t.par_type_code,
+			pt.type_name  AS par_type_name,
+			t.start_at,
+			t.end_at,
+			t.is_deleted
 		FROM types t
-		JOIN projects p
-		ON t.project_code =
-		p.project_code
-		WHERE
-		t.is_deleted != 1  and p.status != 'OD2'
-		ORDER BY t.project_code, t.type_code 
+		JOIN projects p ON t.project_code = p.project_code
+		LEFT JOIN types pt ON t.par_type_code = pt.type_code
+		WHERE t.is_deleted != 1
+		  AND p.status != 'OD2'
+		ORDER BY t.project_code, NVL(t.par_type_code, t.type_code), t.type_code
 	</select>
 
 	<!-- 유형 타입 추가 -->
 	<insert id="addIssueType" parameterType="IssueTypeVO">
-		<selectKey keyProperty="typeCode" resultType="int"
-			order="BEFORE">
+		<selectKey keyProperty="typeCode" resultType="int" order="BEFORE">
 			SELECT NVL(MAX(type_code), 0) + 1 FROM types
 		</selectKey>
-		INSERT INTO types (type_code, project_code, type_name, start_at,
-		end_at, is_deleted)
-		VALUES (#{typeCode}, #{projectCode}, #{typeName}, #{startAt}, #{endAt}, '0')
+		INSERT INTO types (type_code, project_code, type_name, par_type_code, start_at, end_at, is_deleted)
+		VALUES (
+			#{typeCode},
+			#{projectCode},
+			#{typeName},
+			#{parTypeCode},
+			#{startAt},
+			#{endAt},
+			'0'
+		)
 	</insert>
 
 	<!-- 유형 타입 수정 -->

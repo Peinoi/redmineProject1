@@ -63,7 +63,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 		
 	    UserVO user = (UserVO) session.getAttribute("user"); // 세션에서 유저 객체 꺼내기
 
-	    if (user != null && user.getSysCk().equals("Y")) {
+	    if (user != null && "Y".equals(user.getSysCk())) {
 	        System.out.println("관리자 접근 허용: " + requestUri);
 	        return true;
 	    }
@@ -138,7 +138,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 	// 권한 체크
 	private boolean checkPermission(String type, UserProjectAuthVO userAuth, UserVO userVO) {
 	
-		if(userVO.getSysCk().equals('Y')) {
+		if("Y".equals(userVO.getSysCk())) {
 			return true;
 		}
 		

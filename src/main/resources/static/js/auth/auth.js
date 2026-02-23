@@ -237,6 +237,17 @@
 		}
 	});
 
+	// 권한 상세페이지
+	$("#projectTbody").addEventListener("click", (e) => {
+	    const btn = e.target.closest("button");
+	    if (!btn || !btn.classList.contains("auth-btn")) return;
+
+	    const row = btn.closest("tr");
+	    const roleCode = rowData(row).code;
+
+	    location.href = `/authInfo?roleCode=${roleCode}`;
+	});
+	
 
 	// 이벤트 바인딩
 	ui.btnApply.addEventListener("click", applyFilters);

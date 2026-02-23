@@ -27,11 +27,10 @@ public class IssuetypeController {
 	public String issueTypeList(Model model) {
 		List<IssueTypeVO> find = issueTypeService.findIssueType();
 		model.addAttribute("types", find);
-
 		return "issuetype/issuetypelist";
 	}
 
-	// 유형 등록
+	// 유형 등록 
 	@ResponseBody
 	@PostMapping("/api/issuetype/register")
 	public Map<String, Object> registerType(@RequestBody IssueTypeVO vo) {
@@ -47,7 +46,7 @@ public class IssuetypeController {
 		return result;
 	}
 
-	// 유형 수정
+	// 유형 수정 
 	@ResponseBody
 	@PostMapping("/api/issuetype/{typeCode}/update")
 	public Map<String, Object> updateType(@PathVariable Integer typeCode, @RequestBody IssueTypeVO vo) {
@@ -64,7 +63,7 @@ public class IssuetypeController {
 		return result;
 	}
 
-	// 유형 삭제 (소프트)
+	//유형 삭제 (소프트) 
 	@ResponseBody
 	@PostMapping("/api/issuetype/{typeCode}/delete")
 	public Map<String, Object> deleteType(@PathVariable Integer typeCode) {

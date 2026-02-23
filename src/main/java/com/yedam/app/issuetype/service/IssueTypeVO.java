@@ -24,5 +24,7 @@ public class IssueTypeVO {
 	private Date startAt; // 시작일
 	private Date endAt; // 종료일
 	private String isDeleted; // 삭제 여부
+	private Integer parTypeCode;  // 상위 유형 코드 (null이면 최상위)
+    private String  parTypeName;  // 상위 유형명 (조회용)
 
 }

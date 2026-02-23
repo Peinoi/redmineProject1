@@ -65,6 +65,39 @@ public class ProjectController {
 		return "project/projects";
 	}
 
+	// 프로젝트 관리
+	@GetMapping("projectsmgr")
+	public String projectmgrList(HttpSession session, Model model) {
+		UserVO user = (UserVO) session.getAttribute("user");
+
+		if (user == null) {
+			return "redirect:/login";
+		}
+		Integer userCode = user.getUserCode();
+
+		// 1. 사용자 권한 조회
+		UserProjectAuthVO auth = projectService.getUserProjectAuth(userCode, "프로젝트");
+
+		// 2. 필터링된 프로젝트 목록 조회
+		List<ProjectVO> projects = projectService.findAll(userCode, auth.getAdmin());
+
+		// 3. 진척률 조회
+		List<ProjectPrVO> progVO = projectService.progFindAll();
+		Map<Integer, ProjectPrVO> progMap = new HashMap<>();
+		for (ProjectPrVO prog : progVO) {
+			progMap.put(prog.getProjectCode(), prog);
+		}
+
+		model.addAttribute("list", projects);
+		model.addAttribute("progMap", progMap);
+		model.addAttribute("auth", auth);
+		model.addAttribute("userCode", userCode); // userCode 추가
+
+		return "project/projectsmgr";
+	}
+
+	
+	
 	@GetMapping("projectadd")
 	public String projectAdd(Model model) {
 		List<PruserVO> user = projectService.userFindAll();
