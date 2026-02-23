@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.docs.mapper.DocsMapper">
+
+	<!-- 폴더 등록
+	<insert id="insertFolder" parameterType="DocsVO">
+	
+		<selectKey keyProperty="folderCode" resultType="long"
+			order="BEFORE">
+			SELECT NVL(MAX(folder_code), 0) + 1
+			FROM documents_folders
+		</selectKey>
+		
+		INSERT INTO documents_folders (
+			folder_code,
+			folder_name,
+			created_on,
+			header_folder_code,
+			user_code,
+			project_code
+		)
+		VALUES (
+			
+		)
+	</insert> -->
+</mapper>

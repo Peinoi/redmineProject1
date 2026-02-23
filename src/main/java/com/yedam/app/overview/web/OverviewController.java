@@ -86,9 +86,6 @@ public class OverviewController {
 		// 본인이 관리자인 프로젝트 목록
 		List<Integer> adminProList = mainService.findAdminProByUserCode(userCode);
 
-		// 내가 참여한 프로젝트별 공지 목록
-		//PageInfo<MyNoticeDTO> noticeList = overviewService.getRecentNotices(userCode, projectCode, pageNum);
-
 		// 프로젝트 기준 관리자 여부
 		boolean isAdmin = mainService.findIsAdminInProject(userCode, projectCode);
 
@@ -100,7 +97,6 @@ public class OverviewController {
 		model.addAttribute("allGroups", allGroups);
 		model.addAttribute("issueStatusList", issueStatusList);
 		model.addAttribute("adminProjectList", adminProList != null ? adminProList : List.of());
-		//model.addAttribute("noticeList", noticeList);
 		model.addAttribute("isAdmin", isAdmin);
 
 		return "overview/overview";

@@ -13,12 +13,119 @@
 		locale: "kr"
 	};
 
+	const STATUS_COLORS = {
+		'신규': '#90b8ff', '진행': '#ffe27a', '해결': '#a78bfa',
+		'반려': '#f8a1d1', '완료': '#8fe6a2'
+	};
+
+	const PRIORITY_COLORS = {
+		'긴급': '#D97B7B',
+		'높음': '#FFB266',
+		'보통': '#5AB2FF',
+		'낮음': '#69B87C'
+	};
+
+	const PRIORITY_BADGE = {
+		'긴급': 'danger',
+		'높음': 'warning',
+		'보통': 'primary',
+		'낮음': 'success'
+	};
+
+	const STATUS_BADGE = {
+		'신규': 'primary',
+		'진행': 'warning',
+		'해결': 'info',
+		'반려': 'secondary',
+		'완료': 'success'
+	};
+
+	let ADMIN_PROJECTS = [];
+
+	gantt.eachTask(t => {
+		if (!t.start_date || !t.end_date) {
+			console.log("날짜 없음:", t);
+		}
+	});
+
+	gantt.templates.task_text = function(start, end, task) {
+		if (task.rowType === "PROJECT") {
+			return `${task.text}(${task.actualProg ?? 0}%)`;
+		}
+		if (task.rowType === "TYPE") {
+			return `${task.text}(${task.typeActualProg ?? 0}%)`;
+		}
+		if (task.rowType === "ISSUE") {
+			return `${task.text}(${Math.round((task.progress || 0) * 100)}%)`;
+		}
+		return task.text;
+	};
+
 	// 그리드 컬럼 정의
 	const mainGridConfig = {
 		columns: [
 			{ name: "text", tree: true, width: "*", min_width: 200, label: "작업명" },
-			{ name: "priority", label: "우선순위", align: "center", width: 70 },
-			{ name: "status", label: "상태", align: "center", width: 70 },
+			{
+				name: "priority",
+				label: "우선순위",
+				align: "center",
+				width: 70,
+				template: (t) => {
+					if (!t.priority) return '';
+
+					const isOverdue =
+						t.end_date &&
+						t.end_date < new Date() &&
+						t.status !== '완료' &&
+						t.status !== '해결';
+
+					const map = {
+						'긴급': 'danger',
+						'높음': 'warning',
+						'보통': 'primary',
+						'낮음': 'success'
+					};
+
+					const color = isOverdue ? 'danger' : (map[t.priority] || 'secondary');
+
+					return `
+				        <span class="badge rounded-pill bg-${color}-subtle text-${color} fw-semibold px-2 py-1" style="font-size: 14px;">
+				            ${t.priority}
+				        </span>
+				    `;
+				}
+			},
+			{
+				name: "status",
+				label: "상태",
+				align: "center",
+				width: 70,
+				template: (t) => {
+					if (!t.status) return '';
+
+					const isOverdue =
+						t.end_date &&
+						t.end_date < new Date() &&
+						t.status !== '완료' &&
+						t.status !== '해결';
+
+					const map = {
+						'신규': 'primary',
+						'진행': 'warning',
+						'해결': 'info',
+						'반려': 'secondary',
+						'완료': 'success'
+					};
+
+					const color = isOverdue ? 'danger' : (map[t.status] || 'secondary');
+
+					return `
+				        <span class="badge rounded-pill bg-${color}-subtle text-${color} fw-semibold px-2 py-1" style="font-size: 14px;">
+				            ${t.status}
+				        </span>
+				    `;
+				}
+			},
 			{
 				name: "progress", label: "진척도", align: "center", width: 150, min_width: 150,
 				template: (t) => {
@@ -43,7 +150,30 @@
 				}
 			},
 			{ name: "end_date", label: "종료일", align: "center", width: 110, min_width: 110 },
-			{ name: "assigneeName", label: "작업자", align: "center", width: 80 },
+			{
+				name: "assigneeName",
+				label: "작업자",
+				align: "center",
+				width: 80,
+				template: (t) => {
+					if (!t.assigneeName || !t.assigneeCode) return '-';
+
+					const isOverdue =
+						t.end_date &&
+						t.end_date < new Date() &&
+						t.status !== '완료' &&
+						t.status !== '해결';
+
+					const color = isOverdue ? '#dc2626' : '#374151';
+
+					return `
+			           <a href="/users/${t.assigneeCode}"
+			              class="user-link text-decoration-none" style="color: ${color};">
+			              ${t.assigneeName}
+			           </a>
+			       `;
+				}
+			},
 			//{ name: "add", width: 44 }
 		]
 	};
@@ -87,15 +217,10 @@
 	gantt.config.grid_resize = true;
 	gantt.config.keep_grid_width = false;
 	gantt.config.fit_tasks = false;
-	gantt.config.min_column_width = 40;
+	gantt.config.min_column_width = 50;
 
 	// 오늘 기준 6개월 범위 설정
 	const today = new Date();
-	const startDate = new Date(today.getFullYear(), today.getMonth(), 1);  // 이번 달 1일
-	const endDate = new Date(today.getFullYear(), today.getMonth() + 6, 0);  // 6개월 후 마지막 날
-
-	gantt.config.start_date = startDate;
-	gantt.config.end_date = endDate;
 
 	// 모달 완전히 비활성화
 	gantt.config.details_on_dblclick = false;
@@ -105,23 +230,57 @@
 	gantt.config.grid_resize = true;
 	gantt.config.keep_grid_width = false;
 
+	gantt.templates.grid_row_class = function(start, end, task) {
+		if (task.rowType !== 'ISSUE') return '';
 
-	// 우선순위별 스타일 클래스 매핑
+		// 마감기한 초과 체크 (완료/해결 제외)
+		const isOverdue = task.end_date && task.end_date < new Date()
+			&& task.status !== '완료' && task.status !== '해결';
+
+		if (isOverdue) return 'row-overdue';
+	};
+
+	// 우선순위별 타임라인 스타일 클래스 매핑
 	gantt.templates.task_class = (start, end, task) => {
-		if (task.isTypeNode) {
-			return "type-node";
+		const classes = [];
+
+		// ✅ PROJECT 먼저 처리
+		if (task.rowType === "PROJECT") {
+			classes.push("gantt_project");
+			classes.push("issue-clickable");
+			return classes.join(" ");
 		}
 
-		const classes = [];
-		// ISSUE는 클릭 가능 표시
+		// ✅ TYPE 처리
+		if (task.isTypeNode) {
+			classes.push("type-node");
+			return classes.join(" ");
+		}
+
+		// ✅ ISSUE 처리
 		if (task.rowType === "ISSUE") {
 			classes.push("issue-clickable");
-		}
 
-		// 우선순위 클래스 추가
-		const priorityMap = { "긴급": "priority-now", "높음": "priority-high", "보통": "priority-medium", "낮음": "priority-low" };
-		if (task.priority && priorityMap[task.priority]) {
-			classes.push(priorityMap[task.priority]);
+			const isOverdue =
+				end && end < new Date() &&
+				task.status !== '완료' &&
+				task.status !== '해결';
+
+			if (isOverdue) {
+				classes.push("overdue-task");
+				return classes.join(" ");
+			}
+
+			const priorityMap = {
+				"긴급": "priority-now",
+				"높음": "priority-high",
+				"보통": "priority-medium",
+				"낮음": "priority-low"
+			};
+
+			if (task.priority && priorityMap[task.priority]) {
+				classes.push(priorityMap[task.priority]);
+			}
 		}
 
 		return classes.join(" ");
@@ -129,24 +288,105 @@
 
 	// 마우스 호버 시 툴팁 표시
 	gantt.templates.tooltip_text = function(start, end, task) {
-		// ISSUE만 툴팁 표시
-		if (task.rowType === "ISSUE") {
+
+		// PROJECT 툴팁
+		if (task.rowType === "PROJECT") {
 			return `
-					작업번호 : ${task.issueCode}<br>
-					작업명 : ${task.title}<br>
-					시작일 : ${task.status === "신규" ? "" : DateUtils.getYYYYMMDD(task.start_date)}<br>
-					종료일 : ${DateUtils.getYYYYMMDD(task.end_date)}<br>
-					진행률 : ${Math.round((task.progress || 0) * 100)}%<br>
-					우선순위 : ${task.priority || "-"}<br>
-					상태 : ${task.status || "-"}
-					        `;
+		        <div style="width:220px; font-size:12px; line-height:1.55;">
+		            <div style="font-weight:700; margin-bottom:6px;">🗂️ ${task.text}</div>
+		            <div style="display:grid; grid-template-columns:80px 1fr; row-gap:2px;">
+		                <div>📅 시작일</div><div>${DateUtils.getYYYYMMDD(task.start_date)}</div>
+		                <div>📅 종료일</div><div>${DateUtils.getYYYYMMDD(task.end_date)}</div>
+		                <div>📈 실제 진척도</div><div>${task.actualProg ?? 0}%</div>
+		                <div>📊 예상 진척도</div><div>${task.planProg ?? 0}%</div>
+						<div>👤 등록자</div><div>${task.projectCreatorName ?? '-'}</div>
+		            </div>
+		        </div>`;
 		}
-		return null;
+
+		// TYPE 툴팁
+		if (task.rowType === "TYPE") {
+			return `
+		        <div style="width:220px; font-size:12px; line-height:1.55;">
+		            <div style="font-weight:700; margin-bottom:6px;">📂 ${task.text}</div>
+		            <div style="display:grid; grid-template-columns:80px 1fr; row-gap:2px;">
+		                <div>📅 시작일</div><div>${DateUtils.getYYYYMMDD(task.start_date)}</div>
+		                <div>📅 종료일</div><div>${DateUtils.getYYYYMMDD(task.end_date)}</div>
+		                <div>📈 진척도</div><div>${task.typeActualProg ?? 0}%</div>
+		            </div>
+		        </div>`;
+		}
+
+		// ISSUE 툴팁
+		if (task.rowType !== "ISSUE") return null;
+
+		const isOverdue =
+			task.end_date &&
+			task.end_date < new Date() &&
+			task.status !== '완료' &&
+			task.status !== '해결';
+
+		const priorityColor = isOverdue
+			? 'danger'
+			: (PRIORITY_BADGE[task.priority] || 'secondary');
+
+		const statusColor = isOverdue
+			? 'danger'
+			: (STATUS_BADGE[task.status] || 'secondary');
+
+		const startStr = task.status === '신규' ? '-' : DateUtils.getYYYYMMDD(task.start_date);
+		const endStr = task.end_date ? DateUtils.getYYYYMMDD(task.end_date) : '-';
+
+		const typeChain = [task.parTypeName, task.typeName]
+			.filter(Boolean)
+			.join(' > ');
+
+		return `
+		    <div style="
+		        width:260px;
+		        line-height:1.55;
+		        font-size:12px;
+		        white-space:normal;
+		        word-break:break-word;
+		    ">
+	        <div style="font-weight:700; margin-bottom:6px;">
+	            📋 ${task.title}
+	        </div>
+
+	        <div style="display:grid; grid-template-columns:90px 1fr; row-gap:2px;">
+	            <div>🗂️ 프로젝트</div><div>${task.projectName ?? '-'}</div>
+	            <div>📂 유형</div><div>${typeChain || '-'}</div>
+	            <div>📌 작업번호</div><div>${task.issueCode ?? '-'}</div>
+				<div>⚡ 우선순위</div>
+				<div style="
+				    color:${isOverdue ? '#ff6b6b' : (PRIORITY_COLORS[task.priority] || '#e2e8f0')};
+				">
+				    ${task.priority ?? '-'}
+				</div>
+				<div>🚦 상태</div>
+				<div style="
+				    color:${isOverdue ? '#ff6b6b' : (STATUS_COLORS[task.status] || '#e2e8f0')};
+				">
+				    ${task.status ?? '-'}
+				</div>
+	            <div>📈 진척도</div><div>${Math.round((task.progress || 0) * 100)}%</div>
+	            <div>📅 시작일</div><div>${startStr}</div>
+	            <div>📅 종료일</div>
+	            <div style="color:${isOverdue ? '#ff6b6b' : 'inherit'}">
+	                ${endStr}${isOverdue ? ' (초과)' : ''}
+	            </div>
+	            <div>👤 작업자</div><div>${task.assigneeName ?? '-'}</div>
+				<div>👤 등록자</div><div>${task.createdByName ?? '-'}</div>
+	        </div>
+	    </div>
+	    `;
 	};
 
 	// 기본 툴팁 활성화
 	gantt.config.tooltip_enable = true;
 	gantt.config.tooltip_timeout = 30; // 툴팁 표시 딜레이 (밀리초)
+	gantt.config.tooltip_offset_x = 12;
+	gantt.config.tooltip_offset_y = 18;
 
 	/* ========================================================================
 	   2. 유틸리티 및 필터 로직 (Business Logic)
@@ -388,6 +628,16 @@
 		const tasks = [];
 		const links = [];
 
+		const typeMap = {};
+		data.forEach(r => {
+			if (r.rowType === 'TYPE') {
+				typeMap[String(r.typeCode)] = {
+					typeName: r.typeName,
+					parTypeName: r.parTypeName
+				};
+			}
+		});
+
 		data.forEach(item => {
 			const id = item.nodeId;
 			const parent = item.parentId ? item.parentId : 0;
@@ -396,11 +646,11 @@
 			// PROJECT
 			// =========================
 			if (item.rowType === "PROJECT") {
-				const start = toValidDate(item.createdOn);
+				const start = toValidDate(item.createdOn) || gantt.config.start_date;
 				const end =
 					toValidDate(item.projectEndDate) ||
 					toValidDate(item.completedOn) ||
-					start;
+					gantt.config.end_date; // ✅ 기본값을 범위 끝으로
 
 				if (!start || !end) {
 					return;
@@ -418,7 +668,8 @@
 					actualProg: item.actualProg || 0,
 					planProg: item.planProg || 0,
 					rowType: "PROJECT",
-					projectCode: item.projectCode
+					projectCode: item.projectCode,
+					projectCreatorName: item.projectCreatorName
 				});
 			}
 
@@ -428,6 +679,13 @@
 			else if (item.rowType === "TYPE") {
 				let start = toValidDate(item.startAt);
 				let end = toValidDate(item.endAt);
+
+				if (!start && !end) {
+					start = gantt.config.start_date;
+					end = gantt.config.end_date;
+				}
+				if (!start) start = new Date(end);
+				if (!end) end = new Date(start);
 
 				tasks.push({
 					id: id,
@@ -461,8 +719,24 @@
 			// ISSUE
 			// =========================
 			else if (item.rowType === "ISSUE") {
+				console.log("typeMap:", typeMap);
+				console.log("현재 typeCode:", item.typeCode);
+				console.log("매핑:", typeMap[String(item.typeCode)]);
+
 				let start = toValidDate(item.issueStartDate);
 				let end = toValidDate(item.issueEndDate);
+
+				if (!start && !end) {
+					start = new Date();
+					end = new Date();
+				}
+				if (!start && end) start = new Date(end);
+				if (start && !end) end = new Date(start);
+
+				const typeInfo = typeMap[String(item.typeCode)] || {
+					typeName: '-',
+					parTypeName: null
+				};
 
 				tasks.push({
 					id: id,
@@ -473,12 +747,17 @@
 					progress: (item.progress || 0) / 100,
 					priority: item.priority,
 					status: item.issueStatus,
+					assigneeCode: item.assigneeCode,
 					assigneeName: item.assigneeName,
+					createdByName: item.createdByName,
 					parent: parent,
 					type: gantt.config.types.task,
 					rowType: "ISSUE",
 					issueCode: item.issueCode,
-					typeCode: item.typeCode
+					typeCode: item.typeCode,
+					projectName: item.projectName,
+					typeName: typeInfo.typeName,
+					parTypeName: typeInfo.parTypeName
 				});
 
 				// TYPE → ISSUE 링크 생성
@@ -505,11 +784,34 @@
 			const response = await fetch("/ganttData");
 			const rawData = await response.json();
 
-			const filtered = getFilteredDataWithHierarchy(rawData, filters);
-			const ganttData = transformToGanttFormat(filtered);
+			// 관리자 체크
+			ADMIN_PROJECTS = rawData.adminProjects || [];
+
+			const filtered = getFilteredDataWithHierarchy(rawData.tasks, filters);
 
 			gantt.clearAll();
+
+			const rangeStart = window.ganttRange?.start
+				?? new Date(today.getFullYear(), today.getMonth(), 1);
+
+			const ganttData = transformToGanttFormat(filtered);
+
+			// ✅ 빈 데이터 처리
+			const emptyEl = document.getElementById("ganttEmptyState");
+			const ganttEl = document.getElementById("e7eGantt");
+
+			if (!ganttData.data || ganttData.data.length === 0) {
+				if (emptyEl) emptyEl.style.display = "flex";
+				if (ganttEl) ganttEl.style.visibility = "hidden";
+				return;
+			} else {
+				if (emptyEl) emptyEl.style.display = "none";
+				if (ganttEl) ganttEl.style.visibility = "visible";
+			}
+
 			gantt.parse(ganttData);
+
+			gantt.showDate(rangeStart);
 
 			setTimeout(() => {
 				gantt.eachTask(function(task) {
@@ -552,18 +854,14 @@
 			// 모든 태스크를 펼친 상태로 표시
 			gantt.config.open_tree_initially = true;
 
-			// 간트 기간 필터링
-			/*gantt.attachEvent("onBeforeTaskDisplay", function(id, task) {
-				if (!window.ganttRange) return true;
-	
-				return (
-					task.end_date >= window.ganttRange.start &&
-					task.start_date <= window.ganttRange.end
-				);
-			});*/
-
 			// PROJECT/ISSUE 클릭 시 상세페이지 이동
 			gantt.attachEvent("onTaskClick", function(id, e) {
+
+				// 링크 클릭이면 기본 이동 허용
+				if (e.target && e.target.closest("a")) {
+					return true;
+				}
+
 				const task = gantt.getTask(id);
 
 				// 화살표 클릭이면 상세페이지 이동 막고 그냥 트리 열기/닫기
@@ -574,7 +872,7 @@
 				// 프로젝트 클릭
 				if (task.rowType === "PROJECT" && task.projectCode) {
 					// 상세페이지 이동
-					window.location.href = `/projectInfo?projectCode=${task.projectCode}`;
+					window.location.href = `/project/overview/${task.projectCode}`;
 					return false; // 기본 클릭 동작 차단
 				}
 				// 일감만 이동 (rowType 기준)

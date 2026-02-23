@@ -1,4 +1,4 @@
-// /js/issue/search.js
+// /js/gantt/search.js
 (() => {
 	const $ = (s) => document.querySelector(s);
 	const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -11,6 +11,7 @@
 
 		projectText: $("#filterProjectText"),
 		projectValue: $("#filterProjectValue"),
+		projectStatus: $("#filterProjectStatus"),
 		title: $("#filterTitle"),
 		status: $("#filterStatus"),
 		priority: $("#filterPriority"),
@@ -45,6 +46,8 @@
 		assigneeModalSearch: $("#assigneeModalSearch"),
 		creatorModalSearch: $("#creatorModalSearch"),
 		typeModalSearch: $("#typeModalSearch"),
+
+		btnCreate: $("#btnIssueCreate"),
 	};
 
 	// form submit 자체 방지
@@ -97,6 +100,50 @@
 
 		const t = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 });
 		t.show();
+	};
+
+	const restoreEl = (el) => {
+		const st = MOVED.get(el);
+		if (!st) return;
+
+		const { parent, nextSibling } = st;
+		if (nextSibling && nextSibling.parentNode === parent)
+			parent.insertBefore(el, nextSibling);
+		else parent.appendChild(el);
+
+		el.style.position = "";
+		el.style.left = "";
+		el.style.top = "";
+		el.style.zIndex = "";
+		el.style.display = "";
+		el.style.visibility = "";
+		el.style.opacity = "";
+
+		MOVED.delete(el);
+	};
+
+	const closeSubmenus = (except = null) => {
+		$$(".issue-submenu-menu.show").forEach((m) => {
+			if (m === except) return;
+			m.classList.remove("show");
+			restoreEl(m);
+		});
+	};
+
+	const closeAll = () => {
+		$$('.issue-dropdown [data-bs-toggle="dropdown"]').forEach((btn) => {
+			const inst = bootstrap.Dropdown.getInstance(btn);
+			if (inst) inst.hide();
+		});
+		closeSubmenus(null);
+	};
+
+	const closeMenusHard = () => {
+		closeAll();
+		$$(".issue-dropdown-menu.show").forEach((m) => {
+			m.classList.remove("show");
+			restoreEl(m);
+		});
 	};
 
 	const renderListButtons = (listEl, items, onPick) => {
@@ -526,23 +573,13 @@
 	// -------------------------
 	// 이벤트 바인딩
 	// -------------------------
-	ui.btnApply?.addEventListener("click", (e) => {
-		e.preventDefault();
-
-		const filters = getGanttFilters();
-
-		// Gantt 필터 적용
-		if (window.ganttReload) {
-			//console.log("적용할 필터:", filters);
-			window.ganttReload(filters);
-		}
-
-		// Calendar
-		if (window.calendarReload) {
-			window.calendarReload(filters);
-		}
+	// 일감등록
+	ui.btnCreate?.addEventListener("click", () => {
+		closeMenusHard();
+		location.href = "/issueInsert";
 	});
 
+	// 초기화
 	ui.btnReset?.addEventListener("click", (e) => {
 		e.preventDefault();
 		ui.projectText.value = "";
@@ -562,6 +599,24 @@
 		// Gantt 차트 초기화 (필터 없이 전체 데이터)
 		if (window.ganttReload) {
 			window.ganttReload({});
+		}
+	});
+
+	// 조회
+	ui.btnApply?.addEventListener("click", (e) => {
+		e.preventDefault();
+
+		const filters = getGanttFilters();
+
+		// Gantt 필터 적용
+		if (window.ganttReload) {
+			//console.log("적용할 필터:", filters);
+			window.ganttReload(filters);
+		}
+
+		// Calendar
+		if (window.calendarReload) {
+			window.calendarReload(filters);
 		}
 	});
 
@@ -634,7 +689,7 @@
 		// 프로젝트 필터 먼저 적용
 		const treeData = buildTypeTreeForJS(typeCache);
 		const selectedProjectCode = ui.projectValue?.value || "";
-		
+
 		const projectFiltered = selectedProjectCode
 			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
 			: treeData;

@@ -13,6 +13,7 @@
 		    gv.created_on,
 		    gv.completed_on,
 		    gv.project_status,
+		    gv.project_creator_name,
 		
 		    gv.type_code,
 		    gv.type_name,
@@ -30,6 +31,8 @@
 		    gv.progress,
 		    gv.assignee_code,
 		    gv.assignee_name,
+		    gv.created_by_code,
+		    gv.created_by_name,
 		    gv.created_at,
 		    gv.started_at,
 		    gv.due_at,

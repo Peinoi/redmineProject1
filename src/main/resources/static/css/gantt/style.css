@@ -1,13 +1,8 @@
-.gantt-page {
-	height: 100%;
-	display: flex;
-	overflow: auto;
-	flex-direction: column;
-}
-
 /* gantt 전체 */
 #gantt, .gantt_container, .gantt_container * {
 	font-size: 16px;
+	font-weight: 400;
+	font-family: inherit;
 }
 
 /* 타이틀 */
@@ -29,31 +24,6 @@
 	margin-top: 4px;
 	font-size: 12px;
 	color: #6b7280;
-}
-
-/* SB Admin 레이아웃 */
-#layoutSidenav_content {
-	min-height: calc(100vh - 56px); /* header */
-	display: flex;
-	flex-direction: column;
-	overflow: visible;
-}
-
-#layoutSidenav_content main {
-	flex: 1;
-	display: block;
-	overflow: visible;
-}
-
-#layoutSidenav_content main>.container-fluid {
-	padding: 0;
-	height: 100%;
-	display: flex;
-	flex-direction: column;
-}
-
-#layoutSidenav_content footer {
-	flex-shrink: 0;
 }
 
 /* ===================== */
@@ -89,12 +59,12 @@
 /* ===================== */
 /* 프로그램 */
 .gantt_task_line.gantt_project {
-	background-color: #A2A2A2 !important; /* 회색 */
-	border-color: #A2A2A2 !important;
+	background-color: #9CA3AF !important; /* 회색 */
+	border-color: #9CA3AF !important;
 }
 
 .gantt_task_line.gantt_project:hover {
-	background-color: #8E8E8E !important;
+	background-color: #6B7280 !important;
 }
 
 /* 우선순위 - 긴급 */
@@ -137,22 +107,17 @@
 	background-color: #57A567 !important;
 }
 
-/* TYPE 노드 - 보라 */
 .gantt_task_line.type-node {
-	background-color: #B89FD9 !important; /* 부드러운 보라 */
-	border: 1px solid #9B7EC4 !important;
+	background: #64748B !important;
+	border-color: #64748B !important;
 }
 
 .gantt_task_line.type-node .gantt_task_progress {
-	background-color: #8B6DB3 !important; /* 진척도 바는 좀 더 진한 보라 */
+	background-color: #334155 !important;
 }
 
 .gantt_task_line.type-node:hover {
-	background-color: #A88DCB !important;
-}
-
-.issue-clickable {
-	cursor: pointer;
+	background-color: #475569 !important;
 }
 
 .gantt_tree_content, .gantt_cell {
@@ -163,4 +128,65 @@
 
 .gantt_tree_content {
 	display: block;
+}
+
+/* 그리드 헤더 */
+.gantt_grid_head_cell {
+	background-color: #e0e5f3 !important;
+	color: #374151 !important;
+	font-size: 16px !important;
+	font-weight: 500 !important;
+	border-color: #d1d5db !important;
+}
+
+/* 그리드 데이터 행 */
+.gantt_cell {
+	font-size: 13px !important;
+	font-weight: 400 !important;
+	color: #374151 !important;
+}
+
+/* 타임라인 월 헤더 */
+.gantt_scale_row:first-child .gantt_scale_cell {
+	background-color: #e0e5f3 !important;
+	color: #1e3a5f !important;
+	font-size: 13px !important;
+	font-weight: 700 !important;
+	border-color: #d1d5db !important;
+}
+
+/* 타임라인 일 헤더 */
+.gantt_scale_row:last-child .gantt_scale_cell {
+	background-color: #f1f5f9 !important;
+	color: #374151 !important;
+	font-size: 12px !important;
+	font-weight: 500 !important;
+	border-color: #d1d5db !important;
+}
+
+/* 토/일 빨간색 */
+.gantt_scale_cell.weekend {
+	color: #e53e3e !important;
+	font-weight: 700 !important;
+}
+
+.gantt_scale_cell {
+	background-color: #e0e5f3 !important;
+	color: #374151 !important;
+	font-weight: 600 !important;
+	border-color: #d1d5db !important;
+}
+
+/* 마감기한 초과 - 그리드 행 */
+.gantt_row.row-overdue .gantt_cell {
+	background-color: rgba(220, 38, 38, 0.08) !important;
+	color: #dc2626 !important;
+}
+
+/* 마감기한 초과 - 타임라인 막대 */
+.gantt_task_line.overdue-task {
+	background-color: #dc2626 !important;
+	border-color: #b91c1c !important;
+	background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0, 0
+		, 0, 0.1) 4px, rgba(0, 0, 0, 0.1) 8px) !important;
 }

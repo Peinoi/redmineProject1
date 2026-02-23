@@ -113,3 +113,7 @@
 .type-tree ul ul ul .type-item {
 	padding-left: 50px;
 }
+
+.filter-select-wide .form-select {
+	min-width: 110px; /* 원하는 만큼 조절 */
+}

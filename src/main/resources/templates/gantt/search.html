@@ -24,15 +24,20 @@
 						</div>
 					</div>
 
-					<!-- 일감명 -->
-					<div class="col-12 col-md-3">
-						<label class="form-label">일감명</label> <input type="text"
-							id="filterTitle" name="title" class="form-control"
-							placeholder="일감명 입력" th:value="${param.title}" />
+					<!-- 프로젝트 상태 -->
+					<div class="col-12 col-md-1 filter-select-wide">
+						<label class="form-label">프로젝트 상태</label> <select
+							id="filterProjectStatus" name="projectStatusId" class="form-select">
+							<option value=""
+								th:selected="${param.projectStatusId == null or param.projectStatusId == ''}">전체</option>
+							<option value="OD1" th:selected="${param.projectStatusId == 'OD1'}">진행</option>
+							<option value="OD2" th:selected="${param.projectStatusId == 'OD2'}">삭제</option>
+							<option value="OD3" th:selected="${param.projectStatusId == 'OD3'}">종료</option>
+						</select>
 					</div>
 
 					<!-- 유형 -->
-					<div class="col-12 col-md-2">
+					<div class="col-12 col-md-3">
 						<label class="form-label">유형</label>
 						<div class="input-group">
 							<input type="text" id="filterTypeText" class="form-control"
@@ -44,9 +49,16 @@
 						</div>
 					</div>
 
-					<!-- 상태 -->
-					<div class="col-12 col-md-2">
-						<label class="form-label">상태</label> <select id="filterStatus"
+					<!-- 일감명 -->
+					<div class="col-12 col-md-3">
+						<label class="form-label">일감명</label> <input type="text"
+							id="filterTitle" name="title" class="form-control"
+							placeholder="일감명 입력" th:value="${param.title}" />
+					</div>
+
+					<!-- 일감 상태 -->
+					<div class="col-12 col-md-1 filter-select-wide">
+						<label class="form-label">일감 상태</label> <select id="filterStatus"
 							name="statusId" class="form-select">
 							<option value=""
 								th:selected="${param.statusId == null or param.statusId == ''}">전체</option>
@@ -59,7 +71,7 @@
 					</div>
 
 					<!-- 우선순위 -->
-					<div class="col-12 col-md-2">
+					<div class="col-12 col-md-1 filter-select-wide">
 						<label class="form-label">우선순위</label> <select id="filterPriority"
 							name="priority" class="form-select">
 							<option value=""
@@ -114,14 +126,23 @@
 					</div>
 				</div>
 
-				<div class="d-flex justify-content-end gap-2 mt-3">
-					<button type="button" class="btn btn-secondary"
-						id="btnResetFilters">
-						<i class="fas fa-redo me-1"></i>초기화
-					</button>
-					<button type="submit" class="btn btn-primary" id="btnApplyFilters">
-						<i class="fa-solid fa-magnifying-glass me-1"></i>조회
-					</button>
+				<div class="d-flex justify-content-between align-items-center mt-3">
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-success" id="btnIssueCreate">
+							<i class="fas fa-plus me-1"></i>일감등록
+						</button>
+					</div>
+
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-secondary"
+							id="btnResetFilters">
+							<i class="fas fa-redo me-1"></i>초기화
+						</button>
+
+						<button type="submit" class="btn btn-primary" id="btnApplyFilters">
+							<i class="fa-solid fa-magnifying-glass me-1"></i>조회
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -176,7 +197,8 @@
 				<div class="modal-body">
 					<input type="text" id="assigneeModalSearch"
 						class="form-control mb-2" placeholder="담당자명 검색" />
-					<div class="type-tree list-group list-group-flush" id="assigneeModalTree"></div>
+					<div class="type-tree list-group list-group-flush"
+						id="assigneeModalTree"></div>
 				</div>
 			</div>
 		</div>
@@ -194,7 +216,8 @@
 				<div class="modal-body">
 					<input type="text" id="creatorModalSearch"
 						class="form-control mb-2" placeholder="등록자명 검색" />
-					<div class="type-tree list-group list-group-flush" id="creatorModalTree"></div>
+					<div class="type-tree list-group list-group-flush"
+						id="creatorModalTree"></div>
 				</div>
 			</div>
 		</div>

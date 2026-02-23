@@ -15,7 +15,7 @@
 </head>
 
 <body>
-	<div class="gantt-page">
+	<div class="d-flex flex-column h-100 overflow-auto">
 		<div class="x-page-title">
 			<h3 class="page-title">일정 관리</h3>
 			<div class="page-title-sub">일정 관리 페이지입니다.</div>
@@ -26,9 +26,19 @@
 		<!-- 검색조건 -->
 		<div th:replace="~{gantt/searchDuration :: searchDuration}"></div>
 
+		<!-- 빈 상태 UI -->
+		<div id="ganttEmptyState"
+			style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #9ca3af;">
+			<div style="font-size: 48px; margin-bottom: 12px;">📋</div>
+			<div
+				style="font-size: 16px; font-weight: 600; margin-bottom: 6px; color: #6b7280;">표시할
+				일정이 없습니다</div>
+			<div style="font-size: 13px;">검색 조건을 변경하거나 일정을 등록해보세요.</div>
+		</div>
+
 		<!-- 간트차트 -->
 		<div id="e7eGantt" class="gantt-wrapper"></div>
-		
+
 		<!-- 간트차트 네비게이션 추가 -->
 		<div th:replace="~{gantt/searchDuration :: ganttNavigation}"></div>
 	</div>

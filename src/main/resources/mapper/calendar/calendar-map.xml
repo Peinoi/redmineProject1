@@ -62,6 +62,13 @@
 	            WHEN 'ISSUE' THEN 3
 	        END,
 	        type_code,
+	        CASE priority
+		        WHEN '긴급' THEN 1
+		        WHEN '높음' THEN 2
+		        WHEN '보통' THEN 3
+		        WHEN '낮음' THEN 4
+		        ELSE 5
+		    END,
 	        issue_code
 	</select>
 </mapper>
