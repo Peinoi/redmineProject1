@@ -20,4 +20,5 @@ public class UserVO {
 	private String isLock;
 	private String firstLoginYn;
 	private String autoLogin;
+	private String sysCk;
 }

@@ -71,7 +71,8 @@
 								<th style="width: 50px;">번호</th>
 								<th style="width: 100px;">역할명</th>
 								<th style="width: 80px;">설명</th>
-								<th style="width: 80px;">관리자</th>
+								<th style="width: 80px;">마스터 권한</th>
+								<th style="width: 80px;">권한</th>
 								<th style="width: 80px;">저장</th>
 								<th style="width: 80px;">삭제</th>
 							</tr>
@@ -90,10 +91,17 @@
 									th:checked="${info.adminCk == 'Y'}"></td>
 								<td>
 									<!-- 수정 버튼: 관리자 권한 선택 -->
+									<button class="btn btn-primary btn-sm">
+										<i class="fa-regular fa-face-grin"></i> 권한
+									</button>
+								</td>
+								<td>
+									<!-- 수정 버튼: 관리자 권한 선택 -->
 									<button class="btn btn-success btn-sm save-btn">
 										<i class="fa-regular fa-face-meh"></i> 저장
 									</button>
 								</td>
+
 								<td>
 									<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
 									<button class="btn btn-danger btn-sm delete-btn">

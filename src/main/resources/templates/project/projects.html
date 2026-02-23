@@ -28,6 +28,7 @@
 
 				<div>[[ ${auth} ]]</div>
 				<div th:text="${session.userAuth}"></div>
+				<div>관리자 권한 : [[ ${session.user.sysCk} ]]</div>
 				<!-- 셀렉트 옵션 검색 -->
 				<div class="col-12 col-md-2">
 					<label class="form-label">상태</label> <select id="filterPriority"
@@ -54,7 +55,7 @@
 			</div>
 			<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
 			<div class="d-flex justify-content-between align-items-center mt-3">
-				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'}">
+				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
 					<button type="button" class="btn btn-success">
 						<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
 							프로젝트 등록

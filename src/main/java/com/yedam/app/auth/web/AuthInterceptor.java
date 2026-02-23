@@ -8,10 +8,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import com.yedam.app.login.service.UserVO;
-import com.yedam.app.project.service.UserProjectAuthVO;
 import com.yedam.app.auth.service.UriAccessInfoVO;
 import com.yedam.app.auth.service.UriAccessService;
+import com.yedam.app.login.service.UserVO;
+import com.yedam.app.project.service.UserProjectAuthVO;
+import com.yedam.app.usermgr.service.UsermgrService;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,7 +26,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 	private final UriAccessService uriAccessService;
 	private final AntPathMatcher pathMatcher = new AntPathMatcher();
-
+	private final UsermgrService usermgrService;
 	// URI 정보를 메모리에 캐싱 (성능 향상)
 	private Map<String, UriAccessInfoVO> uriCache = new ConcurrentHashMap<>();
 
@@ -59,6 +60,15 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 3. 권한 체크가 필요한 URI인데 세션에 권한 정보가 없는 경우
 		HttpSession session = request.getSession();
+		
+	    UserVO user = (UserVO) session.getAttribute("user"); // 세션에서 유저 객체 꺼내기
+
+	    if (user != null && user.getSysCk().equals("Y")) {
+	        System.out.println("관리자 접근 허용: " + requestUri);
+	        return true;
+	    }
+		
+		
 		@SuppressWarnings("unchecked")
 		List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>) session.getAttribute("userAuth");
 
@@ -71,7 +81,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 4. 사용자의 해당 카테고리 권한 찾기
 		UserProjectAuthVO userAuth = findUserAuthByCategory(userAuths, uriInfo.getCategory());
-
+		UserVO findUser = usermgrService.userFindInfo(userAuth.getUserCode());
 		if (userAuth == null) {
 			System.out.println("해당 카테고리에 대한 권한이 없음!");
 			response.sendRedirect("/accessDenied");
@@ -79,7 +89,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 		}
 
 		// 5. 상세 권한(읽기/쓰기 등) 체크
-		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth);
+		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth,findUser);
 
 		if (!hasPermission) {
 			String contentType = request.getHeader("Content-Type");
@@ -126,7 +136,12 @@ public class AuthInterceptor implements HandlerInterceptor {
 	}
 
 	// 권한 체크
-	private boolean checkPermission(String type, UserProjectAuthVO userAuth) {
+	private boolean checkPermission(String type, UserProjectAuthVO userAuth, UserVO userVO) {
+	
+		if(userVO.getSysCk().equals('Y')) {
+			return true;
+		}
+		
 		// admin이면 모든 권한 허용
 	    if (userAuth.getAdmin() == 1) {
 	        return true;

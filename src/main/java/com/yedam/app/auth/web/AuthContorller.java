@@ -1,5 +1,6 @@
 package com.yedam.app.auth.web;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,7 @@ public class AuthContorller {
 	public String projectList(Model model) {
 
 		List<RoleVO> auth = projectService.roleFindAll();
-
+		Collections.reverse(auth);
 		model.addAttribute("auths", auth);
 		return "auth/auth";
 	}

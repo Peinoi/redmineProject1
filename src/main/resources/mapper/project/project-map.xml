@@ -51,7 +51,7 @@
 	        admin_ck
 	    FROM role
 	    WHERE role_name NOT LIKE '%-delete'
-	    ORDER BY role_code
+	    ORDER BY admin_ck, role_code
 	</select>
 	
 	<!-- 진행중인 프로젝트 불려오기 -->

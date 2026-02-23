@@ -270,7 +270,7 @@
 		}
 		const row = e.target.closest(".userRow");
 		if (row) {
-			window.location.href = `/users/${row.dataset.usercode}`;
+			window.location.href = `/userInfo/${row.dataset.usercode}`;
 		}
 	});
 

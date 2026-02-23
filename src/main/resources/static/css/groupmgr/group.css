@@ -10,14 +10,41 @@ a {
 		display: none;
 	}
 }
+
 .memberRow {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 .memberRow:hover {
-    background-color: #f8f9fa; 
+	background-color: #f8f9fa;
 }
 
 .memberRow button {
-    cursor: default;
+	cursor: default;
+}
+
+tr:hover {
+	cursor: pointer;
+}
+
+/* 모달 내 테이블 선을 부드럽게 */
+#projectSelectModal .table > :not(caption) > * > * {
+    border-bottom-color: #f1f1f1; /* 선 색상을 연하게 변경 */
+}
+
+/* 테이블 헤더(프로젝트명) 부분의 선 조절 */
+#projectSelectModal .table-light {
+    --bs-table-bg: #fdfdfd; /* 헤더 배경색을 조금 더 밝게 */
+    border-bottom: 1px solid #eee;
+}
+
+/* 검색창 하단과 테이블 사이의 간격 및 선 제거 */
+#projectSelectModal .card {
+    border: 1px solid #eee; /* 카드 외곽선도 연하게 */
+    box-shadow: none;
+}
+
+/* 역할 선택 섹션 상단 선 조절 */
+#projectSelectModal .border-top {
+    border-top: 1px solid #f1f1f1 !important;
 }

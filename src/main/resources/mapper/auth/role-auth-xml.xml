@@ -11,6 +11,7 @@
 		    ,admin_ck
 		FROM role
 		WHERE role_code = #{roleCode}
+		
 	</select>
 	<!-- 역할 권한 조회 -->
 	<select id="selectAuthList" resultType="RoleAuthVO">

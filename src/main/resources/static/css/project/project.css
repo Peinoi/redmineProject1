@@ -112,3 +112,7 @@ tbody td:not(:nth-child(2)) {
 .projectRow:hover {
 	background-color: #f8f9fa;
 }
+
+tbody tr:hover {
+	cursor: pointer;
+}
