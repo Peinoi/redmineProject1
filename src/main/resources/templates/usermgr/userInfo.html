@@ -18,8 +18,8 @@ table {
 
 		<!-- 타이틀 영역 -->
 		<div class="x-page-title">
-			<h3 class="page-title">내 정보</h3>
-			<div class="page-title-sub">내 정보를 확인하고 수정할 수 있습니다.</div>
+			<h3 class="page-title">사용자 정보 상세관리</h3>
+			<div class="page-title-sub">사용자 정보를 확인하고 수정할 수 있습니다.</div>
 		</div>
 
 		<!-- 돌아가기 버튼 -->
@@ -34,9 +34,9 @@ table {
 			class="alert alert-info py-2 mb-3" th:text="${msg}">메시지</div>
 
 		<!-- 내 정보 수정 폼 -->
-		<form id="myInfoForm" th:action="@{/myInfo}" method="post"
+		<form id="myInfoForm" th:action="@{/userInfoUpdate}" method="post"
 			class="myinfo-filters mb-3">
-
+			<input type="hidden" name="userCode" th:value="${user.userCode}" />
 			<!-- 클라이언트 검증 안내 메시지 영역 -->
 			<div id="myInfoAlert" class="alert alert-warning py-2 mb-3 d-none"
 				role="alert"></div>
@@ -53,9 +53,9 @@ table {
 						class="form-control" th:value="${user.name}" readonly />
 				</div>
 				<div class="col-4 col-md-2">
-					<label class="form-label">관리자</label> <input type="checkbox" 
-					id="sysBtn"
-						th:checked="${user.sysCk == 'Y'}" th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}" />
+					<label class="form-label">관리자</label> <input type="checkbox"
+						id="sysBtn" th:checked="${user.sysCk == 'Y'}"
+						th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}" />
 				</div>
 				<div class="col-12 col-md-4">
 					<label class="form-label">직책</label> <input type="text"
@@ -185,7 +185,6 @@ table {
 
 	</div>
 	<th:block layout:fragment="pageScript">
-		<script th:src="@{/js/user/my-info.js}"></script>
 		<script th:src="@{/js/usermgr/userinfo.js}"></script>
 	</th:block>
 </body>

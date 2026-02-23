@@ -19,6 +19,7 @@ import com.yedam.app.login.service.UserVO;
 import com.yedam.app.project.service.PruserVO;
 import com.yedam.app.user.service.MyGroupProjectRoleVO;
 import com.yedam.app.user.service.MyInfoService;
+import com.yedam.app.user.service.MyInfoUpdateReqDTO;
 import com.yedam.app.user.service.MyProjectRoleVO;
 import com.yedam.app.usermgr.service.UsermgrService;
 
@@ -127,6 +128,30 @@ public class UsermgrController {
 		int result = usermgrService.userSysUpdate(userCode, sysCk);
 
 		return (result > 0) ? "success" : "fail";
+	}
+	
+	
+	@PostMapping("/userInfoUpdate")
+	public String updateMyInfo(MyInfoUpdateReqDTO req, HttpSession session, RedirectAttributes ra) {
+		
+		/*
+		 * // 세션에서 user 가져오기 UserVO sessionUser = (UserVO) session.getAttribute("user");
+		 * // 없으면 로그인으로 if (sessionUser == null) return "login/login";
+		 * 
+		 * // userCode 꺼내기 Integer userCode = sessionUser.getUserCode();
+		 * 
+		 * // 서버에서도 수정 불가 항목은 무시/차단 req.setUserCode(userCode);
+		 */
+	    
+	    // 업데이트 실행
+	    int updated = myInfoService.modifyMyInfo(req);
+	    if (updated == 1) {
+	    	ra.addFlashAttribute("msg", "내 정보가 수정되었습니다.");
+	    } else {
+	    	ra.addFlashAttribute("msg", "수정에 실패했습니다. 다시 시도해주세요.");
+	    }
+		
+		return "redirect:/usermgr";
 	}
 
 }
