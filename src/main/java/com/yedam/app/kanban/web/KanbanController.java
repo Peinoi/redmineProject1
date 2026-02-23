@@ -117,7 +117,7 @@ public class KanbanController {
   
   // 진척도 업데이트
   @ResponseBody
-  @PostMapping("/api/issues/progress")
+  @PostMapping("/api/kanban/progress")
   public Map<String, Object> updateProgress(@RequestBody ProgressUpdateRequest req, HttpSession session) {
     UserVO user = (UserVO) session.getAttribute("user");
     if (user == null || user.getUserCode() == null) {

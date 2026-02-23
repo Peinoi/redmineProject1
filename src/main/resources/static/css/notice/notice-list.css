@@ -301,3 +301,8 @@
 .type-tree .text-muted {
   padding: 14px;
 }
+
+/* 공지 목록 행 클릭 가능 표시 */
+#noticeTable tbody tr.noticeRow {
+  cursor: pointer;
+}

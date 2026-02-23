@@ -68,41 +68,54 @@ public class IssueController {
     if (user == null) return "redirect:/login";
 
     Integer userCode = user.getUserCode();
-    model.addAttribute("list", issueService.findVisibleIssues(userCode, projectCode));
+
+    List<IssueVO> list = issueService.findVisibleIssues(userCode, projectCode);
+    model.addAttribute("list", list);
     model.addAttribute("projectCode", projectCode);
 
     return "issue/list";
   }
 
-  // 단건조회
-  @GetMapping("issueInfo")
-  public String issueInfo(IssueVO issue, Model model, HttpSession session) {
-    IssueVO findVO = issueService.findByIssueCode(issue);
-    model.addAttribute("issue", findVO);
-    model.addAttribute("logs", logService.findLogsByTarget("ISSUE", issue.getIssueCode()));
+//단건조회
+@GetMapping("issueInfo")
+public String issueInfo(IssueVO issue, Model model, HttpSession session) {
+ IssueVO findVO = issueService.findByIssueCode(issue);
+ model.addAttribute("issue", findVO);
+ model.addAttribute("logs", logService.findLogsByTarget("ISSUE", issue.getIssueCode()));
 
-    boolean canModify = false;
-    boolean canDelete = false;
-    boolean isAdmin = false;
+ boolean canModify = false;
+ boolean canDelete = false;
+ boolean isAdmin = false;
 
-    UserVO user = (UserVO) session.getAttribute("user");
-    if (user != null && findVO != null) {
-      Integer userCode = user.getUserCode();
-      Long projectCode = findVO.getProjectCode();
+ UserVO user = (UserVO) session.getAttribute("user");
+ if (user != null && user.getUserCode() != null && findVO != null) {
+   Integer userCode = user.getUserCode();
+   Long projectCode = findVO.getProjectCode();
+   Long issueCode = findVO.getIssueCode(); // 또는 issue.getIssueCode()
 
-      canModify = authorityService.canModify(projectCode, userCode, "일감");
-      canDelete = authorityService.canDelete(projectCode, userCode, "일감");
+   // 관리자 여부
+   AuthorityVO projAuth = authorityService.getProjectAuth(userCode, projectCode);
+   isAdmin = projAuth != null && "Y".equalsIgnoreCase(projAuth.getAdminCk());
 
-      AuthorityVO projAuth = authorityService.getProjectAuth(userCode, projectCode);
-      isAdmin = projAuth != null && "Y".equalsIgnoreCase(projAuth.getAdminCk());
-    }
+   // 등록자/담당자 여부
+   boolean isCreatorOrAssignee =
+       authorityService.isIssueCreatorOrAssignee(issueCode, userCode);
 
-    model.addAttribute("canModify", canModify);
-    model.addAttribute("canDelete", canDelete);
-    model.addAttribute("isAdmin", isAdmin);
+   // 역할 권한
+   boolean hasModifyRole = authorityService.canModify(projectCode, userCode, "일감");
+   boolean hasDeleteRole = authorityService.canDelete(projectCode, userCode, "일감");
 
-    return "issue/info";
-  }
+   // 최종 권한 규칙 적용
+   canModify = isAdmin || (hasModifyRole && isCreatorOrAssignee);
+   canDelete = isAdmin || (hasDeleteRole && isCreatorOrAssignee);
+ }
+
+ model.addAttribute("canModify", canModify);
+ model.addAttribute("canDelete", canDelete);
+ model.addAttribute("isAdmin", isAdmin);
+
+ return "issue/info";
+}
 
   // 등록 화면
   @GetMapping("issueInsert")
@@ -362,5 +375,4 @@ public class IssueController {
 
     return issueService.resolveIssue(issueCode, user.getUserCode(), uploadFile);
   }
-
 }

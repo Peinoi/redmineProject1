@@ -53,4 +53,10 @@ public class AuthorityServiceImpl implements AuthorityService {
     return authorityMapper.existsAdminProject(userCode) == 1;
   }
 
+  
+  @Override
+  public boolean isIssueCreatorOrAssignee(Long issueCode, Integer userCode) {
+    if (issueCode == null || userCode == null) return false;
+    return authorityMapper.existsIssueCreatorOrAssignee(issueCode, userCode) == 1;
+  }
 }

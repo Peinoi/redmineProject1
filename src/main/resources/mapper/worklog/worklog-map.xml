@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yedam.app.worklog.mapper.WorkLogMapper">
+
+  <!-- 목록 -->
+  <select id="selectWorklogList" resultType="map">
+    SELECT
+      TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS workDate,
+      p.project_name AS projectName,
+      i.title AS issueTitle,
+      u.name AS workerName,
+      wl.spent_minutes AS spentMinutes,
+      wl.description AS description
+    FROM work_logs wl
+    JOIN issues i ON i.issue_code = wl.issue_code
+    JOIN projects p ON p.project_code = i.project_code
+    JOIN users u ON u.user_code = wl.worker_code
+    <where>
+      <if test="from != null and from != ''">
+        wl.work_date &gt;= TO_DATE(#{from}, 'YYYY-MM-DD')
+      </if>
+      <if test="to != null and to != ''">
+        wl.work_date &lt; TO_DATE(#{to}, 'YYYY-MM-DD') + 1
+      </if>
+    </where>
+    ORDER BY wl.work_date DESC, wl.work_log_code DESC
+  </select>
+
+  <!-- 상세에서 넘어올 때: 일감명 자동 표시용 -->
+  <select id="selectIssuePrefill" resultType="map">
+    SELECT
+      i.issue_code AS issueCode,
+      i.title AS issueTitle,
+      p.project_code AS projectCode,
+      p.project_name AS projectName
+    FROM issues i
+    JOIN projects p ON p.project_code = i.project_code
+    WHERE i.issue_code = #{issueCode}
+  </select>
+
+  <!-- 권한 체크: 담당자 -->
+  <select id="selectAssigneeCode" resultType="long">
+    SELECT assignee_code
+    FROM issues
+    WHERE issue_code = #{issueCode}
+  </select>
+
+  <!-- 등록 -->
+  <insert id="insertWorkLog">
+    INSERT INTO work_logs (
+      issue_code,
+      work_date,
+      worker_code,
+      spent_minutes,
+      description
+    ) VALUES (
+      #{issueCode},
+      #{workDate},
+      #{workerCode},
+      #{spentMinutes},
+      #{description}
+    )
+  </insert>
+
+</mapper>

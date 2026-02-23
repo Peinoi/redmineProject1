@@ -166,3 +166,11 @@
   color: #111827 !important;
   box-shadow: 0 4px 14px rgba(17, 24, 39, 0.1) !important;
 }
+
+/* required star */
+.form-label .req {
+  color: #ef4444;
+  font-weight: 900;
+  margin-left: 4px;
+  line-height: 1;
+}

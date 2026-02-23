@@ -11,5 +11,7 @@ public interface AuthorityService {
 	  AuthorityVO getProjectAuth(Integer userCode, Long projectCode);
 	  
 	  boolean hasAnyAdminProject(Integer userCode);
+	  
+	  boolean isIssueCreatorOrAssignee(Long issueCode, Integer userCode);
 
 }

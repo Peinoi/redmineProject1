@@ -94,9 +94,13 @@
       return location.replace(withTs("/noticeList"));
     }
 
-    // 직전이 목록/작업이력이라면 그대로
+    // 직전이 목록/작업이력/내페이지/개요면 그대로 이동
     if (ref.includes("/noticeList")) return location.replace(withTs(ref));
     if (ref.includes("/logs")) return location.replace(withTs(ref));
+    if (ref.includes("/my")) return location.replace(withTs(ref));
+    if (ref.includes("/G2main")) return location.replace(withTs(ref));
+    if (ref.includes("/project/overview/"))
+      return location.replace(withTs(ref));
 
     // ref가 이상하면 anchor 우선
     if (anchor) return location.replace(withTs(anchor));

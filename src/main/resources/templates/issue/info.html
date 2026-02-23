@@ -25,6 +25,18 @@
       <div class="d-flex gap-2">
         <button
           type="button"
+          class="btn btn-dark"
+          id="btnWorklog"
+          th:attr="
+      data-can-worklog=${isAdmin or (issue.assigneeCode != null and issue.assigneeCode == loginUserCode)},
+      data-issue-code=${issue.issueCode}
+    "
+        >
+          <i class="fa-regular fa-clock me-1"></i>소요시간 등록
+        </button>
+
+        <button
+          type="button"
           class="btn btn-success"
           id="btnEdit"
           th:attr="data-can-modify=${canModify}"
@@ -296,39 +308,51 @@
       </div>
     </div>
 
-    <section class="issue-history">
-      <h4 class="section-title">이력</h4>
+    <div class="issue-bottom-grid">
+      <!-- 이력 -->
+      <section class="issue-history">
+        <h4 class="section-title">이력</h4>
 
-      <div class="history-box">
-        <div class="empty" th:if="${logs == null or #lists.isEmpty(logs)}">
-          이력이 없습니다.
-        </div>
+        <div class="history-box">
+          <div class="empty" th:if="${logs == null or #lists.isEmpty(logs)}">
+            이력이 없습니다.
+          </div>
 
-        <div
-          class="history-list"
-          th:if="${logs != null and !#lists.isEmpty(logs)}"
-        >
           <div
-            class="history-item"
-            th:each="log : ${logs}"
-            th:attr="data-meta=${log.meta},
-                    data-action=${log.actionType},
-                    data-user=${log.userName != null ? log.userName : log.userCode},
-                    data-time=${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm')}"
+            class="history-list"
+            th:if="${logs != null and !#lists.isEmpty(logs)}"
           >
-            <div class="history-head">
-              <span
-                class="head-line"
-                th:text="|${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm:ss')} / ${log.actionType == 'CREATE' ? '생성' : (log.actionType == 'UPDATE' ? '수정' : log.actionType)} / ${log.userName != null ? log.userName : log.userCode}|"
-              ></span>
-            </div>
-            <div class="history-body">
-              <div class="change-lines"></div>
+            <div
+              class="history-item"
+              th:each="log : ${logs}"
+              th:attr="data-meta=${log.meta},
+                  data-action=${log.actionType},
+                  data-user=${log.userName != null ? log.userName : log.userCode},
+                  data-time=${#temporals.format(log.createdAt, 'yyyy-MM-dd HH:mm')}"
+            >
+              <div class="history-head">
+                <span class="head-line"></span>
+              </div>
+              <div class="history-body">
+                <div class="change-lines"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <!-- 소요시간 이력 -->
+      <section class="worklog-history">
+        <div class="d-flex justify-content-between align-items-center">
+          <h4 class="section-title mb-0">소요시간</h4>
+          <div class="text-muted small" id="worklogTotalText"></div>
+        </div>
+
+        <div class="worklog-box" id="worklogBox">
+          <div class="empty text-muted">소요시간 이력이 없습니다.</div>
+        </div>
+      </section>
+    </div>
 
     <script th:src="@{/js/issue/issue-info.js}"></script>
   </body>

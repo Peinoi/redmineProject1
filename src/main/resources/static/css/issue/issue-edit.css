@@ -393,3 +393,11 @@
 #parIssueModalTree .type-item.pi-item.pi-disabled:hover {
   background-color: #ffffff;
 }
+
+/* required star */
+.form-label .req {
+  color: #ef4444;
+  font-weight: 900;
+  margin-left: 4px;
+  line-height: 1;
+}
