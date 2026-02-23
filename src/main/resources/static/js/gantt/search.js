@@ -56,6 +56,12 @@
 	// -------------------------
 	// 유틸 함수
 	// -------------------------
+	const PROJECT_STATUS_LABEL = {
+			OD1: "진행",
+			OD2: "삭제",
+			OD3: "종료",
+		};
+	
 	const STATUS_LABEL = {
 		OB1: "신규",
 		OB2: "진행",
@@ -221,13 +227,16 @@
 	// Gantt 필터 객체 만들기
 	// -------------------------
 	const getGanttFilters = () => {
+		const psCode = ui.projectStatus?.value?.trim() || "";
 		const sCode = ui.status?.value?.trim() || "";
 		const prCode = ui.priority?.value?.trim() || "";
+		const psLabel = psCode ? PROJECT_STATUS_LABEL[psCode] : "";
 		const sLabel = sCode ? STATUS_LABEL[sCode] : "";
 		const prLabel = prCode ? PRIORITY_LABEL[prCode] : "";
 
 		return {
 			projectCode: ui.projectValue?.value || "",
+			projectStatus: psLabel,
 			title: ui.title?.value?.trim()?.toLowerCase() || "",
 			type: ui.typeValue?.value || "",
 			status: sLabel,  // 라벨로 변환
@@ -584,6 +593,7 @@
 		e.preventDefault();
 		ui.projectText.value = "";
 		ui.projectValue.value = "";
+		ui.projectStatus.value = "";
 		ui.title.value = "";
 		ui.typeText.value = "";
 		ui.typeValue.value = "";

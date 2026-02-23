@@ -392,7 +392,7 @@
 	   2. 유틸리티 및 필터 로직 (Business Logic)
 	   ======================================================================== */
 	// data: 전체 Gantt 데이터
-	// filters: { title, type, projectCode, status, priority, assigneeCode, creatorCode, createdAt, dueAt }
+	// filters: { projectCode, projectStatus, title, type, projectCode, status, priority, assigneeCode, creatorCode, createdAt, dueAt }
 	const getFilteredDataWithHierarchy = (data, filters) => {
 		const title = filters.title?.trim()?.toLowerCase();
 		const tCode = filters.type?.trim() || "";
@@ -431,6 +431,11 @@
 			let ok = true;
 			// 프로젝트
 			if (pCode && String(item.projectCode) !== String(pCode)) {
+				ok = false;
+			}
+
+			// 프로젝트 상태
+			if (filters.projectStatus && item.projectStatus !== filters.projectStatus) {
 				ok = false;
 			}
 
@@ -504,7 +509,7 @@
 		// 4. 필터링된 이슈가 속한 TYPE만 (상위 TYPE 포함) 수집
 		const validTypes = new Set();
 
-		const hasAnyFilter = pCode || title || tCode || filters.status ||
+		const hasAnyFilter = pCode || filters.projectStatus || title || tCode || filters.status ||
 			filters.priority || filters.assigneeCode ||
 			filters.creatorCode || filters.createdAt || filters.dueAt;
 
@@ -719,10 +724,6 @@
 			// ISSUE
 			// =========================
 			else if (item.rowType === "ISSUE") {
-				console.log("typeMap:", typeMap);
-				console.log("현재 typeCode:", item.typeCode);
-				console.log("매핑:", typeMap[String(item.typeCode)]);
-
 				let start = toValidDate(item.issueStartDate);
 				let end = toValidDate(item.issueEndDate);
 
@@ -756,6 +757,7 @@
 					issueCode: item.issueCode,
 					typeCode: item.typeCode,
 					projectName: item.projectName,
+					projectStatus: item.projectStatus,
 					typeName: typeInfo.typeName,
 					parTypeName: typeInfo.parTypeName
 				});
