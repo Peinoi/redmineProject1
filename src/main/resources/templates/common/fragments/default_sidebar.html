@@ -1,67 +1,40 @@
-<nav
-  th:fragment="DefaultSideBar"
-  class="sb-sidenav accordion sb-sidenav-dark"
-  id="sidenavAccordion"
->
-  <div class="sb-sidenav-menu">
-    <div class="nav" style="margin: 20px">
-      <a class="nav-link" th:href="@{/projects}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-diagram-project"></i>
-        </div>
-        프로젝트
-      </a>
-
-      <a class="nav-link" th:href="@{/issueList}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-list-check"></i>
-        </div>
-        일감 목록
-      </a>
-
-      <a class="nav-link" th:href="@{/kanbanboard}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-table-columns"></i>
-        </div>
-        나의 일정
-      </a>
-
-      <a class="nav-link" th:href="@{/ganttChart}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-chart-gantt"></i>
-        </div>
-        일정 관리
-      </a>
-
-      <a class="nav-link" th:href="@{/calendar}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-calendar-days"></i>
-        </div>
-        일정 달력
-      </a>
-
-      <a class="nav-link" th:href="@{/noticeList}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-bullhorn"></i>
-        </div>
-        공지사항
-      </a>
-
-      <a class="nav-link" th:href="@{/docs}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-folder-open"></i>
-        </div>
-        문서
-      </a>
-
-      <a class="nav-link" th:href="@{/logs}">
-        <div class="sb-nav-link-icon">
-          <i class="fa-solid fa-clock"></i>
-        </div>
-        작업내역
-      </a>
-
-			<a class="nav-link" th:href="@{/my}">
+<nav th:fragment="DefaultSideBar"
+	class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+	<div class="sb-sidenav-menu">
+		<div class="nav" style="margin: 20px">
+			<a class="nav-link" th:href="@{/projects}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-diagram-project"></i>
+				</div> 프로젝트
+			</a> <a class="nav-link" th:href="@{/issueList}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-list-check"></i>
+				</div> 일감 목록
+			</a> <a class="nav-link" th:href="@{/kanbanboard}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-table-columns"></i>
+				</div> 나의 일정
+			</a> <a class="nav-link" th:href="@{/ganttChart}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-chart-gantt"></i>
+				</div> 일정 관리
+			</a> <a class="nav-link" th:href="@{/calendar}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-calendar-days"></i>
+				</div> 일정 달력
+			</a> <a class="nav-link" th:href="@{/noticeList}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-bullhorn"></i>
+				</div> 공지사항
+			</a> <a class="nav-link" th:href="@{/docs}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-folder-open"></i>
+				</div> 문서
+			</a> <a class="nav-link" th:href="@{/logs}">
+				<div class="sb-nav-link-icon">
+					<i class="fa-solid fa-clock"></i>
+				</div> 작업내역
+			</a> <a class="nav-link" th:href="@{/my}">
 				<div class="sb-nav-link-icon">
 					<i class="fa-solid fa-user"></i>
 				</div> 내 페이지
@@ -74,9 +47,11 @@
 
 
 			<!-- 아코디언 -->
+			<!-- 관리자 또는 마스터 권한 이 있는 사람만 활성화 -->
 			<a class="nav-link collapsed" data-bs-toggle="collapse"
 				data-bs-target="#collapseSettings" aria-expanded="false"
-				aria-controls="collapseSettings">
+				aria-controls="collapseSettings"
+				th:if="${(session.userAuth != null and !#lists.isEmpty(session.userAuth) and session.userAuth[0].admin == 1) || (session.user != null and session.user.sysCk == 'Y')}">
 				<div class="sb-nav-link-icon">
 					<i class="fa-solid fa-gear"></i>
 				</div> 관리
