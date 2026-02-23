@@ -4,12 +4,19 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
 
+import com.yedam.app.login.service.UserVO;
 import com.yedam.app.project.service.PruserVO;
 
 public interface UsermgrMapper {
 
 	// 사용자 리스트
 	public List<PruserVO> userAll();
+	
+	// 사용자 단건 조회
+	public UserVO userInfo(@Param("userCode") int userCode);
+	
+	// 사용자 관리자 권한 부여
+	public int userSysUpdate(@Param("userCode") int userCode,@Param("sysCk") String sysCk);
 
 	// next 사번, 유저코드
 	public PruserVO selectNextNo();

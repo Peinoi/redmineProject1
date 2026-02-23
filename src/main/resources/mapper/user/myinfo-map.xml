@@ -11,7 +11,8 @@
       		name          AS name,
       		phone         AS phone,
       		position      AS position,
-      		created_at    AS createdAt
+      		created_at    AS createdAt,
+      		sys_ck 		  AS sysCk
     	FROM users
     	WHERE user_code = #{userCode}
   	</select>
@@ -68,11 +69,11 @@
 	  FROM group_member gm
 	  JOIN "GROUP" g
 	    ON g.group_code = gm.gr_code
-	  JOIN gr_pro_role gpr
+	  LEFT JOIN gr_pro_role gpr
 	    ON gpr.gr_code = gm.gr_code
-	  JOIN projects p
+	  LEFT JOIN projects p
 	    ON p.project_code = gpr.project_code
-	  JOIN role r
+	  LEFT JOIN role r
 	    ON r.role_code = gpr.role_code
 	  WHERE gm.user_code = #{userCode}
 	  GROUP BY g.group_code, g.gr_name, p.project_code, p.project_name

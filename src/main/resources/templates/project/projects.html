@@ -54,14 +54,14 @@
 			</div>
 			<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
 			<div class="d-flex justify-content-between align-items-center mt-3">
-				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'}">
+				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
 					<button type="button" class="btn btn-success">
 						<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
 							프로젝트 등록
 						</a>
 					</button>
 				</div>
-
+[[ ${session.user.sysCk} ]]
 				<div class="col-auto d-flex gap-2 ms-auto">
 					<button type="button" class="btn btn-secondary"
 						id="btnResetFilters">

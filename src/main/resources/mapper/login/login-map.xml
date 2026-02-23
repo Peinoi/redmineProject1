@@ -8,6 +8,7 @@
 				,name
 				,is_lock
 				,first_login_yn
+				,sys_ck
 		from users
 		where employee_no = #{employeeNo}
 	</select>

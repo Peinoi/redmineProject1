@@ -13,11 +13,31 @@
             email,
             created_at,
             last_login_at,
-            is_lock
+            is_lock,
+            sys_ck
         FROM users
         WHERE name NOT LIKE '%-delete'
         ORDER BY employee_no
     </select>
+    
+     <!-- 사용자 단건조회 -->
+    <select id="userInfo" resultType="UserVO">
+        SELECT
+            user_code,
+            employee_no,
+            name,
+            phone,
+            email,
+            position,
+            created_at,
+            last_login_at,
+            is_lock,
+            sys_ck
+        FROM users
+        WHERE name NOT LIKE '%-delete' AND user_code = #{userCode}
+        ORDER BY employee_no
+    </select>
+    
 
     <!-- next 유저코드, 사번 -->
     <select id="selectNextNo" resultType="PruserVO">
@@ -63,5 +83,21 @@
      			,is_lock = 1   
         WHERE  user_code = #{userCode}
     </update>
+    
+    
+    <!-- 사용자 관리자 권한 부여 -->
+    <update id="userSysUpdate">
+	    UPDATE users
+	       SET sys_ck = 
+	           <if test='sysCk == "Y"'>
+	               'Y'
+	           </if>
+	           <if test='sysCk == "N"'>
+	               'N'
+	           </if>
+	     WHERE user_code = #{userCode}
+	</update>
+    
+    
 
 </mapper>

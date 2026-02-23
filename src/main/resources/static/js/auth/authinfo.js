@@ -139,7 +139,7 @@ function updateRole() {
 			return response.json();
 		})
 		.then(data => {
-			if (!data) return;  
+			if (!data) return;
 			if (data.success) {
 				alert(data.message);
 				window.location.href = '/auth'; // 역할 목록 페이지로 이동
