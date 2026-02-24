@@ -582,7 +582,7 @@ function addMemberRow(mappCode, userCode, userName, roleCode, roleName) {
 		</td>
 		<td>
 			<button type="button" class="btn btn-danger btn-sm btn-delete-member">
-				<i class="fa-solid fa-face-dizzy"></i> 삭제
+				<i class="fa-solid fa-minus me-1"></i> 삭제
 			</button>
 		</td>
 	`;
@@ -613,7 +613,7 @@ function addGroupRow(grProCode, grCode, grName, roleCode, roleName) {
 		</td>
 		<td>
 			<button type="button" class="btn btn-danger btn-sm btn-delete-member">
-				<i class="fa-solid fa-face-dizzy"></i> 삭제
+				<i class="fa-solid fa-minus me-1"></i> 삭제
 			</button>
 		</td>
 	`;

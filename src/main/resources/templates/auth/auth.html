@@ -8,7 +8,7 @@
 <meta charset="UTF-8">
 <title>projects</title>
 <link rel="stylesheet" th:href="@{/css/issue/issue-list.css}">
-<link rel="stylesheet" th:href="@{/css/project/project.css}">
+<link rel="stylesheet" th:href="@{/css/auth/auth.css}">
 
 </head>
 <body>
@@ -30,7 +30,7 @@
 				<div class="d-flex justify-content-between align-items-center mt-3">
 					<div class="d-flex gap-2">
 						<button type="button" class="btn btn-success">
-							<a th:href="@{/authadd}"> <i class="fas fa-check me-1"></i>
+							<a th:href="@{/authadd}"> <i class="fas fa-plus me-1"></i>
 								역할 등록
 							</a>
 						</button>
@@ -98,14 +98,14 @@
 								<td>
 									<!-- 수정 버튼: 관리자 권한 선택 -->
 									<button class="btn btn-success btn-sm save-btn">
-										<i class="fa-regular fa-face-meh"></i> 저장
+										<i class="fas fa-check"></i> 저장
 									</button>
 								</td>
 
 								<td>
 									<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
 									<button class="btn btn-danger btn-sm delete-btn">
-										<i class="fa-solid fa-face-dizzy"></i> 삭제
+										<i class="fa-solid fa-minus me-1"></i> 삭제
 									</button>
 								</td>
 							</tr>

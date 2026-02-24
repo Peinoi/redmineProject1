@@ -504,7 +504,7 @@ function updateMemberTable() {
                 <button class="btn btn-success btn-sm btn-edit-member" data-index="${actualIndex}" data-type="${type}"><i class="fa-regular fa-face-meh"></i> 수정</button>
             </td>
             <td>
-                <button class="btn btn-danger btn-sm btn-remove-member" data-index="${actualIndex}" data-type="${type}"><i class="fa-solid fa-face-dizzy"></i> 삭제</button>
+                <button class="btn btn-danger btn-sm btn-remove-member" data-index="${actualIndex}" data-type="${type}"><i class="fa-solid fa-minus me-1"></i> 삭제</button>
             </td>
         `;
 		tbody.appendChild(row);

@@ -116,3 +116,7 @@ tbody td:not(:nth-child(2)) {
 tbody tr:hover {
 	cursor: pointer;
 }
+
+input[type="checkbox"]:hover {
+	cursor: pointer;
+}

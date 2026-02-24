@@ -91,7 +91,7 @@ function updateMemberTable() {
             <td>${m.userName}</td>
             <td>${m.email}</td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeMember(${i})">
-                <i class="fa-solid fa-face-dizzy"></i> 삭제</button></td>`;
+                <i class="fa-solid fa-minus me-1"></i>삭제</button></td>`;
 		tbody.appendChild(tr);
 	});
 }
@@ -176,9 +176,9 @@ function updateProjectTable() {
             <td>${p.projectName}</td>
             <td>${p.roleName}</td>
             <td><button type="button" class="btn btn-success btn-sm" onclick="openEditModal(${i})">
-                <i class="fa-regular fa-face-meh"></i> 수정</button></td>
+               <i class="fas fa-edit me-1"></i> 수정</button></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeProject(${i})">
-                <i class="fa-solid fa-face-dizzy"></i> 삭제</button></td>`;
+                <i class="fa-solid fa-minus me-1"></i>삭제</button></td>`;
 		tbody.appendChild(tr);
 	});
 }

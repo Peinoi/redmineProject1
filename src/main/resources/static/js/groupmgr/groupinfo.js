@@ -151,7 +151,7 @@ function addSelectedMembers() {
 		    <td>
 		        <button type="button" class="btn btn-danger btn-sm" 
 		                onclick="event.stopPropagation(); removeNewMember(this, ${userCode})">
-		            <i class="fa-solid fa-face-dizzy"></i> 삭제
+		            <i class="fa-solid fa-minus me-1"></i>삭제
 		        </button>
 		    </td>`;
 		tbody.appendChild(tr);
@@ -267,9 +267,9 @@ function addSelectedProjects() {
             <td><a href="/project/${projectCode}" class="text-decoration-none">${cb.dataset.projectName}</a></td>
             <td class="role-name-cell">${roleName}</td>
             <td><button type="button" class="btn btn-success btn-sm" onclick="openEditNewProject(this, ${projectCode})">
-                <i class="fa-regular fa-face-meh"></i> 수정</button></td>
+                <i class="fas fa-edit me-1"></i> 수정</button></td>
             <td><button type="button" class="btn btn-danger btn-sm" onclick="removeNewProject(this, ${projectCode})">
-                <i class="fa-solid fa-face-dizzy"></i> 삭제</button></td>`;
+                <i class="fa-solid fa-minus me-1"></i>삭제</button></td>`;
 		tbody.appendChild(tr);
 	});
 
