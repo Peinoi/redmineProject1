@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}">
+<head>
+<meta charset="UTF-8">
+<title>문서</title>
+<link rel="stylesheet" th:href="@{/css/docs/list.css}" />
+</head>
+<body>
+	<div layout:fragment="Content">
+
+		<!-- 페이지 타이틀 -->
+		<div class="x-page-title mb-3">
+			<h3 class="page-title">문서</h3>
+			<div class="page-title-sub">산출물 관리 페이지입니다.</div>
+		</div>
+
+		<!-- 검색/필터 -->
+		<div class="search-filters">
+			<div class="row g-2">
+				<div class="col-md-3">
+					<label class="form-label">프로젝트</label>
+					<div class="input-group">
+						<input type="text" id="filterProjectText" class="form-control"
+							placeholder="프로젝트 선택" readonly th:value="${projectName}" /> <input
+							type="hidden" id="filterProjectValue" name="projectCode"
+							th:value="${projectCode}" />
+						<button type="button" class="btn btn-secondary"
+							id="btnOpenProjectModal">선택</button>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<label class="form-label">폴더</label>
+					<div class="input-group">
+						<input type="text" id="filterFolderText" class="form-control"
+							placeholder="폴더 선택" readonly th:value="${folderName}" /> <input
+							type="hidden" id="filterFolderValue" name="folderCode"
+							th:value="${folderCode}" />
+						<button type="button" class="btn btn-secondary"
+							id="btnOpenFolderModal">선택</button>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<label class="form-label">파일명</label> <input type="text"
+						id="filterFile" class="form-control" placeholder="파일명 입력">
+				</div>
+				<div class="col-md-1 d-flex align-items-end">
+					<button id="btnFilter" class="btn btn-success w-100">검색</button>
+				</div>
+
+				<!-- 프로젝트 선택 모달 -->
+				<div class="modal fade" id="projectSelectModal" tabindex="-1"
+					aria-hidden="true">
+					<div class="modal-dialog modal-lg modal-dialog-scrollable">
+						<div class="modal-content">
+							<div class="modal-header">
+								<h5 class="modal-title">프로젝트 선택</h5>
+								<button type="button" class="btn-close" data-bs-dismiss="modal"
+									aria-label="Close"></button>
+							</div>
+							<div class="modal-body">
+								<input type="text" id="projectModalSearch"
+									class="form-control mb-2" placeholder="프로젝트명 검색" />
+								<div class="list-group" id="projectModalList"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 폴더 + 파일 테이블 -->
+		<div class="card">
+			<div class="card-body p-0">
+				<table class="table table-hover mb-0">
+					<thead class="table-light">
+						<tr>
+							<th>구분</th>
+							<th>파일 크기</th>
+							<th>다운로드</th>
+							<th>파일 등록일</th>
+							<th>파일 등록자</th>
+							<th>삭제</th>
+						</tr>
+					</thead>
+					<tbody>
+						<!-- 폴더 트리 + 파일 반복 -->
+						<tr th:each="doc : ${documentList}">
+							<td th:text="${doc.isFolder ? '📁' : '📄'}"></td>
+							<td th:text="${doc.size}"></td>
+							<td><a th:if="!${doc.isFolder}"
+								th:href="@{'/documents/download/' + ${doc.fileCode}}"
+								class="btn btn-sm btn-primary btn-download">다운</a></td>
+							<td th:text="${doc.uploadDt}"></td>
+							<td th:text="${doc.uploadUser}"></td>
+							<td>
+								<button th:if="!${doc.isFolder}"
+									class="btn btn-sm btn-danger btn-delete">삭제</button>
+							</td>
+						</tr>
+						<tr th:if="${documentList == null or documentList.isEmpty()}">
+							<td colspan="12" class="text-center">등록된 문서가 없습니다.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+	</div>
+
+	<th:block layout:fragment="pageScript">
+		<script th:src="@{/js/docs/list.js}"></script>
+	</th:block>
+
+</body>
+</html>
