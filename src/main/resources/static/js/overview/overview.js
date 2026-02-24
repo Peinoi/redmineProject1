@@ -1,4 +1,19 @@
 // /js/overview/overview.js 
+document.addEventListener("DOMContentLoaded", function() {
+	const backBtn = document.getElementById("btnBack");
+	if (!backBtn) return;
+
+	backBtn.addEventListener("click", function(e) {
+		e.preventDefault();
+
+		if (history.length > 1) {
+			history.back();
+		} else {
+			window.location.href = "/G2main";
+		}
+	});
+});
+
 document.addEventListener('DOMContentLoaded', () => {
 	document.querySelectorAll('#mainIssueTable tr.click-row')
 		.forEach(row => {

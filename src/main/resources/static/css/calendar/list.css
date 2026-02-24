@@ -105,3 +105,35 @@
   margin-right: 4px;
   display: inline-block;
 }
+
+/* 이벤트와 overflow 링크 함께 조절 */
+.fc-daygrid-event {
+    margin-bottom: 4px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.fc-daygrid-more-link {
+    margin-top: 2px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #6b7280;
+}
+
+.fc-today-button {
+	cursor: pointer;
+}
+
+/* 컨테이너에 기준점 설정 */
+#container {
+    position: relative;
+    min-height: 600px; /* 로딩 바가 보일 최소 높이 확보 */
+}
+
+/* 로딩 스피너 스타일 */
+#calendarLoadingSpinner {
+    pointer-events: all; /* 로딩 중 클릭 방지 */
+}

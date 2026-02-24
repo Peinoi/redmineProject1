@@ -10,6 +10,8 @@
 		
 		    gv.project_code,
 		    gv.project_name,
+		    gv.project_status,
+		    gv.project_status_name,
 		
 		    gv.type_code,
 		    gv.type_name,

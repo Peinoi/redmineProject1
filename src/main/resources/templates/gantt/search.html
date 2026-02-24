@@ -1,14 +1,16 @@
 <!-- search.html -->
 <!DOCTYPE html>
 <html xmlns:th="https://www.thymeleaf.org/">
-<div th:fragment="searchCondition">
+<div th:fragment="searchCondition(view)">
 	<!-- 검색조건 토글 버튼 -->
 	<button type="button" class="btn btn-outline-secondary mb-2"
-		id="btnToggleSearch">검색조건 열기</button>
+		id="btnToggleSearch" data-bs-toggle="collapse"
+		data-bs-target="#searchConditionWrapper">검색조건 열기</button>
 
 	<!-- 검색조건 전체 wrapper (기본 닫힘) -->
-	<form id="issueFilterForm" th:action="@{/issueList}" method="get">
-		<div id="searchConditionWrapper" style="display: none;">
+	<form id="issueFilterForm" th:action="@{/searchList}" method="get">
+		<input type="hidden" name="view" th:value="${view}" />
+		<div id="searchConditionWrapper" class="collapse">
 			<div class="search-filters mb-3 mt-3">
 				<div class="row g-2 align-items-end">
 					<!-- 프로젝트 -->
@@ -27,12 +29,23 @@
 					<!-- 프로젝트 상태 -->
 					<div class="col-12 col-md-1 filter-select-wide">
 						<label class="form-label">프로젝트 상태</label> <select
-							id="filterProjectStatus" name="projectStatusId" class="form-select">
-							<option value=""
-								th:selected="${param.projectStatusId == null or param.projectStatusId == ''}">전체</option>
-							<option value="OD1" th:selected="${param.projectStatusId == 'OD1'}">진행</option>
-							<option value="OD2" th:selected="${param.projectStatusId == 'OD2'}">삭제</option>
-							<option value="OD3" th:selected="${param.projectStatusId == 'OD3'}">종료</option>
+							id="filterProjectStatus" name="projectStatusName"
+							class="form-select">
+
+							<!-- 관리자일 때 -->
+							<th:block th:if="${isAdmin}">
+								<option value=""
+									th:selected="${param.projectStatus == null or param.projectStatus == ''}">전체</option>
+								<option value="OD1"
+									th:selected="${param.projectStatus == null or param.projectStatus == 'OD1'}">진행</option>
+								<option value="OD3"
+									th:selected="${param.projectStatus == 'OD3'}">종료</option>
+							</th:block>
+
+							<!-- 개발자일 때 -->
+							<th:block th:unless="${isAdmin}">
+								<option value="OD1" selected>진행</option>
+							</th:block>
 						</select>
 					</div>
 

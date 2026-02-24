@@ -29,9 +29,8 @@
 /* ===================== */
 /* list.html (gantt) 전용 */
 /* ===================== */
-/* 핵심 */
 .gantt-wrapper {
-	flex: 1; /* 남은 공간 전부 차지 */
+	flex: 1;
 	min-height: 600px;
 	min-width: 0;
 }
@@ -44,80 +43,32 @@
 /* ===================== */
 /* 커서 스타일 */
 /* ===================== */
-/* ISSUE 행과 막대에만 포인터 커서 */
 .gantt_row[data-task-id^="ISSUE_"], .gantt_task_line.issue-clickable {
 	cursor: pointer;
 }
 
-/* 프로젝트 행과 막대에도 포인터 커서 */
 .gantt_row[data-task-id^="project_"], .gantt_task_line.gantt_project {
 	cursor: pointer;
 }
 
 /* ===================== */
-/* 색상 스타일 */
+/* 색상 - color 필드가 기본, hover만 CSS로 */
 /* ===================== */
-/* 프로그램 */
-.gantt_task_line.gantt_project {
-	background-color: #9CA3AF !important; /* 회색 */
-	border-color: #9CA3AF !important;
-}
-
 .gantt_task_line.gantt_project:hover {
-	background-color: #6B7280 !important;
-}
-
-/* 우선순위 - 긴급 */
-.gantt_task_line.priority-now {
-	background-color: #D97B7B !important; /* 빨강 */
-	border-color: #D97B7B !important;
-}
-
-.gantt_task_line.priority-now:hover {
-	background-color: #CC6666 !important;
-}
-
-/* 우선순위 - 높음 */
-.gantt_task_line.priority-high {
-	background-color: #FFB266 !important; /* 주황 */
-	border-color: #FFB266 !important;
-}
-
-.gantt_task_line.priority-high:hover {
-	background-color: #FF9F4D !important;
-}
-
-/* 우선순위 - 보통 */
-.gantt_task_line.priority-medium {
-	background-color: #5AB2FF !important; /* 파랑 */
-	border-color: #5AB2FF !important;
-}
-
-.gantt_task_line.priority-medium:hover {
-	background-color: #3D9FFF !important;
-}
-
-/* 우선순위 - 낮음 */
-.gantt_task_line.priority-low {
-	background-color: #69B87C !important; /* 초록 */
-	border-color: #69B87C !important;
-}
-
-.gantt_task_line.priority-low:hover {
-	background-color: #57A567 !important;
-}
-
-.gantt_task_line.type-node {
-	background: #64748B !important;
-	border-color: #64748B !important;
-}
-
-.gantt_task_line.type-node .gantt_task_progress {
-	background-color: #334155 !important;
+	filter: brightness(0.85);
 }
 
 .gantt_task_line.type-node:hover {
-	background-color: #475569 !important;
+	filter: brightness(0.85);
+}
+
+.gantt_task_line.issue-clickable:hover {
+	filter: brightness(0.88);
+}
+
+/* type-node progress bar */
+.gantt_task_line.type-node .gantt_task_progress {
+	background-color: rgba(0, 0, 0, 0.25);
 }
 
 .gantt_tree_content, .gantt_cell {
@@ -183,10 +134,81 @@
 	color: #dc2626 !important;
 }
 
-/* 마감기한 초과 - 타임라인 막대 */
+/* 마감기한 초과 - 타임라인 막대 (대각선 줄무늬) */
 .gantt_task_line.overdue-task {
-	background-color: #dc2626 !important;
-	border-color: #b91c1c !important;
 	background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0, 0
-		, 0, 0.1) 4px, rgba(0, 0, 0, 0.1) 8px) !important;
+		, 0, 0.15) 4px, rgba(0, 0, 0, 0.15) 8px) !important;
+}
+
+/* 일감 클릭 가능한 행 커서 */
+.issue-clickable {
+	cursor: pointer;
+}
+
+.gantt_row_task[data-task-id^="PROJECT_"] {
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+/* 부모 컨테이너에 기준점 설정 */
+.d-flex.flex-column.h-100 {
+	position: relative;
+}
+
+/* 로딩 스피너 */
+#ganttLoadingSpinner {
+	background: rgba(255, 255, 255, 0.8) !important;
+	pointer-events: all;
+}
+
+/* 내보내기 버튼 */
+.gantt-navigation {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 15px;
+}
+
+.gantt-export-btns {
+	margin-left: auto;
+	display: flex;
+	gap: 6px;
+}
+
+.export-btn {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 5px 14px;
+	font-size: 13px;
+	font-weight: 500;
+	border-radius: 6px;
+	border: 1px solid;
+	cursor: pointer;
+	transition: all 0.15s ease;
+	height: 38px;
+}
+
+.excel-btn {
+	background-color: #f0fdf4;
+	color: #16a34a;
+	border-color: #bbf7d0;
+}
+
+.excel-btn:hover {
+	background-color: #16a34a;
+	color: #fff;
+	border-color: #16a34a;
+}
+
+.pdf-btn {
+	background-color: #fef2f2;
+	color: #dc2626;
+	border-color: #fecaca;
+}
+
+.pdf-btn:hover {
+	background-color: #dc2626;
+	color: #fff;
+	border-color: #dc2626;
 }

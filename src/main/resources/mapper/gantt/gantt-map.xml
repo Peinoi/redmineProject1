@@ -13,6 +13,7 @@
 		    gv.created_on,
 		    gv.completed_on,
 		    gv.project_status,
+		    gv.project_status_name,
 		    gv.project_creator_name,
 		
 		    gv.type_code,

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/"
+	xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	layout:decorate="~{common/layouts/default_layout}">
+<head>
+<meta charset="UTF-8">
+<title>문서 업로드</title>
+<link rel="stylesheet" th:href="@{/css/docs/insert.css}" />
+<link rel="stylesheet" th:href="@{/css/docs/modal.css}" />
+</head>
+
+<body>
+	<div layout:fragment="Content">
+
+		<!-- 페이지 타이틀 -->
+		<div class="x-page-title">
+			<h3 class="page-title">문서 등록</h3>
+			<div class="page-title-sub">문서 등록 페이지입니다.</div>
+		</div>
+
+		<div class="mb-3">
+			<button type="button" class="btn btn-secondary" id="btnBack">
+				<i class="fas fa-arrow-left me-1"></i>돌아가기
+			</button>
+		</div>
+
+		<!-- 업로드 카드 -->
+		<div class="card doc-upload-card">
+			<div class="card-body">
+
+				<form id="uploadForm" action="/documents/upload" method="post"
+					enctype="multipart/form-data">
+
+					<div class="row g-3">
+
+						<!-- 프로젝트 선택 -->
+						<div class="col-12 col-md-6">
+							<label class="form-label">프로젝트<span class="req">*</span></label>
+							<div class="input-group">
+								<input type="text" id="filterProjectText" class="form-control"
+									placeholder="프로젝트 선택" readonly th:value="${projectName}" /> <input
+									type="hidden" id="filterProjectValue" name="projectCode"
+									th:value="${projectCode}" />
+								<button type="button" class="btn btn-secondary"
+									id="btnOpenProjectModal">선택</button>
+							</div>
+						</div>
+
+						<!-- 파일 업로드 ⭐ 핵심 -->
+						<div class="col-12 col-md-6">
+							<label class="form-label">파일<span class="req">*</span></label> <input
+								type="file" name="files" id="files" class="form-control"
+								multiple />
+						</div>
+
+						<!-- 저장 폴더 -->
+						<div class="col-12">
+							<label class="form-label">저장 폴더<span class="req">*</span></label>
+
+							<div class="folder-box">
+
+								<input type="text" id="folderText" class="form-control mb-2"
+									readonly placeholder="폴더를 선택하세요" /> <input type="hidden"
+									name="folderCode" id="folderCode" />
+
+								<!-- 폴더 트리 -->
+								<div id="folderTree" class="folder-tree"></div>
+
+								<div class="text-end mt-2">
+									<button type="button" class="btn btn-outline-primary btn-sm"
+										id="btnCreateFolder">
+										<i class="fas fa-folder-plus me-1"></i>폴더 생성
+									</button>
+								</div>
+
+							</div>
+						</div>
+
+						<!-- 등록 버튼 -->
+						<div class="col-12 text-end">
+							<button type="submit" class="btn btn-primary">
+								<i class="fas fa-upload me-1"></i>업로드
+							</button>
+						</div>
+
+						<!-- 프로젝트 선택 모달 -->
+						<div class="modal fade" id="projectSelectModal" tabindex="-1"
+							aria-hidden="true">
+							<div class="modal-dialog modal-lg modal-dialog-scrollable">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title">프로젝트 선택</h5>
+										<button type="button" class="btn-close"
+											data-bs-dismiss="modal" aria-label="Close"></button>
+									</div>
+									<div class="modal-body">
+										<input type="text" id="projectModalSearch"
+											class="form-control mb-2" placeholder="프로젝트명 검색" />
+										<div class="list-group" id="projectModalList"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- ================= 폴더 생성 모달 ================= -->
+						<div class="modal fade" id="folderCreateModal" tabindex="-1">
+							<div class="modal-dialog">
+								<div class="modal-content">
+
+									<div class="modal-header">
+										<h5 class="modal-title">폴더 생성</h5>
+										<button type="button" class="btn-close"
+											data-bs-dismiss="modal"></button>
+									</div>
+
+									<div class="modal-body">
+
+										<div class="mb-3">
+											<label class="form-label">폴더명</label> <input type="text"
+												id="newFolderName" class="form-control" />
+										</div>
+
+										<div class="mb-3">
+											<label class="form-label">상위 폴더</label> <select
+												id="parentFolderCode" class="form-select">
+												<option value="">최상위</option>
+											</select>
+										</div>
+
+									</div>
+
+									<div class="modal-footer">
+										<button class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+										<button class="btn btn-primary" id="btnSaveFolder">생성</button>
+									</div>
+
+								</div>
+							</div>
+						</div>
+
+					</div>
+				</form>
+
+			</div>
+		</div>
+
+	</div>
+
+
+
+	<th:block layout:fragment="pageScript">
+		<script th:src="@{/js/docs/modal.js}"></script>
+		<script th:src="@{/js/docs/insert.js}"></script>
+	</th:block>
+</body>
+</html>

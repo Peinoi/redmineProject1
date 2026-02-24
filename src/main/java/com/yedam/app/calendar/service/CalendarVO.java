@@ -15,6 +15,8 @@ public class CalendarVO {
 
 	private Integer projectCode; // 프로젝트 코드
 	private String projectName; // 프로젝트명
+	private String projectStatus; // 프로젝트 상태
+	private String projectStatusName; // 프로젝트 상태명 
 
 	// 타입
 	private Integer typeCode; // 타입 코드

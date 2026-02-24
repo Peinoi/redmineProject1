@@ -8,19 +8,19 @@ import lombok.Data;
 public class DocsVO {
 	
 	// 폴더
-	private Integer folderCode;
+	private Integer folderCode; // Not Null
 	private String folderName;
 	private Date createdOn;
 	private Integer headerFolderCode;
 	private Integer userCode;
-	private Integer projectCode;
+	private Integer projectCode; // Not Null
 	
 	// 파일
-	private Integer fileCode;
+	private Integer fileCode; // Not Null
 	private String originalName;
 	private String storedName;
 	private String path;
 	private String mimeType;
-	private Integer sizeBytes;
+	private Integer sizeBytes; // Not Null
 	private Date uploadedAt;	
 }

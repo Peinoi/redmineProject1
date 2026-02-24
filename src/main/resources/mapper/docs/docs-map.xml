@@ -2,25 +2,70 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.docs.mapper.DocsMapper">
 
-	<!-- 폴더 등록
+	<!-- 폴더 등록 -->
 	<insert id="insertFolder" parameterType="DocsVO">
-	
 		<selectKey keyProperty="folderCode" resultType="long"
 			order="BEFORE">
 			SELECT NVL(MAX(folder_code), 0) + 1
 			FROM documents_folders
 		</selectKey>
-		
+
 		INSERT INTO documents_folders (
-			folder_code,
-			folder_name,
-			created_on,
-			header_folder_code,
-			user_code,
-			project_code
-		)
-		VALUES (
-			
-		)
-	</insert> -->
+				project_code,
+				folder_code,
+				folder_name,
+				created_on,
+				header_folder_code,
+				user_code
+			   )
+	    VALUES (
+				#{projectCode},
+				#{folderCode},
+				#{folderName},
+				#{createdOn},
+				 <choose>
+			        <when test="headerFolderCode != null and headerFolderCode != ''">
+			          #{headerFolderCode}
+			        </when>
+			        <otherwise>
+			          NULL
+			        </otherwise>
+			      </choose>,
+				#{userCode}
+			   )
+	</insert>
+	
+	<insert id="insertFiles" parameterType="DocsVO">
+	  <selectKey keyProperty="fileCode"
+	             resultType="long"
+	             order="BEFORE">
+	    SELECT NVL(MAX(file_code),0)+1
+	    FROM documents_attachments
+	  </selectKey>
+	
+	  INSERT INTO documents_attachments (
+	  		file_code,
+	        original_name,
+	        stored_name,
+	        path,
+	        mime_type,
+	        size_bytes,
+	        uploaded_at,
+	        user_code,
+	        folder_code,
+	        project_code
+	  )
+	  VALUES (
+	        #{fileCode},
+	        #{originalName},
+	        #{storedName},
+	        #{path},
+	        #{mimeType},
+	        #{sizeBytes},
+	        #{uploadedAt},
+	        #{userCode},
+	        #{folderCode},
+	        #{projectCode}
+	  )
+	</insert>
 </mapper>

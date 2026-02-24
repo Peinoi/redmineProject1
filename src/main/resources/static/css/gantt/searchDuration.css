@@ -6,7 +6,7 @@
 	border-left: 1px solid #dee2e6;
 	border-right: 1px solid #dee2e6;
 	border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+	border-top-right-radius: 6px;
 	background: #f8f9fa;
 }
 
@@ -65,4 +65,24 @@
 
 .gantt-navigation .btn {
 	min-width: 100px;
+}
+
+#rangeMonths, #baseMonth, #baseYear {
+	cursor: pointer;
+}
+
+/* 전체 숫자 입력 박스 */
+.month-input {
+	cursor: text; /* 숫자 직접 입력 시 텍스트 커서 */
+}
+
+/* Chrome, Edge, Safari - 스핀 버튼 */
+.month-input::-webkit-inner-spin-button, .month-input::-webkit-outer-spin-button
+	{
+	cursor: pointer; /* 스핀 버튼 위에 마우스 올리면 손가락 커서 */
+}
+
+/* Firefox */
+.month-input[type=number] {
+	-moz-appearance: textfield; /* 기본 스핀 버튼 제거 후 JS/HTML로 직접 구현 가능 */
 }

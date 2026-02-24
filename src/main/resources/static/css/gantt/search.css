@@ -4,6 +4,7 @@
 	border-radius: 10px;
 	padding: 14px 14px 10px;
 	background: #f9fafb;
+	overflow-x: hidden;
 }
 
 .search-filters+.card {
@@ -21,8 +22,14 @@
 }
 
 /* 등록일/마감기한 넓이 */
+/* 날짜 입력: 부모에 맞게 */
 .search-filters input[type="date"] {
-	min-width: 210px;
+	min-width: 0;
+	width: 100%;
+}
+
+.search-filters .input-group>.form-control {
+	min-width: 0;
 }
 
 /* ========================= */
@@ -114,6 +121,8 @@
 	padding-left: 50px;
 }
 
+/* select도 줄어들 수 있게 */
 .filter-select-wide .form-select {
-	min-width: 110px; /* 원하는 만큼 조절 */
+	min-width: 0;
+	width: 100%;
 }

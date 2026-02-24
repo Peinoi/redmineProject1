@@ -24,7 +24,16 @@
 		</div>
 
 		<!-- 검색조건 -->
-		<div class="mb-3" th:replace="~{gantt/search :: searchCondition}"></div>
+		<div class="mb-3" th:replace="~{gantt/search :: searchCondition(view='calendar/list')}"></div>
+
+		<div id="calendarLoadingSpinner"
+			class="d-flex justify-content-center align-items-center"
+			style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); z-index: 1000; display: none;">
+			<div class="spinner-border text-primary" role="status"
+				style="width: 3rem; height: 3rem;">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+		</div>
 
 		<!-- ===================== -->
 		<!-- 캘린더 카드 -->

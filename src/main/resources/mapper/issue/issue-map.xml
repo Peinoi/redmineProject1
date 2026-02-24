@@ -36,7 +36,7 @@
 
 		ua.name AS assignee_name,
 		uc.name AS creator_name,
-
+		
 		i.type_code,
 		t.type_name
 
@@ -54,7 +54,7 @@
 		
 		LEFT JOIN common_code cps
 		ON p.status = cps.code_id
-		AND cp.group_code = 'OD'
+		AND cps.group_code = 'OD'
 
 		LEFT JOIN users ua ON ua.user_code = i.assignee_code
 		LEFT JOIN users uc ON uc.user_code = i.created_by_code

@@ -12,7 +12,6 @@
 		projectText: $("#filterProjectText"),
 		projectValue: $("#filterProjectValue"),
 		projectStatus: $("#filterProjectStatus"),
-		title: $("#filterTitle"),
 		status: $("#filterStatus"),
 		priority: $("#filterPriority"),
 		assigneeText: $("#filterAssigneeText"),
@@ -56,6 +55,12 @@
 	// -------------------------
 	// 유틸 함수
 	// -------------------------
+	const PROJECT_STATUS_LABEL = {
+		OD1: "진행",
+		OD2: "삭제",
+		OD3: "종료",
+	};
+
 	const STATUS_LABEL = {
 		OB1: "신규",
 		OB2: "진행",
@@ -221,13 +226,16 @@
 	// Gantt 필터 객체 만들기
 	// -------------------------
 	const getGanttFilters = () => {
+		const psCode = ui.projectStatus?.value?.trim() || "";
 		const sCode = ui.status?.value?.trim() || "";
 		const prCode = ui.priority?.value?.trim() || "";
+		const psLabel = psCode ? PROJECT_STATUS_LABEL[psCode] : "";
 		const sLabel = sCode ? STATUS_LABEL[sCode] : "";
 		const prLabel = prCode ? PRIORITY_LABEL[prCode] : "";
 
 		return {
 			projectCode: ui.projectValue?.value || "",
+			projectStatus: psLabel,
 			title: ui.title?.value?.trim()?.toLowerCase() || "",
 			type: ui.typeValue?.value || "",
 			status: sLabel,  // 라벨로 변환
@@ -582,8 +590,10 @@
 	// 초기화
 	ui.btnReset?.addEventListener("click", (e) => {
 		e.preventDefault();
+
 		ui.projectText.value = "";
 		ui.projectValue.value = "";
+		ui.projectStatus.value = "";
 		ui.title.value = "";
 		ui.typeText.value = "";
 		ui.typeValue.value = "";
@@ -598,8 +608,20 @@
 
 		// Gantt 차트 초기화 (필터 없이 전체 데이터)
 		if (window.ganttReload) {
-			window.ganttReload({});
+			window.ganttReload({  // {} 대신 명시적으로
+				projectCode: "", projectStatus: "", title: "",
+				type: "", status: "", priority: "",
+				assigneeCode: "", creatorCode: "", createdAt: "", dueAt: ""
+			});
 		}
+
+		// Calendar 초기화
+		// 빈 객체({})를 보내 필터를 풀고, true를 보내 캐시를 비워 서버 데이터를 새로 받아옵니다.
+		if (window.calendarReload) {
+			window.calendarReload({}, true);
+		}
+
+		showToast("검색 조건과 데이터가 초기화되었습니다.");
 	});
 
 	// 조회
@@ -722,17 +744,18 @@
 		renderTypeTree(filteredTypes, document.getElementById("typeModalTree"));
 	});
 
-
 	document.addEventListener("DOMContentLoaded", () => {
 		const toggleBtn = document.getElementById("btnToggleSearch");
-		const searchWrapper = document.getElementById("searchConditionWrapper");
+		const wrapper = document.getElementById("searchConditionWrapper");
 
-		if (!toggleBtn || !searchWrapper) return;
+		if (!toggleBtn || !wrapper) return;
 
-		toggleBtn.addEventListener("click", () => {
-			const isOpen = searchWrapper.style.display === "block";
-			searchWrapper.style.display = isOpen ? "none" : "block";
-			toggleBtn.textContent = isOpen ? "검색조건 열기" : "검색조건 닫기";
+		wrapper.addEventListener("shown.bs.collapse", () => {
+			toggleBtn.textContent = "검색조건 닫기";
+		});
+
+		wrapper.addEventListener("hidden.bs.collapse", () => {
+			toggleBtn.textContent = "검색조건 열기";
 		});
 	});
 
