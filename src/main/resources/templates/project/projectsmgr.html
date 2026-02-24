@@ -33,16 +33,14 @@
 				<div class="col-12 col-md-2">
 					<label class="form-label">상태</label> <select id="filterPriority"
 						class="form-select">
-						<option value="">전체</option>
-						<option value="OD1">진행</option>
-						<option value="OD2">중지</option>
+						<option value="OD1" selected>진행</option>
 						<option value="OD3">종료</option>
 					</select>
 				</div>
 
 				<!-- 모달 담당자 선택 검색 -->
 
-				<div class="col-12 col-md-3">
+				<div class="col-12 col-md-3" style="display: none">
 					<label class="form-label">담당자</label>
 					<div class="input-group">
 						<input type="text" id="filterAssigneeText" class="form-control"
@@ -55,7 +53,8 @@
 			</div>
 			<!-- 프로젝트 관리자 권한이 하나라도 있다면 등록 버튼 활성화 -->
 			<div class="d-flex justify-content-between align-items-center mt-3">
-				<div class="d-flex gap-2" th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
+				<div class="d-flex gap-2"
+					th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
 					<button type="button" class="btn btn-success">
 						<a th:href="@{/projectadd}"> <i class="fas fa-check me-1"></i>
 							프로젝트 등록
@@ -75,115 +74,123 @@
 			</div>
 
 		</div>
-		<form id="issueDeleteForm" th:action="@{/issueDelete}" method="post"
-			style="display: none;"></form>
-		<div class="card mb-4">
+	</div>
+	<form id="issueDeleteForm" th:action="@{/issueDelete}" method="post"
+		style="display: none;"></form>
+	<div class="card mb-4">
 
-			<div
-				class="card-header d-flex align-items-center justify-content-between">
-				<div>
-					<i class="fas fa-table me-1"></i> 프로젝트 목록
+		<div
+			class="card-header d-flex align-items-center justify-content-between">
+			<div>
+				<i class="fas fa-table me-1"></i> 프로젝트 목록
 
-				</div>
-				<div class="text-muted small" id="projectPageInfo"></div>
 			</div>
-			<div class="card-body">
-				<div class="table-responsive">
-					<table class="table table-hover align-middle" id="issueTable"
-						style="table-layout: fixed; width: 100%;">
-						<thead class="table-light">
-							<tr>
+			<div class="text-muted small" id="projectPageInfo"></div>
+		</div>
+		<div class="card-body">
+			<div class="table-responsive">
+				<table class="table table-hover align-middle" id="issueTable"
+					style="table-layout: fixed; width: 100%;">
+					<thead class="table-light">
+						<tr>
 
-								<th style="width: 50px;">번호</th>
-								<th style="width: 100px;">프로젝트명</th>
-								<th style="width: 80px;">등록일</th>
-								<th style="width: 50px;">관리자</th>
-								<th style="width: 100px;">관리자번호</th>
-								<th>관리자메일</th>
-								<th style="width: 80px;">진행 상태</th>
-								<th style="width: 150px;">진척률(예상, 실제)</th>
-								<th style="width: 80px;">종료</th>
-								<th style="width: 80px;">삭제</th>
-							</tr>
-						</thead>
+							<th style="width: 50px;">번호</th>
+							<th style="width: 100px;">프로젝트명</th>
+							<th style="width: 80px;">등록일</th>
+							<th style="width: 50px;">관리자</th>
+							<th style="width: 100px;">관리자번호</th>
+							<th>관리자메일</th>
+							<th style="width: 80px;">진행 상태</th>
+							<th style="width: 150px;">진척률(예상, 실제)</th>
+							<th style="width: 80px;">복사</th>
+							<th style="width: 80px;">종료</th>
+							<th style="width: 80px;">삭제</th>
+						</tr>
+					</thead>
 
-						<tbody id="projectTbody">
-							<tr class="projectRow" th:each="pro, status : ${list}"
-								th:data-project-code="${pro.projectCode}">
-								<td>[[ ${status.index+1} ]]</td>
-								<td>[[ ${pro.projectName} ]]</td>
-								<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
-								<td>[[ ${pro.name} ]]</td>
-								<td>[[ ${pro.phone} ]]</td>
-								<td>[[ ${pro.email} ]]</td>
-								<td>[[ ${pro.codeName} ]]</td>
-								<td>
-									<div th:if="${pro.codeName == '종료'}"
-										class="text-center text-muted">
-										<i class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.
-									</div>
+					<tbody id="projectTbody">
+						<tr class="projectRow" th:each="pro, status : ${list}"
+							th:data-project-code="${pro.projectCode}">
+							<td>[[ ${status.index+1} ]]</td>
+							<td>[[ ${pro.projectName} ]]</td>
+							<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
+							<td>[[ ${pro.name} ]]</td>
+							<td>[[ ${pro.phone} ]]</td>
+							<td>[[ ${pro.email} ]]</td>
+							<td>[[ ${pro.codeName} ]]</td>
+							<td>
+								<div th:if="${pro.codeName == '종료'}"
+									class="text-center text-muted">
+									<i class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.
+								</div>
 
-									<div
-										th:if="${pro.codeName != '종료' and progMap.containsKey(pro.projectCode) and progMap.get(pro.projectCode).planProg != null}"
-										class="text-start">
+								<div
+									th:if="${pro.codeName != '종료' and progMap.containsKey(pro.projectCode) and progMap.get(pro.projectCode).planProg != null}"
+									class="text-start">
 
-										<th:block
-											th:with="
+									<th:block
+										th:with="
             planProg=${progMap.get(pro.projectCode).planProg},
             actualProg=${progMap.get(pro.projectCode).actualProg ?: 0}">
 
-											<div class="progress mb-1" role="progressbar"
-												th:attr="aria-valuenow=${planProg}" aria-valuemin="0"
-												aria-valuemax="100" style="height: 20px;">
-												<div class="progress-bar progress-bar-striped bg-secondary"
-													th:style="|width: ${planProg}%|" th:text="|${planProg}%|">
-												</div>
+										<div class="progress mb-1" role="progressbar"
+											th:attr="aria-valuenow=${planProg}" aria-valuemin="0"
+											aria-valuemax="100" style="height: 20px;">
+											<div class="progress-bar progress-bar-striped bg-secondary"
+												th:style="|width: ${planProg}%|" th:text="|${planProg}%|">
 											</div>
+										</div>
 
-											<div class="progress" role="progressbar"
-												th:attr="aria-valuenow=${actualProg}" aria-valuemin="0"
-												aria-valuemax="100" style="height: 20px;">
-												<div
-													class="progress-bar progress-bar-striped progress-bar-animated"
-													th:classappend="${actualProg >= planProg} ? 'bg-primary' : (${planProg - actualProg <= 10} ? 'bg-warning' : 'bg-danger')"
-													th:style="|width: ${actualProg}%|"
-													th:text="|${actualProg}%|"></div>
-											</div>
-										</th:block>
-									</div>
+										<div class="progress" role="progressbar"
+											th:attr="aria-valuenow=${actualProg}" aria-valuemin="0"
+											aria-valuemax="100" style="height: 20px;">
+											<div
+												class="progress-bar progress-bar-striped progress-bar-animated"
+												th:classappend="${actualProg >= planProg} ? 'bg-primary' : (${planProg - actualProg <= 10} ? 'bg-warning' : 'bg-danger')"
+												th:style="|width: ${actualProg}%|"
+												th:text="|${actualProg}%|"></div>
+										</div>
+									</th:block>
+								</div>
 
-									<div
-										th:if="${pro.codeName != '종료' and (!progMap.containsKey(pro.projectCode) or progMap.get(pro.projectCode).planProg == null)}"
-										class="text-center text-muted">
-										<i class="fas fa-info-circle me-1"></i> 프로젝트 개발이 진행 전입니다.
-									</div>
-								</td>
-								<td>
-									<!-- 종료 버튼: 관리자이거나 수정 권한이 있을 때만 활성화 -->
-									<button class="btn btn-success btn-sm"
-										th:disabled="${auth.admin != 1 and auth.moRol != 'Y'}">
-										<i class="fa-regular fa-face-meh"></i> 종료
-									</button>
-								</td>
-								<td>
-									<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
-									<button class="btn btn-danger btn-sm"
-										th:disabled="${auth.admin != 1 and auth.delRol != 'Y'}">
-										<i class="fa-solid fa-minus me-1"></i> 삭제
-									</button>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-
-				<!-- 페이징 -->
-				<nav class="d-flex justify-content-center mt-3 mb-3">
-					<ul class="pagination mb-0" id="projectPagination"></ul>
-				</nav>
+								<div
+									th:if="${pro.codeName != '종료' and (!progMap.containsKey(pro.projectCode) or progMap.get(pro.projectCode).planProg == null)}"
+									class="text-center text-muted">
+									<i class="fas fa-info-circle me-1"></i> 프로젝트 개발이 진행 전입니다.
+								</div>
+							</td>
+							<td>
+								<!-- 복사 버튼: 프로젝트 복사 -->
+								<button class="btn btn-primary btn-sm copy-project-btn"
+									th:disabled="${auth.admin != 1 and auth.moRol != 'Y'}">
+									<i class="fa-solid fa-clone"></i> 복사
+								</button>
+							</td>
+							<td>
+								<!-- 종료 버튼: 관리자이거나 수정 권한이 있을 때만 활성화 -->
+								<button class="btn btn-success btn-sm"
+									th:disabled="${auth.admin != 1 and auth.moRol != 'Y'}">
+									<i class="fa-regular fa-face-meh"></i> 종료
+								</button>
+							</td>
+							<td>
+								<!-- 삭제 버튼: 관리자이거나 삭제 권한이 있을 때만 활성화 -->
+								<button class="btn btn-danger btn-sm"
+									th:disabled="${auth.admin != 1 and auth.delRol != 'Y'}">
+									<i class="fa-solid fa-minus me-1"></i> 삭제
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 
+			<!-- 페이징 -->
+			<nav class="d-flex justify-content-center mt-3 mb-3">
+				<ul class="pagination mb-0" id="projectPagination"></ul>
+			</nav>
 		</div>
+
 
 		<!-- 모달창 -->
 		<div class="modal fade" id="creatorSelectModal" tabindex="-1"
@@ -203,7 +210,6 @@
 				</div>
 			</div>
 		</div>
-
 
 		<script th:src="@{/js/project/projectmgr.js}"></script>
 </body>

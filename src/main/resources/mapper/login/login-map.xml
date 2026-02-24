@@ -60,6 +60,7 @@
       			u.email,
       			u.phone,
       			u.is_lock,
+      			sys_ck,
       			u.first_login_yn
     	FROM user_auto_login t
     	

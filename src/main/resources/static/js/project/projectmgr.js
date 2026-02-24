@@ -152,7 +152,7 @@
 
 	function resetFilters() {
 		ui.title.value = "";
-		ui.priority.value = "";
+		ui.priority.value = "OD1";
 		ui.assigneeText.value = "";
 		ui.assigneeValue.value = "";
 

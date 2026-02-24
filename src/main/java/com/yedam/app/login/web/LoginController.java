@@ -149,6 +149,7 @@ public class LoginController {
 		List<UserProjectAuthVO> auths = projectService.getUserProjectAuthAll(user.getUserCode());
 		session.setAttribute("userAuth", auths);
 		
+		
 		// 사원번호 기억
 		String remember = userVO.getRememberEmpNo(); //체크박스 name과 매핑
 		// 체크되면

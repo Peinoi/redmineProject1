@@ -56,8 +56,8 @@
 	async function ensureUserCache() {
 		if (userCache.length > 0) return true;
 
-		const res = await fetch("/api/users/modal", {
-			headers: { Accept: "application/json",'X-Requested-With': 'XMLHttpRequest' },
+		const res = await fetch("/api/users/modal/assignees", {
+			headers: { Accept: "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 		});
 
 		if (!res.ok) {
@@ -152,7 +152,7 @@
 
 	function resetFilters() {
 		ui.title.value = "";
-		ui.priority.value = "";
+		ui.priority.value = "OD1";
 		ui.assigneeText.value = "";
 		ui.assigneeValue.value = "";
 
@@ -278,8 +278,8 @@
 					}
 				});
 				if (response.status === 403) {
-				    showToast('권한이 없습니다.', true);
-				    return;
+					showToast('권한이 없습니다.', true);
+					return;
 				}
 				const result = await response.json();
 
@@ -310,8 +310,8 @@
 					}
 				});
 				if (response.status === 403) {
-				    showToast('권한이 없습니다.', true);
-				    return;
+					showToast('권한이 없습니다.', true);
+					return;
 				}
 				const result = await response.json();
 
