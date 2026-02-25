@@ -57,7 +57,7 @@
 		if (userCache.length > 0) return true;
 
 		const res = await fetch("/api/users/modal", {
-			headers: { Accept: "application/json",'X-Requested-With': 'XMLHttpRequest' },
+			headers: { Accept: "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 		});
 
 		if (!res.ok) {
@@ -245,7 +245,112 @@
 	// 초기 로드 시 모든 행에 스타일 적용
 	rowsAll().forEach(tr => updateRowStyle(tr));
 
-	// 프로젝트 행 클릭 이벤트 (상세 페이지 이동)
+	// ──────────────────────────────────────────────────────────
+	// 프로젝트 복사 모달
+	// ──────────────────────────────────────────────────────────
+	const copyProjectModal = new bootstrap.Modal(document.getElementById("copyProjectModal"));
+	const newCopyProjectInput = document.getElementById("newCopyProject");
+	const btnSaveUser = document.getElementById("btnSaveUser");
+
+	// 복사 대상 프로젝트 코드 (복사 버튼 클릭 시 세팅)
+	let copyTargetProjectCode = null;
+
+	// 특수문자 금지 정규식
+	const SPECIAL_CHAR_REGEX = /[!@#$%^&*()\-+=\[\]{};':"\\|,.<>\/?`~]/;
+
+	// 현재 테이블의 모든 프로젝트명 가져오기
+	function getExistingProjectNames() {
+		return rowsAll().map(tr => rowData(tr).projectName.trim().toLowerCase());
+	}
+
+	// 프로젝트명 유효성 검사
+	function validateCopyProjectName(value) {
+		let errEl = document.getElementById("copyNameError");
+		if (!errEl) {
+			errEl = document.createElement("div");
+			errEl.id = "copyNameError";
+			errEl.className = "invalid-feedback";
+			errEl.style.display = "block";
+			newCopyProjectInput.parentNode.appendChild(errEl);
+		}
+
+		const trimmed = value.trim();
+
+		// 빈값 체크
+		if (!trimmed) {
+			newCopyProjectInput.classList.add("is-invalid");
+			newCopyProjectInput.classList.remove("is-valid");
+			errEl.textContent = "프로젝트명을 입력해주세요.";
+			return false;
+		}
+
+		// 특수문자 체크
+		if (SPECIAL_CHAR_REGEX.test(trimmed)) {
+			newCopyProjectInput.classList.add("is-invalid");
+			newCopyProjectInput.classList.remove("is-valid");
+			errEl.textContent = "특수문자는 사용할 수 없습니다.";
+			return false;
+		}
+
+		// 중복 프로젝트명 체크
+		if (getExistingProjectNames().includes(trimmed.toLowerCase())) {
+			newCopyProjectInput.classList.add("is-invalid");
+			newCopyProjectInput.classList.remove("is-valid");
+			errEl.textContent = "이미 존재하는 프로젝트명입니다.";
+			return false;
+		}
+
+		// 통과
+		newCopyProjectInput.classList.remove("is-invalid");
+		newCopyProjectInput.classList.add("is-valid");
+		errEl.textContent = "";
+		return true;
+	}
+
+	// 실시간 유효성 표시
+	newCopyProjectInput.addEventListener("input", () => {
+		validateCopyProjectName(newCopyProjectInput.value);
+	});
+
+	// 복사 버튼 클릭
+	btnSaveUser.addEventListener("click", async () => {
+		if (!validateCopyProjectName(newCopyProjectInput.value)) return;
+
+		try {
+			const response = await fetch(`/project/${copyTargetProjectCode}/copy`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
+				},
+				body: JSON.stringify({
+					projectName: newCopyProjectInput.value.trim()
+				})
+			});
+
+			if (response.status === 403) {
+				showToast('권한이 없습니다.', true);
+				return;
+			}
+
+			const result = await response.json();
+
+			if (result.success) {
+				alert(result.message);
+				copyProjectModal.hide();
+				location.reload();
+			} else {
+				alert(result.message);
+			}
+		} catch (err) {
+			console.error('복사 오류:', err);
+			alert('복사 처리 중 오류가 발생했습니다.');
+		}
+	});
+
+	// ──────────────────────────────────────────────────────────
+	// 프로젝트 행 클릭 이벤트
+	// ──────────────────────────────────────────────────────────
 	$("#projectTbody").addEventListener("click", async (e) => {
 		const btn = e.target.closest("button");
 		const row = e.target.closest("tr.projectRow");
@@ -255,17 +360,31 @@
 		// 버튼 클릭이 아닌 경우 상세 페이지로 이동
 		if (!btn) {
 			const projectCode = row.dataset.projectCode;
-			if (projectCode) {
-				location.href = `/project/${projectCode}`;
-			}
+			if (projectCode) location.href = `/project/${projectCode}`;
 			return;
 		}
 
-		// 기존 버튼 클릭 로직 (삭제, 종료)
 		const projectCode = row.dataset.projectCode;
 		const projectName = rowData(row).projectName;
 
-		// 1. 삭제 버튼 클릭
+		// 복사 버튼 클릭
+		if (btn.classList.contains("copy-project-btn")) {
+			copyTargetProjectCode = projectCode;
+
+			newCopyProjectInput.value = `${projectName}_COPY`;
+			newCopyProjectInput.readOnly = false;
+			newCopyProjectInput.style.background = "";
+			newCopyProjectInput.style.fontWeight = "";
+			newCopyProjectInput.classList.remove("is-invalid", "is-valid");
+
+			const errEl = document.getElementById("copyNameError");
+			if (errEl) errEl.textContent = "";
+
+			copyProjectModal.show();
+			return;
+		}
+
+		// 삭제 버튼 클릭
 		if (btn.classList.contains("btn-danger")) {
 			if (!confirm(`"${projectName}" 프로젝트를 삭제하시겠습니까?`)) return;
 
@@ -278,8 +397,8 @@
 					}
 				});
 				if (response.status === 403) {
-				    showToast('권한이 없습니다.', true);
-				    return;
+					showToast('권한이 없습니다.', true);
+					return;
 				}
 				const result = await response.json();
 
@@ -297,7 +416,7 @@
 			}
 		}
 
-		// 2. 종료 버튼 클릭
+		// 종료 버튼 클릭
 		if (btn.classList.contains("btn-success")) {
 			if (!confirm(`"${projectName}" 프로젝트를 종료 처리하시겠습니까?`)) return;
 
@@ -310,8 +429,8 @@
 					}
 				});
 				if (response.status === 403) {
-				    showToast('권한이 없습니다.', true);
-				    return;
+					showToast('권한이 없습니다.', true);
+					return;
 				}
 				const result = await response.json();
 
@@ -334,16 +453,16 @@
 	rowsAll().forEach((tr) => {
 		const d = rowData(tr);
 
-		// 상태가 '삭제'인 경우 filtered를 "1"로 설정하여 목록에서 제외
+		// 상태가 '삭제'인 경우 목록에서 제외
 		if (d.status === "삭제") {
 			tr.dataset.filtered = "1";
 		} else {
 			tr.dataset.filtered = "0";
 		}
 
-		// 상태가 '종료'인 경우 회색 스타일 적용 (이전 답변 코드 활용)
 		updateRowStyle(tr);
 	});
+
 	// 초기 렌더링 수행
 	renderPage();
 })();

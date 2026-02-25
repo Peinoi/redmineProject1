@@ -46,5 +46,8 @@ public interface ProjectService {
 
 	// 프로젝트 수정
 	public int updateProject(ProjectUpdateDTO updateDTO);
+	
+	// 프로젝트 복사
+	public int copyNewProject(ProjectCopyVO projectCopyVO);
 
 }

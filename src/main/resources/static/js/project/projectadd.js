@@ -767,7 +767,7 @@ function submitProject(formData) {
 		.then(data => {
 			if (data.success) {
 				alert(data.message);
-				window.location.href = '/projects';
+				window.location.href = '/projectsmgr';
 			} else {
 				alert(data.message);
 			}

@@ -19,7 +19,7 @@ public class CommonController {
 	
 	@GetMapping("/")
 	public String home() {
-		return "index";
+		return "redirect:/G2main";
 	}
 	
 	@GetMapping("empList")

@@ -126,7 +126,7 @@
 								th:data-startat="${info.startAt != null ? #dates.format(info.startAt,'yyyy-MM-dd') : ''}"
 								th:data-endat="${info.endAt != null ? #dates.format(info.endAt,'yyyy-MM-dd') : ''}">
 								<td class="col-no">[[ ${status.index + 1} ]]</td>
-								<td>[[ ${info.projectName} ]]</td>
+								<td class="ellipsis">[[ ${info.projectName} ]]</td>
 								<td><span th:if="${info.parTypeCode != null}"
 									style="margin-left: 12px; color: #888;">└ </span> [[
 									${info.typeName} ]]</td>

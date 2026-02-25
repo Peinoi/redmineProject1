@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.yedam.app.login.service.UserVO;
 import com.yedam.app.project.service.GroupVO;
+import com.yedam.app.project.service.ProjectCopyVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
 import com.yedam.app.project.service.ProjectMemberDetailVO;
@@ -96,8 +97,6 @@ public class ProjectController {
 		return "project/projectsmgr";
 	}
 
-	
-	
 	@GetMapping("projectadd")
 	public String projectAdd(Model model) {
 		List<PruserVO> user = projectService.userFindAll();
@@ -292,4 +291,40 @@ public class ProjectController {
 		return response;
 	}
 
+	// 프로젝트 복사
+	@PostMapping("project/{projectCode}/copy")
+	@ResponseBody
+	public Map<String, Object> copyProject(@PathVariable Integer projectCode, @RequestBody ProjectCopyVO projectCopyVO,
+			HttpSession session) {
+
+		Map<String, Object> response = new HashMap<>();
+
+		UserVO user = (UserVO) session.getAttribute("user");
+		if (user == null) {
+			response.put("success", false);
+			response.put("message", "로그인이 필요합니다.");
+			return response;
+		}
+
+		try {
+			// session에서 userCode 주입, PathVariable로 projectCode 주입
+			projectCopyVO.setUserCode(user.getUserCode());
+			projectCopyVO.setProjectCode(projectCode);
+
+			int result = projectService.copyNewProject(projectCopyVO);
+
+			if (result == 0) {
+				response.put("success", true);
+				response.put("message", "프로젝트가 복사되었습니다.");
+			} else {
+				response.put("success", false);
+				response.put("message", projectCopyVO.getResultMsg());
+			}
+		} catch (Exception e) {
+			response.put("success", false);
+			response.put("message", "복사 처리 중 오류가 발생했습니다: " + e.getMessage());
+		}
+
+		return response;
+	}
 }

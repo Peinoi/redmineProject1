@@ -1,18 +1,26 @@
 package com.yedam.app.project.service.impl;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.yedam.app.project.mapper.ProjectMapper;
+import com.yedam.app.project.service.AttachmentsDetailVO;
 import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectAddGroupVO;
 import com.yedam.app.project.service.ProjectAddMapVO;
 import com.yedam.app.project.service.ProjectAddStatusVO;
 import com.yedam.app.project.service.ProjectAddVO;
+import com.yedam.app.project.service.ProjectCopyVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
 import com.yedam.app.project.service.ProjectMemberDetailVO;
@@ -60,10 +68,12 @@ public class ProjectServiceImpl implements ProjectService {
 	public List<ProjectPrVO> progFindAll() {
 		return projectMapper.projPrAll();
 	}
+
 	@Override
 	public List<ProjectVO> findAllProject() {
 		return projectMapper.ProjectAll();
 	}
+
 	// 프로젝트 등록
 	@Override
 	public int projectAdd(ProjectAddVO projectAddVO) {
@@ -151,7 +161,8 @@ public class ProjectServiceImpl implements ProjectService {
 		params.put("status", status);
 		return projectMapper.updateProjectStatus(params);
 	}
-	// 유저 권한 
+
+	// 유저 권한
 	@Override
 	public List<UserProjectAuthVO> getUserProjectAuthAll(Integer userCode) {
 		Map<String, Object> params = new HashMap<>();
@@ -159,7 +170,6 @@ public class ProjectServiceImpl implements ProjectService {
 		return projectMapper.selectUserProjectAuthAll(params);
 	}
 
-	
 	// 프로젝트 단건 조회 및 수정
 	@Override
 	public ProjectDetailVO getProjectDetail(Integer projectCode) {
@@ -175,7 +185,6 @@ public class ProjectServiceImpl implements ProjectService {
 	public List<ProjectGroupDetailVO> getProjectGroups(Integer projectCode) {
 		return projectMapper.selectProjectGroups(projectCode);
 	}
-
 
 	@Override
 	@Transactional
@@ -268,5 +277,47 @@ public class ProjectServiceImpl implements ProjectService {
 		return result;
 	}
 
-	
+	// 프로젝트 복사
+	@Override
+	@Transactional
+	public int copyNewProject(ProjectCopyVO projectCopyVO) {
+
+		// 1. 프로시저 호출 (DB 레코드 복사 - 프로시저 내 COMMIT/ROLLBACK 없음)
+		projectMapper.projectCopy(projectCopyVO);
+
+		// 2. 프로시저 실패 시 예외 발생 → @Transactional이 롤백 처리
+		if (projectCopyVO.getResultCode() != 0) {
+			throw new RuntimeException(projectCopyVO.getResultMsg());
+		}
+
+		// 3. 복사된 프로젝트의 첨부파일 상세 목록 조회
+		List<AttachmentsDetailVO> details = projectMapper.selectCopiedAttachments(projectCopyVO.getNewProjectCode());
+
+		// 4. 물리 파일 복사 + DB stored_name 업데이트
+		for (AttachmentsDetailVO detail : details) {
+			String originalStoredName = detail.getStoredName();
+			String ext = originalStoredName.contains(".")
+					? originalStoredName.substring(originalStoredName.lastIndexOf("."))
+					: "";
+			String newStoredName = UUID.randomUUID().toString() + ext;
+
+			Path src = Paths.get(detail.getPath(), originalStoredName);
+			Path dest = Paths.get(detail.getPath(), newStoredName);
+
+			try {
+				// 원본 파일이 존재할 때만 복사
+				if (Files.exists(src)) {
+					Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
+				}
+			} catch (IOException e) {
+				// 파일 복사 실패 시 예외 발생 → @Transactional이 DB 롤백 처리
+				throw new RuntimeException("파일 복사 실패: " + originalStoredName, e);
+			}
+
+			// DB stored_name 새 파일명으로 업데이트
+			projectMapper.updateStoredName(detail.getFileDetailCode(), newStoredName);
+		}
+
+		return projectCopyVO.getResultCode();
+	}
 }

@@ -396,4 +396,48 @@
 	      AND project_code = #{projectCode} * -1  <!-- 음수 상태인 것 -->
 	</select>
     
+    
+    <!-- 프로젝트 복사 프로시저 호출 -->
+	<select id="projectCopy"
+	        parameterType="ProjectCopyVO"
+	        statementType="CALLABLE">
+	    {
+	        CALL PROC_COPY_PROJECT(
+	            #{projectName,    mode=IN,  jdbcType=VARCHAR},
+	            #{projectCode,    mode=IN,  jdbcType=NUMERIC},
+	            #{userCode,       mode=IN,  jdbcType=NUMERIC},
+	            #{newProjectCode, mode=OUT, jdbcType=NUMERIC},
+	            #{resultCode,     mode=OUT, jdbcType=NUMERIC},
+	            #{resultMsg,      mode=OUT, jdbcType=VARCHAR}
+	        )
+	    }
+	</select>
+	
+	<!-- 복사된 프로젝트의 첨부파일 상세 목록 조회 -->
+	<select id="selectCopiedAttachments"
+	        parameterType="int"
+	        resultType="AttachmentsDetailVO">
+	    SELECT ad.file_detail_code
+	         , ad.file_code
+	         , ad.original_name
+	         , ad.stored_name
+	         , ad.path
+	         , ad.mime_type
+	         , ad.size_bytes
+	         , ad.is_used
+	      FROM attachments_detail ad
+	      JOIN attachments         a ON a.file_code = ad.file_code
+	      JOIN (
+	               SELECT file_code FROM issues  WHERE project_code = #{newProjectCode}
+	               UNION
+	               SELECT file_code FROM notices WHERE project_code = #{newProjectCode}
+	           ) ref ON ref.file_code = a.file_code
+	</select>
+	
+	<!-- 물리 파일 복사 후 stored_name 업데이트 -->
+	<update id="updateStoredName">
+	    UPDATE attachments_detail
+	       SET stored_name = #{newStoredName}
+	     WHERE file_detail_code = #{fileDetailCode}
+	</update>
 </mapper>

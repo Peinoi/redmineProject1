@@ -112,7 +112,7 @@
 						<tr class="projectRow" th:each="pro, status : ${list}"
 							th:data-project-code="${pro.projectCode}">
 							<td>[[ ${status.index+1} ]]</td>
-							<td>[[ ${pro.projectName} ]]</td>
+							<td class="ellipsis">[[ ${pro.projectName} ]]</td>
 							<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
 							<td>[[ ${pro.name} ]]</td>
 							<td>[[ ${pro.phone} ]]</td>
@@ -192,7 +192,7 @@
 		</div>
 
 
-		<!-- 모달창 -->
+		<!-- 관리자 선택 모달창 -->
 		<div class="modal fade" id="creatorSelectModal" tabindex="-1"
 			aria-hidden="true">
 			<div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -206,6 +206,62 @@
 						<input type="text" id="creatorModalSearch"
 							class="form-control mb-2" placeholder="관리자명 검색">
 						<div class="list-group" id="creatorModalList"></div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- 프로젝트 복사 모달 -->
+		<div class="modal fade" id="copyProjectModal" tabindex="-1"
+			aria-hidden="true">
+			<div class="modal-dialog modal-md modal-dialog-centered">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title">
+							<i class="fas fa-user-plus me-2"></i>프로젝트 복사
+						</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal"
+							aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+
+						<div class="mb-3">
+							<label class="form-label fw-bold"> 신규 복사 프로젝트 </label><span
+								class="text-danger">*</span> <input type="text"
+								id="newCopyProject" class="form-control"
+								style="background: #f3f4f6; color: #111827; font-weight: 700; letter-spacing: 1px;">
+						</div>
+
+						<div class="mb-3">
+							<label class="form-label fw-bold">등록자명 <span
+								class="text-danger">*</span></label> <input type="text"
+								id="addProjectUser" class="form-control"
+								th:value="${session.user != null ? session.user.name : ''}"
+								maxlength="50" readonly>
+							<div class="invalid-feedback" id="nameError"></div>
+						</div>
+						<div class="mb-1">
+							<label class="form-label fw-bold"> 복사 항목 </label>
+						</div>
+						<div class="alert alert-info py-2 mb-2" style="font-size: 14px;">
+							<i class="fas fa-minus me-1"></i> 구성원 <br /> <i
+								class="fas fa-minus me-1"></i> 그룹 <br /> <i
+								class="fas fa-minus me-1"></i> 일감 유형 <br /> <i
+								class="fas fa-minus me-1"></i> 일감 <br /> <i
+								class="fas fa-minus me-1"></i> 공지사항 <br />
+
+						</div>
+
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary"
+							data-bs-dismiss="modal">
+							<i class="fas fa-times me-1"></i>취소
+						</button>
+						<button type="button" class="btn btn-success" id="btnSaveUser">
+							<i class="fas fa-save me-1"></i> 복사
+						</button>
 					</div>
 				</div>
 			</div>

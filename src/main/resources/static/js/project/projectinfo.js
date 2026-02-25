@@ -198,12 +198,12 @@ function initializeChanges() {
 // ============================================
 function validateProjectName(event) {
 	const input = event.target;
-	const regExp = /[^\wㄱ-ㅎ가-힣]/g;
-	const filtered = value.replace(regExp, '');
+	const value = input.value;
+	const filtered = value.replace(/[^\w\sㄱ-ㅎ가-힣]/g, '').replace(/\s/g, '');
 
 	if (value !== filtered) {
 		input.value = filtered;
-		showValidationMessage(input, '특수문자는 사용할 수 없습니다.');
+		showValidationMessage(input, '특수문자와 공백은 사용할 수 없습니다.');
 		return false;
 	}
 
