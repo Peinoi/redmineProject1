@@ -296,8 +296,8 @@
                   data-login-user-code=${loginUserCode != null ? loginUserCode : ''}"
               >
                 <td class="col-no"></td>
-                <td th:text="${issue.projectName}"></td>
-                <td th:text="${issue.title}"></td>
+                <td th:text="${issue.projectName}" class="text-start"></td>
+                <td th:text="${issue.title}" class="text-start"></td>
                 <td
                   th:text="${issue.typeName != null ? issue.typeName : '-'}"
                 ></td>

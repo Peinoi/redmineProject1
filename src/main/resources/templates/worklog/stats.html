@@ -1,0 +1,375 @@
+<!doctype html>
+<html
+  xmlns:th="https://www.thymeleaf.org/"
+  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{common/layouts/default_layout}"
+  layout:fragment="Content"
+>
+  <head>
+    <meta charset="UTF-8" />
+    <title>소요시간 통계</title>
+    <link rel="stylesheet" th:href="@{/css/worklog/worklog-stats.css}" />
+  </head>
+
+  <body>
+    <div class="x-page-title">
+      <h3 class="page-title">소요시간 통계</h3>
+      <div class="page-title-sub">
+        프로젝트별 소요시간 통계를 확인할 수 있습니다.
+      </div>
+    </div>
+
+    <!-- 필터 -->
+    <form id="worklogStatsFilterForm" th:action="@{/worklogStats}" method="get">
+      <div class="issue-filters mb-3 mt-3">
+        <div class="row g-2 align-items-end">
+          <!-- 프로젝트 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">프로젝트</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterProjectText"
+                class="form-control"
+                placeholder="프로젝트 선택"
+                readonly
+                th:value="${projectName}"
+              />
+              <input
+                type="hidden"
+                id="filterProjectValue"
+                name="projectCode"
+                th:value="${projectCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenProjectModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+
+          <!-- 유형 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">유형</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterTypeText"
+                class="form-control"
+                placeholder="유형 선택"
+                readonly
+                th:value="${typeLabel}"
+              />
+              <input
+                type="hidden"
+                id="filterTypeValue"
+                name="typeCode"
+                th:value="${param.typeCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenTypeModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+
+          <!-- 일감명 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">일감</label>
+            <input
+              type="text"
+              id="filterIssueTitle"
+              name="issueTitle"
+              class="form-control"
+              placeholder="일감명 입력"
+              th:value="${param.issueTitle}"
+            />
+          </div>
+
+          <!-- 작업자 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">작업자</label>
+            <div class="input-group">
+              <input
+                type="text"
+                id="filterWorkerText"
+                class="form-control"
+                placeholder="작업자 선택"
+                readonly
+                th:value="${workerName}"
+              />
+              <input
+                type="hidden"
+                id="filterWorkerValue"
+                name="workerCode"
+                th:value="${param.workerCode}"
+              />
+              <button
+                type="button"
+                class="btn btn-secondary"
+                id="btnOpenWorkerModal"
+              >
+                선택
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-2 mt-1 align-items-end">
+          <!-- 시간 -->
+          <div class="col-12 col-md-3">
+            <label class="form-label">소요시간(시/분) 이상</label>
+            <div class="d-flex gap-2">
+              <input
+                type="number"
+                id="filterWorkHour"
+                class="form-control"
+                placeholder="시"
+                min="0"
+                max="999"
+                inputmode="numeric"
+              />
+              <input
+                type="number"
+                id="filterWorkMinute"
+                class="form-control"
+                placeholder="분"
+                min="0"
+                max="59"
+                inputmode="numeric"
+              />
+            </div>
+            <input
+              type="hidden"
+              id="filterWorkTime"
+              name="workTime"
+              th:value="${(param.workTime != null and param.workTime[0] != '0:00') ? param.workTime[0] : ''}"
+            />
+          </div>
+
+          <!-- 그룹 토글 -->
+          <div class="col-12 col-md-6 stats-group-col">
+            <div class="stats-group-wrap">
+              <div class="stats-group-box">
+                <div class="stats-radio">
+                  <label class="stats-opt">
+                    <input
+                      type="radio"
+                      name="groupBy"
+                      id="groupByProject"
+                      value="project"
+                      th:checked="${param.groupBy == null or param.groupBy == 'project'}"
+                    />
+
+                    <span>프로젝트</span>
+                  </label>
+
+                  <label class="stats-opt">
+                    <input
+                      type="radio"
+                      name="groupBy"
+                      id="groupByWorker"
+                      value="worker"
+                      th:checked="${param.groupBy == 'worker'}"
+                    />
+                    <span>작업자</span>
+                  </label>
+
+                  <label class="stats-opt">
+                    <input
+                      type="radio"
+                      name="groupBy"
+                      id="groupByType"
+                      value="type"
+                      th:checked="${param.groupBy == 'type'}"
+                    />
+                    <span>유형</span>
+                  </label>
+                </div>
+
+                <label class="stats-opt">
+                  <input
+                    type="checkbox"
+                    id="optIssue"
+                    th:checked="${param.includeIssue == 'true'}"
+                  />
+                  <span>일감</span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <!-- 버튼 -->
+          <div class="col-12 col-md-3 d-flex justify-content-end gap-2">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="btnResetFilters"
+            >
+              <i class="fas fa-redo me-1"></i>초기화
+            </button>
+
+            <button type="button" class="btn btn-primary" id="btnApplyFilters">
+              <i class="fa-solid fa-magnifying-glass"></i>조회
+            </button>
+          </div>
+        </div>
+      </div>
+      <input
+        type="hidden"
+        id="includeIssueHidden"
+        name="includeIssue"
+        th:value="${param.includeIssue}"
+      />
+    </form>
+
+    <!-- 탭 + 테이블 -->
+    <div class="card mb-4">
+      <div
+        class="card-header d-flex align-items-center justify-content-between"
+      >
+        <div class="d-flex align-items-center gap-3">
+          <i class="fas fa-table"></i>
+
+          <ul class="nav nav-tabs nav-tabs-sm mb-0" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link"
+                th:href="@{/worklogs}"
+                role="tab"
+                aria-selected="false"
+                >목록</a
+              >
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active"
+                th:href="@{/worklogStats}"
+                role="tab"
+                aria-selected="true"
+                >통계</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="text-muted small" id="statsPageInfo"></div>
+      </div>
+      <div id="statsOverlay" class="stats-overlay d-none">
+        <div class="spinner-border text-primary"></div>
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table
+            class="table table-hover align-middle text-center"
+            id="statsTable"
+          >
+            <thead class="table-light">
+              <tr id="statsTheadRow"></tr>
+            </thead>
+            <tbody id="statsTbody"></tbody>
+          </table>
+        </div>
+
+        <nav class="d-flex justify-content-center mt-3 mb-3">
+          <ul class="pagination mb-0" id="statsPagination"></ul>
+        </nav>
+      </div>
+    </div>
+
+    <!-- 프로젝트/유형/작업자 모달 (목록 페이지와 동일 구조 재사용) -->
+    <div
+      class="modal fade"
+      id="projectSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">프로젝트 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="projectModalSearch"
+              class="form-control mb-2"
+              placeholder="프로젝트명 검색"
+            />
+            <div class="list-group" id="projectModalList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="typeSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">유형 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="typeModalSearch"
+              class="form-control mb-2"
+              placeholder="유형명 검색"
+            />
+            <div id="typeModalTree" class="type-tree"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="workerSelectModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">작업자 선택</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="text"
+              id="workerModalSearch"
+              class="form-control mb-2"
+              placeholder="작업자명 검색"
+            />
+            <div id="workerModalTree" class="type-tree"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script th:src="@{/js/worklog/worklog-stats.js}"></script>
+  </body>
+</html>

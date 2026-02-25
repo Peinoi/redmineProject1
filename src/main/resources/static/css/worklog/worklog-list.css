@@ -364,3 +364,67 @@
   margin-left: 4px;
   line-height: 1;
 }
+
+/* =========================================================
+   Worklog Tabs 
+   ========================================================= */
+
+/* 탭 전체 컨테이너 */
+.card-header .nav-tabs {
+  border-bottom: 0;
+  gap: 8px;
+}
+
+/* 탭 링크를 버튼처럼 */
+.card-header .nav-tabs .nav-link {
+  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.55);
+  color: #374151;
+
+  font-weight: 800;
+  font-size: 13px;
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+
+/* hover: "눌러볼 수 있겠다" */
+.card-header .nav-tabs .nav-link:hover {
+  background: #ffffff;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08);
+}
+
+/* active: 선택된 탭은 더 진하게 */
+.card-header .nav-tabs .nav-link.active {
+  background: #457aec;
+  border-color: #2c6cf5;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.18);
+}
+
+/* active의 밑줄/기존 라인 제거 */
+.card-header .nav-tabs .nav-link::after {
+  content: none !important;
+}
+
+/* 키보드 포커스 */
+.card-header .nav-tabs .nav-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* 아이콘도 탭 톤에 맞게 */
+.card-header .nav-tabs .nav-link i {
+  opacity: 0.9;
+}

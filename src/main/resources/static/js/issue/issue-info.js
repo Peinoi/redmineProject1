@@ -70,6 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ref.includes("/my")) return location.replace(withTs(ref));
     if (ref.includes("/calendar")) return location.replace(withTs(ref));
     if (ref.includes("/worklogs")) return location.replace(withTs(ref));
+    if (ref.includes("/worklogStats")) return location.replace(withTs(ref));
 
     // ref가 비어있거나 이상하면 anchor 우선
     if (anchor) return location.replace(withTs(anchor));
@@ -321,8 +322,33 @@ function renderHistory() {
   const dateFields = new Set(["dueAt", "startedAt", "resolvedAt"]);
 
   document.querySelectorAll(".history-list").forEach((listEl) => {
-    const items = Array.from(listEl.querySelectorAll(".history-item"));
-    if (items.length === 0) return;
+    const items = Array.from(listEl.querySelectorAll(".history-item")).filter(
+      (item) => {
+        const metaStr = item.dataset.meta;
+
+        const action = (item.dataset.action || "").trim();
+        if (action === "CREATE") return true;
+
+        if (!metaStr || metaStr === "null") return false;
+
+        try {
+          const obj = JSON.parse(metaStr);
+          const changes = Array.isArray(obj.changes) ? obj.changes : null;
+
+          // changes 배열이 있고 비어있으면 제거
+          if (changes && changes.length === 0) return false;
+
+          return true;
+        } catch {
+          return true;
+        }
+      },
+    );
+
+    if (items.length === 0) {
+      listEl.innerHTML = "";
+      return;
+    }
 
     let lastDate = "";
     const frag = document.createDocumentFragment();

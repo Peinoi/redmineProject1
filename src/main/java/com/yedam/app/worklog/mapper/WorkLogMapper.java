@@ -33,4 +33,16 @@ Map<String, Object> selectWorklogAuthInfo(@Param("workLogCode") Long workLogCode
 int updateWorkLog(WorkLogVO vo);
 
 int deleteWorkLog(@Param("workLogCode") Long workLogCode);
+
+List<Map<String, Object>> selectWorklogStats(
+	    @Param("loginUserCode") Integer loginUserCode,
+	    @Param("groupBy") String groupBy,
+	    @Param("includeIssue") boolean includeIssue,
+
+	    @Param("projectCode") Long projectCode,
+	    @Param("typeCode") Long typeCode,
+	    @Param("workerCode") Integer workerCode,
+	    @Param("issueTitle") String issueTitle,
+	    @Param("minMinutes") Integer minMinutes
+	);
 }

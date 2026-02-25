@@ -17,4 +17,15 @@ public interface WorkLogService {
   void updateWorklog(Long workLogCode, WorkLogVO vo, HttpSession session);
 
   void deleteWorklog(Long workLogCode, HttpSession session);
+  
+  List<Map<String, Object>> getStats(
+		    String groupBy,
+		    boolean includeIssue,
+		    Long projectCode,
+		    Long typeCode,
+		    Integer workerCode,
+		    String issueTitle,
+		    String workTime,
+		    HttpSession session
+		);
 }

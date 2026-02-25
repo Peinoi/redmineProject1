@@ -108,7 +108,7 @@
     worker_code,
     spent_minutes,
     description
-  ) VALUES (
+  ) VALUES ( 
     #{workLogCode},
     #{issueCode},
     #{workDate},
@@ -177,4 +177,95 @@
   DELETE FROM work_logs
   WHERE work_log_code = #{workLogCode}
 </delete>
+
+<!-- 통계 -->
+<select id="selectWorklogStats" resultType="map">
+  SELECT
+    p.project_code AS "projectCode",
+    p.project_name AS "projectName",
+
+    <choose>
+      <when test="groupBy == 'type'">
+        NVL(t.type_code, 0) AS "groupKey",
+        NVL(t.type_name, '-') AS "groupName",
+      </when>
+      <when test="groupBy == 'project'">
+        0 AS "groupKey",
+        '-' AS "groupName",
+      </when>
+      <otherwise>
+        u.user_code AS "groupKey",
+        u.name AS "groupName",
+      </otherwise>
+    </choose>
+
+    <if test="includeIssue">
+      i.issue_code AS "issueCode",
+      i.title AS "issueTitle",
+    </if>
+
+    SUM(wl.spent_minutes) AS "minutes"
+
+  FROM work_logs wl
+  JOIN issues i ON i.issue_code = wl.issue_code
+  JOIN projects p ON p.project_code = i.project_code
+  JOIN users u ON u.user_code = wl.worker_code
+  LEFT JOIN types t ON t.type_code = i.type_code
+
+  <where>
+    EXISTS (
+      SELECT 1
+      FROM vw_user_auth va
+      WHERE va.project_code = p.project_code
+        AND va.user_code = #{loginUserCode}
+    )
+
+    <if test="projectCode != null">
+      AND p.project_code = #{projectCode}
+    </if>
+
+    <if test="typeCode != null">
+      AND i.type_code = #{typeCode}
+    </if>
+
+    <if test="workerCode != null">
+      AND wl.worker_code = #{workerCode}
+    </if>
+
+    <if test="issueTitle != null and issueTitle != ''">
+      AND i.title LIKE '%' || #{issueTitle} || '%'
+    </if>
+
+    <!-- 여기서 minMinutes 조건 제거 (개별 row 기준 필터링 방지) -->
+  </where>
+
+  GROUP BY
+    p.project_code,
+    p.project_name,
+
+    <choose>
+      <when test="groupBy == 'type'">
+        t.type_code,
+        t.type_name
+      </when>
+      <when test="groupBy == 'project'">
+        0
+      </when>
+      <otherwise>
+        u.user_code,
+        u.name
+      </otherwise>
+    </choose>
+
+    <if test="includeIssue">
+      , i.issue_code,
+        i.title
+    </if>
+
+  <if test="minMinutes != null">
+    HAVING SUM(wl.spent_minutes) &gt;= #{minMinutes}
+  </if>
+
+  ORDER BY p.project_name
+</select>
 </mapper>

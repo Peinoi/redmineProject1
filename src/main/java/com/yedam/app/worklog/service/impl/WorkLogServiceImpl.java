@@ -195,4 +195,63 @@ public class WorkLogServiceImpl implements WorkLogService {
     int deleted = workLogMapper.deleteWorkLog(workLogCode);
     if (deleted != 1) throw new IllegalStateException("삭제에 실패했습니다.");
   }
+  
+  @Override
+  public List<Map<String, Object>> getStats(
+      String groupBy,
+      boolean includeIssue,
+      Long projectCode,
+      Long typeCode,
+      Integer workerCode,
+      String issueTitle,
+      String workTime,
+      HttpSession session
+  ) {
+    UserVO user = (UserVO) session.getAttribute("user");
+    if (user == null || user.getUserCode() == null) {
+      throw new IllegalStateException("로그인이 필요합니다.");
+    }
+
+    // groupBy 기본값 정리 (project/worker/type 허용)
+    String g = (groupBy == null) ? "worker" : groupBy.toLowerCase();
+    if (!"project".equals(g) && !"worker".equals(g) && !"type".equals(g)) {
+      g = "worker";
+    }
+
+    Integer minMinutes = parseWorkTimeToMinutes(workTime);
+
+    return workLogMapper.selectWorklogStats(
+        user.getUserCode(),
+        g,
+        includeIssue,
+        projectCode,
+        typeCode,
+        workerCode,
+        issueTitle,
+        minMinutes
+    );
+  }
+
+  private Integer parseWorkTimeToMinutes(String workTime) {
+    if (workTime == null) return null;
+    String s = workTime.trim();
+    if (s.isEmpty()) return null;
+
+    // "0:00"은 미적용으로 취급
+    if ("0:00".equals(s) || "00:00".equals(s)) return null;
+
+    String[] parts = s.split(":");
+    if (parts.length != 2) return null;
+
+    try {
+      int h = Integer.parseInt(parts[0].trim());
+      int m = Integer.parseInt(parts[1].trim());
+      if (h < 0) h = 0;
+      if (m < 0) m = 0;
+      if (m > 59) m = 59;
+      return h * 60 + m;
+    } catch (Exception e) {
+      return null;
+    }
+  }
 }

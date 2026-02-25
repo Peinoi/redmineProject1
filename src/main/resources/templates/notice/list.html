@@ -171,8 +171,8 @@
                   data-created=${notice.createdAt != null ? #temporals.format(notice.createdAt,'yyyy-MM-dd') : ''}"
               >
                 <td class="col-no"></td>
-                <td th:text="${notice.projectName}"></td>
-                <td th:text="${notice.title}"></td>
+                <td th:text="${notice.projectName}" class="text-start"></td>
+                <td th:text="${notice.title}" class="text-start"></td>
                 <td>
                   <a
                     th:if="${notice.userCode != null}"
