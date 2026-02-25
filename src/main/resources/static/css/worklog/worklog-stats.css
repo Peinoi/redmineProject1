@@ -1,0 +1,586 @@
+/* =========================================================
+   Worklog Stats - /static/css/worklog/worklog-stats.css
+   ========================================================= */
+
+/* page title */
+.x-page-title {
+  margin: 14px 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.x-page-title .page-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: -0.2px;
+}
+
+.x-page-title .page-title-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* filter (worklog-list.css와 통일) */
+.issue-filters {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 14px 10px;
+  background: #f9fafb;
+}
+
+.issue-filters + .card {
+  margin-top: 10px;
+}
+
+.issue-filters .form-label {
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #111827;
+}
+
+.issue-filters .input-group .btn {
+  white-space: nowrap;
+}
+
+/* worklog: time split inputs 느낌 통일 */
+.issue-filters #filterWorkHour,
+.issue-filters #filterWorkMinute {
+  min-width: 0;
+}
+
+.issue-filters .d-flex.gap-2 > .form-control {
+  border-radius: 10px;
+}
+
+.issue-filters .d-flex.gap-2 > .form-control:focus {
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
+/* =========================================================
+   group toggle (안 늘어나고, md 이상 중앙)
+   ========================================================= */
+
+.stats-group-col {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+
+@media (min-width: 768px) {
+  .stats-group-col {
+    justify-content: center;
+  }
+}
+
+.stats-group-wrap {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.stats-group-box {
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  width: fit-content;
+  max-width: 100%;
+}
+
+.stats-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+
+  padding-right: 10px;
+  margin-right: 6px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.stats-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+  font-size: 13px;
+  user-select: none;
+  line-height: 1;
+}
+
+.stats-opt input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+/* =========================================================
+   card / table container (worklog-list.css와 통일)
+   ========================================================= */
+
+.card.mb-4 {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  position: relative; /* overlay */
+}
+
+/* header */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  padding: 10px 12px;
+  background-color: rgb(224, 229, 243);
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* dropdown/모달 대비 */
+.card {
+  overflow: visible;
+}
+
+.card-body {
+  padding: 0;
+  overflow: visible;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  overflow-y: visible !important;
+}
+
+/* =========================================================
+   tabs (worklog-list.css와 동일 톤)
+   ========================================================= */
+
+.card-header .nav-tabs {
+  border-bottom: 0;
+  gap: 8px;
+}
+
+.card-header .nav-tabs .nav-link {
+  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.55);
+  color: #374151;
+
+  font-weight: 800;
+  font-size: 13px;
+
+  padding: 6px 12px;
+  border-radius: 999px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.05s ease;
+}
+
+.card-header .nav-tabs .nav-link:hover {
+  background: #ffffff;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08);
+}
+
+.card-header .nav-tabs .nav-link.active {
+  background: #457aec;
+  border-color: #2c6cf5;
+  color: #ffffff;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.18);
+}
+
+.card-header .nav-tabs .nav-link::after {
+  content: none !important;
+}
+
+.card-header .nav-tabs .nav-link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+.card-header .nav-tabs .nav-link i {
+  opacity: 0.9;
+}
+
+/* =========================================================
+   table (tbody scroll + thead fixed)
+   ========================================================= */
+
+#statsTable {
+  margin: 0;
+  width: 100%;
+  white-space: nowrap;
+  table-layout: fixed;
+}
+
+#statsTable thead,
+#statsTable tbody {
+  display: block;
+}
+
+#statsTable thead tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+#statsTable tbody {
+  display: block;
+  max-height: 460px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#statsTable tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+#statsTable thead th {
+  font-size: 14px;
+  font-weight: 800;
+  vertical-align: middle;
+  background-color: rgb(224, 229, 243);
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 10px 10px;
+}
+
+#statsTable tbody td {
+  font-size: 14px;
+  vertical-align: middle;
+  color: #111827;
+  border-color: #eeeeee;
+  padding: 8px 10px;
+}
+
+#statsTable.table-hover > tbody > tr:hover > * {
+  background-color: #f9fafb;
+}
+
+/* 컬럼 폭(4열 고정) */
+#statsTable th:nth-child(1),
+#statsTable td:nth-child(1) {
+  width: 35%;
+}
+#statsTable th:nth-child(2),
+#statsTable td:nth-child(2) {
+  width: 25%;
+}
+#statsTable th:nth-child(3),
+#statsTable td:nth-child(3) {
+  width: 25%;
+}
+#statsTable th:nth-child(4),
+#statsTable td:nth-child(4) {
+  width: 15%;
+}
+
+/* =========================================================
+   stats indentation / accordion
+   ========================================================= */
+
+.stats-cell {
+  text-align: left;
+}
+
+.stats-lv0 {
+  font-weight: 800;
+}
+
+.stats-lv1 {
+  padding-left: 18px !important;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stats-lv2 {
+  padding-left: 36px !important;
+  font-weight: 600;
+  color: #374151;
+}
+
+.stats-time {
+  font-weight: 800;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.stats-time-subtle {
+  opacity: 0.65;
+  font-weight: 700;
+}
+
+.stats-accordion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stats-arrow {
+  width: 12px;
+  display: inline-block;
+  font-size: 11px;
+}
+
+/* issue badge */
+.stats-issue-badge {
+  font-size: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* subtle row */
+.stats-row-muted td {
+  color: #6b7280;
+}
+
+/* =========================================================
+   overlay
+   ========================================================= */
+
+.stats-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* =========================================================
+   pagination (worklog-list와 통일)
+   ========================================================= */
+
+.pagination .page-link {
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.pagination .page-link:hover {
+  background-color: #f3f4f6;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #111827;
+  border-color: #111827;
+  color: #ffffff;
+}
+
+/* =========================================================
+   MODALS (project/type/worker) - worklog-list.css와 동일
+   ========================================================= */
+
+/* Project modal list wrapper */
+#projectSelectModal #projectModalList {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+/* Project modal items */
+#projectSelectModal #projectModalList > .list-group-item,
+#projectSelectModal #projectModalList > button.list-group-item,
+#projectSelectModal #projectModalList > .list-group-item-action,
+#projectSelectModal #projectModalList > button.list-group-item-action {
+  width: 100%;
+  text-align: left;
+
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+
+  background: rgb(224, 229, 243) !important;
+  color: #111827 !important;
+
+  font-weight: 800;
+  font-size: 14px;
+
+  padding: 10px 14px !important;
+  margin-bottom: 10px !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+
+  box-shadow: none !important;
+}
+
+#projectSelectModal #projectModalList > :last-child {
+  margin-bottom: 0 !important;
+}
+
+#projectSelectModal #projectModalList > .list-group-item:hover,
+#projectSelectModal #projectModalList > button.list-group-item:hover {
+  background: #dee2e6 !important;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.08) !important;
+}
+
+#projectSelectModal #projectModalList > .list-group-item:focus,
+#projectSelectModal #projectModalList > button.list-group-item:focus,
+#projectSelectModal #projectModalList > .list-group-item:active,
+#projectSelectModal #projectModalList > button.list-group-item:active,
+#projectSelectModal #projectModalList > .list-group-item.active,
+#projectSelectModal #projectModalList > button.list-group-item.active {
+  outline: none !important;
+  background: #d5dbe3 !important;
+  color: #111827 !important;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.1) !important;
+}
+
+/* Tree modal base */
+#typeModalTree,
+#workerModalTree,
+.type-tree {
+  padding: 0;
+  border: none !important;
+  background-color: #ffffff;
+}
+
+#typeModalTree ul,
+#workerModalTree ul,
+.type-tree ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.type-project-group {
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background-color: #f8f9fa;
+  box-shadow: none;
+}
+
+.type-project-header {
+  background-color: rgb(224, 229, 243);
+  color: #111827;
+  padding: 10px 14px;
+  font-weight: 800;
+  font-size: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  transition: background-color 0.15s ease;
+}
+
+.type-project-header:hover {
+  background-color: #dee2e6;
+}
+
+.type-project-header::before {
+  content: "▶";
+  font-size: 12px;
+}
+
+.type-project-header.active::before {
+  content: "▼";
+}
+
+.type-project-header.active {
+  filter: brightness(0.98);
+}
+
+.type-item {
+  cursor: pointer;
+  padding: 10px 14px;
+  display: block;
+  font-size: 14px;
+  color: #111827;
+  background-color: #ffffff;
+  border-bottom: 1px solid #eeeeee;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.type-item:hover {
+  background-color: #e2e6ea;
+}
+
+.type-project-group li:last-child > .type-item {
+  border-bottom: none;
+}
+
+.type-project-group li:last-child > ul li:last-child > .type-item {
+  border-bottom: none;
+}
+
+/* indentation like list page */
+#typeModalTree ul ul .type-item,
+#workerModalTree ul ul .type-item,
+.type-tree ul ul .type-item {
+  padding-left: 28px;
+}
+
+#typeModalTree ul ul ul .type-item,
+#workerModalTree ul ul ul .type-item,
+.type-tree ul ul ul .type-item {
+  padding-left: 50px;
+}
+
+#typeModalTree ul ul ul ul .type-item,
+#workerModalTree ul ul ul ul .type-item,
+.type-tree ul ul ul ul .type-item {
+  padding-left: 72px;
+}
+
+#typeModalTree .text-muted,
+#workerModalTree .text-muted {
+  padding: 14px;
+}
+
+/* =========================================================
+   scrollbar tone
+   ========================================================= */
+
+#statsTable tbody::-webkit-scrollbar {
+  width: 10px;
+}
+
+#statsTable tbody::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+  border: 2px solid #ffffff;
+}
+
+#statsTable tbody::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (max-height: 820px) {
+  #statsTable tbody {
+    max-height: 460px;
+  }
+}
+
+@media (max-height: 720px) {
+  #statsTable tbody {
+    max-height: 380px;
+  }
+}

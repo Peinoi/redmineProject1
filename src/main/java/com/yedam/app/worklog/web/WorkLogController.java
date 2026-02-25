@@ -122,4 +122,40 @@ public class WorkLogController {
     }
     return res;
   }
+  
+  @GetMapping("/worklogStats")
+  public String worklogStatsPage() {
+      return "worklog/stats";
+  }
+  
+  @ResponseBody
+  @GetMapping("/api/worklogs/stats")
+  public Map<String, Object> stats(
+      @RequestParam(defaultValue = "worker") String groupBy,
+      @RequestParam(defaultValue = "false") boolean includeIssue,
+
+      @RequestParam(required = false) Long projectCode,
+      @RequestParam(required = false) Long typeCode,
+      @RequestParam(required = false) Integer workerCode,
+      @RequestParam(required = false) String issueTitle,
+      @RequestParam(required = false) String workTime,
+
+      HttpSession session
+  ) {
+    Map<String, Object> res = new HashMap<>();
+    try {
+      List<Map<String, Object>> data = workLogService.getStats(
+          groupBy, includeIssue,
+          projectCode, typeCode, workerCode, issueTitle, workTime,
+          session
+      );
+
+      res.put("success", true);
+      res.put("data", data);
+    } catch (Exception e) {
+      res.put("success", false);
+      res.put("message", e.getMessage());
+    }
+    return res;
+  }
 }

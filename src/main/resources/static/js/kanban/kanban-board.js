@@ -38,10 +38,8 @@
     typeModalEl: $("#typeSelectModal"),
 
     projectModalList: $("#projectModalList"),
-    // NOTE: kanban-board.html 에서 id를 assigneeModalTree/creatorModalTree 로 바꿔야 함
     assigneeModalList: $("#assigneeModalTree"),
     creatorModalList: $("#creatorModalTree"),
-
     typeModalTree: $("#typeModalTree"),
 
     projectModalSearch: $("#projectModalSearch"),
@@ -64,6 +62,14 @@
     progressModalTitle: $("#progressModalTitle"),
     progressInput: $("#progressInput"),
     btnProgressSubmit: $("#btnProgressSubmit"),
+
+    resolveHour: $("#resolveHour"),
+    resolveMinute: $("#resolveMinute"),
+    progressHour: $("#progressHour"),
+    progressMinute: $("#progressMinute"),
+
+    progressDesc: $("#progressDesc"),
+    resolveDesc: $("#resolveDesc"),
   };
 
   if (!ui.form) return;
@@ -85,6 +91,90 @@
     toastEl.style.display = "block";
     const t = bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 });
     t.show();
+  };
+
+  // ------------------------------
+  // Worklog helpers
+  // ------------------------------
+  const pad2 = (n) => String(n).padStart(2, "0");
+
+  const todayYmd = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  };
+
+  const readWorklogInputs = (mode) => {
+    const hEl = mode === "progress" ? ui.progressHour : ui.resolveHour;
+    const mEl = mode === "progress" ? ui.progressMinute : ui.resolveMinute;
+    const dEl = mode === "progress" ? ui.progressDesc : ui.resolveDesc;
+
+    const rawH = (hEl?.value || "").trim();
+    const rawM = (mEl?.value || "").trim();
+    const desc = (dEl?.value || "").trim();
+
+    const hasDescInput = desc !== "";
+
+    const hour = rawH === "" ? 0 : Number(rawH);
+    const minute = rawM === "" ? 0 : Number(rawM);
+
+    if (Number.isNaN(hour) || hour < 0)
+      return { error: "시간(시)을 올바르게 입력해 주세요." };
+    if (Number.isNaN(minute) || minute < 0 || minute > 59)
+      return { error: "시간(분)은 0~59로 입력해 주세요." };
+
+    const spentMinutes = hour * 60 + minute;
+
+    const shouldSave = spentMinutes >= 1 || hasDescInput;
+
+    // 내용만 있고 시간 0이면 저장 불가
+    if (hasDescInput && spentMinutes < 1) {
+      return {
+        error: "내용 입력은 소요시간을 1분 이상 입력해야 합니다.",
+      };
+    }
+
+    return {
+      shouldSave,
+      spentMinutes,
+      description: desc,
+    };
+  };
+
+  const clearWorklogInputs = (mode) => {
+    if (mode === "progress") {
+      if (ui.progressHour) ui.progressHour.value = "";
+      if (ui.progressMinute) ui.progressMinute.value = "";
+      if (ui.progressDesc) ui.progressDesc.value = "";
+    } else {
+      if (ui.resolveHour) ui.resolveHour.value = "";
+      if (ui.resolveMinute) ui.resolveMinute.value = "";
+      if (ui.resolveDesc) ui.resolveDesc.value = "";
+    }
+  };
+
+  const postWorklog = async ({ issueCode, spentMinutes, description }) => {
+    const res = await fetch("/api/worklogs", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        issueCode: Number(issueCode),
+        workDate: todayYmd(),
+        spentMinutes: Number(spentMinutes),
+        // 백엔드에서 trim-empty -> null 처리도 하고 있으니 빈문자면 null로 보내도 됨
+        description:
+          description && description.trim() ? description.trim() : null,
+      }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      throw new Error(data?.message || "소요시간 저장 실패");
+    }
+    return data;
   };
 
   // ------------------------------
@@ -330,12 +420,12 @@
   });
 
   // ------------------------------
-  // Modal data load / render  (issue-list.js 방식으로 통일)
+  // Modal data load / render
   // ------------------------------
   let projectCache = [];
-  let assigneeCache = []; // 트리 형태: [{projectCode, projectName, children:[{userCode,userName}]}]
-  let creatorCache = []; // 트리 형태
-  let typeCache = []; // 서버 원본: projectCode/projectName 포함
+  let assigneeCache = [];
+  let creatorCache = [];
+  let typeCache = [];
 
   const renderListButtons = (listEl, items, onPick) => {
     if (!listEl) return;
@@ -410,7 +500,6 @@
     return true;
   };
 
-  // ---- Project modal ----
   const openProjectModal = async () => {
     if (!projectModal) return;
 
@@ -422,7 +511,6 @@
       ui.projectText.value = picked.name;
       ui.projectValue.value = picked.code;
 
-      // 프로젝트 변경 시 의존 필드 초기화
       ui.typeText.value = "";
       ui.typeValue.value = "";
       ui.assigneeText.value = "";
@@ -462,7 +550,6 @@
     );
   });
 
-  // ---- User(assignee/creator) tree ----
   const renderUserTree = (projects, container, pickHandler) => {
     if (!container) return;
     container.innerHTML = "";
@@ -666,7 +753,6 @@
     );
   });
 
-  // ---- Type modal tree (project accordion + tree + search) ----
   const buildTypeTreeForJS = (serverData) => {
     const projectMap = {};
 
@@ -804,7 +890,6 @@
     if (!ok) return;
 
     const q = ui.typeModalSearch.value.trim().toLowerCase();
-
     const selectedProjectCode = ui.projectValue?.value || "";
     const treeData = buildTypeTreeForJS(typeCache);
 
@@ -835,7 +920,6 @@
     renderTypeTree(filtered, ui.typeModalTree);
   });
 
-  // ---- bind open buttons ----
   ui.btnProjectModal?.addEventListener("click", openProjectModal);
   ui.btnAssigneeModal?.addEventListener("click", () =>
     openUserModal("assignee"),
@@ -850,7 +934,6 @@
 
   const isSaving = { value: false };
 
-  // position 저장은 "숨겨진 카드"까지 포함해서 보내야 꼬임이 없음
   const getOrder = (colBody) =>
     Array.from(colBody.querySelectorAll(".kan-card[data-issue-code]")).map(
       (c) => Number(c.dataset.issueCode),
@@ -864,7 +947,6 @@
 
   const myUserCode = String(ui.boardMeta?.dataset?.userCode || "").trim();
 
-  // 권한 캐시: 프로젝트 수정권한(canModify)
   const canModifyCache = new Map();
 
   const fetchCanModify = async (projectCode) => {
@@ -883,7 +965,6 @@
     return ok;
   };
 
-  // 관리자 여부
   const isAdminCache = new Map();
 
   const fetchIsAdmin = async (projectCode) => {
@@ -902,7 +983,6 @@
     return ok;
   };
 
-  // 담당자면 canModify 없어도 허용(서버 정책과 일치)
   const isAssigneeCard = (card) => {
     if (!myUserCode) return false;
     return String(card?.dataset?.assigneeCode || "") === myUserCode;
@@ -913,7 +993,6 @@
     return await fetchCanModify(projectCode);
   };
 
-  // 드래그 원복
   const revertToOrigin = (itemEl, fromCol, oldIndex) => {
     if (!itemEl || !fromCol || typeof oldIndex !== "number") return;
 
@@ -927,7 +1006,6 @@
     updateCardStates();
   };
 
-  // 토스트 중복 방지
   let lastNoAuthToastAt = 0;
   const toastNoAuthOnce = () => {
     const now = Date.now();
@@ -1034,7 +1112,7 @@
   // ------------------------------
   // Progress modal (OB2)
   // ------------------------------
-  let pendingProgress = null; // { issueCode, projectCode, card }
+  let pendingProgress = null;
 
   const openProgressModal = async (card) => {
     if (!ui.progressModalEl || !progressModal) return;
@@ -1078,6 +1156,10 @@
       ui.progressInput.value = String(Number.isNaN(cur) ? 0 : cur);
     }
 
+    // 소요시간 입력 초기화
+    if (ui.progressHour) ui.progressHour.value = "";
+    if (ui.progressMinute) ui.progressMinute.value = "";
+
     progressModal.show();
   };
 
@@ -1087,7 +1169,7 @@
       return;
     }
 
-    const { projectCode, card } = pendingProgress;
+    const { projectCode, card, issueCode } = pendingProgress;
 
     let v = Number(ui.progressInput?.value);
     if (Number.isNaN(v)) v = 0;
@@ -1126,6 +1208,29 @@
       }
 
       setProgressUI(card, v);
+
+      // worklog 저장 (조건 충족 시에만)
+      const wl = readWorklogInputs("progress");
+      if (wl.error) {
+        showToast(wl.error);
+        return;
+      }
+
+      if (wl.shouldSave) {
+        // 여기까지 오면 (시간>=1) OR (내용입력+시간>=1) 상태
+        try {
+          await postWorklog({
+            issueCode: Number(card.dataset.issueCode || 0),
+            spentMinutes: wl.spentMinutes,
+            description: wl.description, // 시간만 입력이면 null로 들어감
+          });
+        } catch (e) {
+          showToast(e?.message || "소요시간 저장 실패");
+          // 진척도는 이미 성공했으니 중단하지 않음
+        }
+      }
+
+      clearWorklogInputs("progress");
 
       progressModal.hide();
       cleanupModalBackdrops();
@@ -1238,6 +1343,11 @@
     pendingResolve = { item, fromCol, oldIndex, issueCode, projectCode };
 
     if (ui.resolveFile) ui.resolveFile.value = "";
+
+    // 소요시간 입력 초기화
+    if (ui.resolveHour) ui.resolveHour.value = "";
+    if (ui.resolveMinute) ui.resolveMinute.value = "";
+
     resolveModal.show();
   };
 
@@ -1290,6 +1400,28 @@
         showToast(res.message || "해결 처리 실패");
         return;
       }
+
+      // worklog 저장 (조건 충족 시에만)
+      const wl = readWorklogInputs("resolve");
+      if (wl.error) {
+        showToast(wl.error);
+        return;
+      }
+
+      if (wl.shouldSave) {
+        try {
+          await postWorklog({
+            issueCode: Number(issueCode || 0),
+            spentMinutes: wl.spentMinutes,
+            description: wl.description,
+          });
+        } catch (e) {
+          showToast(e?.message || "소요시간 저장 실패");
+          // 해결은 이미 성공했으니 중단하지 않음
+        }
+      }
+
+      clearWorklogInputs("resolve");
 
       pendingResolve = null;
       resolveModal.hide();
@@ -1400,7 +1532,6 @@
             return;
           }
 
-          // 관리자 OB4 반려 모달
           if (toStatusCode === "OB4") {
             isSaving.value = true;
             openRejectModal({
