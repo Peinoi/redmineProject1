@@ -62,3 +62,86 @@
 .btn-delete {
 	font-size: 0.85rem;
 }
+
+.search-filters .d-flex>input[type="date"] {
+	min-width: 0;
+}
+
+/* 기존 것 교체 */
+#projectSelectModal {
+	z-index: 1055; /* 기본값으로 되돌리기 */
+}
+
+/* backdrop 중첩 방지 */
+body.modal-open .modal-backdrop+.modal-backdrop {
+	display: none;
+}
+
+/* ================== 파일 미리보기 ================== */
+.file-preview-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.file-preview-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 10px;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	margin-bottom: 6px;
+	background: #f9fafb;
+	font-size: 13px;
+}
+
+.file-preview-item .file-icon {
+	font-size: 20px;
+	width: 24px;
+	text-align: center;
+	flex-shrink: 0;
+}
+
+.file-preview-item .file-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.file-preview-item .file-name {
+	font-weight: 500;
+	color: #111827;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.file-preview-item .file-meta {
+	font-size: 11px;
+	color: #6b7280;
+	margin-top: 1px;
+}
+
+.file-preview-item .btn-remove-file {
+	background: none;
+	border: none;
+	color: #9ca3af;
+	cursor: pointer;
+	padding: 0 2px;
+	font-size: 16px;
+	line-height: 1;
+	flex-shrink: 0;
+}
+
+.file-preview-item .btn-remove-file:hover {
+	color: #ef4444;
+}
+
+.file-preview-item.is-error {
+	border-color: #fca5a5;
+	background: #fef2f2;
+}
+
+.file-preview-item.is-error .file-name {
+	color: #dc2626;
+}

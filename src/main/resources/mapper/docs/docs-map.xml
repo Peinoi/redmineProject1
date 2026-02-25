@@ -4,7 +4,7 @@
 
 	<!-- 폴더 등록 -->
 	<insert id="insertFolder" parameterType="DocsVO">
-		<selectKey keyProperty="folderCode" resultType="long"
+		<selectKey keyProperty="folderCode" resultType="Integer"
 			order="BEFORE">
 			SELECT NVL(MAX(folder_code), 0) + 1
 			FROM documents_folders

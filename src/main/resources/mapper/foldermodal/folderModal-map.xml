@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.yedam.app.foldermodal.mapper.FolderModalMapper">
+	<select id="selectFolderList" resultType="FolderModalVO">
+		SELECT df.project_code,
+			   p.project_name,
+		       df.folder_code,
+		       df.folder_name,
+		       df.created_on,
+		       df.header_folder_code,
+		       dfh.folder_name AS headerFolderName,
+		       df.user_code,
+		       u.name
+		FROM documents_folders df
+		LEFT OUTER JOIN documents_folders dfh
+		  ON df.header_folder_code = dfh.folder_code
+		LEFT OUTER JOIN users u
+		  ON u.user_code = df.user_code
+		LEFT JOIN projects p
+		  ON df.project_code = p.project_code
+		WHERE EXISTS (
+		    SELECT 1
+		    FROM VW_USER_PROJECT_AUTH v
+		    WHERE v.user_code = #{userCode}
+		      AND v.project_code = df.project_code
+			  AND (
+		            (v.role_code = 1 AND p.status IN ('OD1','OD3'))
+		         OR (v.role_code = 2 AND p.status = 'OD1')
+			  )
+		)
+		ORDER BY NVL(dfh.folder_name, df.folder_name), df.folder_name
+	</select>
+	
+	<select id="selectProjectListByUser" resultType="FolderModalVO">
+    SELECT DISTINCT
+        p.project_code  AS projectCode,
+        p.project_name  AS projectName
+    FROM projects p
+    WHERE EXISTS (
+        SELECT 1
+        FROM VW_USER_PROJECT_AUTH v
+        WHERE v.user_code = #{userCode}
+          AND v.project_code = p.project_code
+          AND (
+                (v.role_code = 1 AND p.status IN ('OD1','OD3'))
+             OR (v.role_code = 2 AND p.status = 'OD1')
+          )
+    )
+    ORDER BY p.project_code
+</select>
+</mapper>

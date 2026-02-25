@@ -1,0 +1,292 @@
+<!-- seatch.html -->
+<!DOCTYPE html>
+<html xmlns:th="https://www.thymeleaf.org/">
+<div th:fragment="searchCondition(view)">
+	<!-- 검색조건 전체 wrapper (기본 닫힘) -->
+	<form id="filterForm" th:action="@{/searchList}" method="get">
+		<input type="hidden" name="view" th:value="${view}" />
+		<div id="searchConditionWrapper">
+			<div class="search-filters mb-3 mt-3">
+				<div class="row g-2 align-items-end">
+					<!-- 프로젝트 -->
+					<div class="col-12 col-md-6 col-lg-3">
+						<label class="form-label">프로젝트</label>
+						<div class="input-group">
+							<input type="text" id="filterProjectText" class="form-control"
+								placeholder="프로젝트 선택" readonly th:value="${projectName}" /> <input
+								type="hidden" id="filterProjectValue" name="projectCode"
+								th:value="${projectCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenProjectModal">선택</button>
+						</div>
+					</div>
+
+					<!-- 프로젝트 상태 -->
+					<div class="col-12 col-md-3 col-lg-3">
+						<label class="form-label">프로젝트 상태</label> <select
+							id="filterProjectStatus" name="projectStatusName"
+							class="form-select">
+
+							<th:block th:if="${isAdmin}">
+								<option value="">전체</option>
+								<option value="OD1">진행</option>
+								<option value="OD3">종료</option>
+							</th:block>
+
+							<th:block th:unless="${isAdmin}">
+								<option value="OD1" selected>진행</option>
+							</th:block>
+						</select>
+					</div>
+
+					<!-- 폴더 -->
+					<div class="col-12 col-md-6 col-lg-3">
+						<label class="form-label">폴더</label>
+						<div class="input-group">
+							<input type="text" id="filterFolderText" class="form-control"
+								placeholder="폴더 선택" readonly th:value="${folderName}" /> <input
+								type="hidden" id="filterFolderValue" name="folderCode"
+								th:value="${folderCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenFolderModal">선택</button>
+						</div>
+					</div>
+
+					<!-- 파일명 -->
+					<div class="col-12 col-md-6 col-lg-3">
+						<label class="form-label">파일명</label> <input type="text"
+							id="filterFile" name="fileName" class="form-control"
+							placeholder="파일명 입력" th:value="${param.fileName}">
+					</div>
+				</div>
+
+				<div class="row g-2 align-items-end mt-1">
+					<!-- 등록자 -->
+					<div class="col-12 col-md-6 col-lg-3">
+						<label class="form-label">등록자</label>
+						<div class="input-group">
+							<input type="text" id="filterCreatorText" class="form-control"
+								placeholder="등록자 선택" readonly th:value="${creatorName}" /> <input
+								type="hidden" id="filterCreatorValue" name="createdCode"
+								th:value="${param.createdByCode}" />
+							<button type="button" class="btn btn-secondary"
+								id="btnOpenCreatorModal">선택</button>
+						</div>
+					</div>
+
+					<!-- 파일 유형 -->
+					<div class="col-12 col-md-6 col-lg-3">
+						<label class="form-label">파일 유형</label> <select
+							id="filterFileType" name="fileType" class="form-select">
+							<option value="">전체</option>
+							<option value="pdf">PDF</option>
+							<option value="doc">DOC</option>
+							<option value="xls">XLS</option>
+						</select>
+					</div>
+
+					<!-- 등록일 -->
+					<div class="col-12 col-md-12 col-lg-6">
+						<label class="form-label">파일 등록일</label>
+						<div class="d-flex align-items-center gap-2">
+							<input type="date" id="filterCreatedFrom" name="createdFrom"
+								class="form-control" th:value="${param.createdFrom}" /> <span
+								class="text-muted">~</span> <input type="date"
+								id="filterCreatedTo" name="createdTo" class="form-control"
+								th:value="${param.createdTo}" />
+						</div>
+					</div>
+				</div>
+
+				<!-- 버튼 영역 (row 밖, form 안) -->
+				<div class="d-flex justify-content-between align-items-center mt-3">
+
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-success" id="btnDocsCreate">
+							<i class="fas fa-plus me-1"></i>문서등록
+						</button>
+					</div>
+
+					<div class="d-flex gap-2">
+						<button type="button" class="btn btn-secondary"
+							id="btnResetFilters">
+							<i class="fas fa-redo me-1"></i>초기화
+						</button>
+
+						<button type="submit" class="btn btn-primary" id="btnApplyFilters">
+							<i class="fa-solid fa-magnifying-glass me-1"></i>조회
+						</button>
+					</div>
+
+				</div>
+
+			</div>
+		</div>
+	</form>
+
+	<!-- ================= 문서 등록 모달 ================= -->
+	<div class="modal fade" id="docUploadModal" tabindex="-1">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">문서 등록</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<form id="uploadForm" action="/docsUpload" method="post"
+						enctype="multipart/form-data">
+						<div class="row g-0" style="min-height: 380px;">
+
+							<!-- 왼쪽: 메타 정보 -->
+							<div class="col-12 col-md-5 pe-md-4 border-end">
+								<p class="text-muted small mb-3">문서 업로드 경로를 설정하세요</p>
+
+								<!-- 프로젝트 -->
+								<div class="mb-3">
+									<label class="form-label fw-semibold">프로젝트<span
+										class="req">*</span></label>
+									<div class="input-group">
+										<input type="text" id="uploadProjectText" class="form-control"
+											placeholder="프로젝트 선택" readonly /> <input type="hidden"
+											id="uploadProjectValue" name="projectCode" />
+										<button type="button" class="btn btn-secondary"
+											id="btnOpenProjectModalFromUpload">선택</button>
+									</div>
+								</div>
+
+								<!-- 폴더 -->
+								<div class="mb-3">
+									<label class="form-label fw-semibold">폴더<span
+										class="req">*</span></label>
+									<div class="input-group">
+										<input type="text" id="uploadFolderText" class="form-control"
+											readonly placeholder="폴더 선택" /> <input type="hidden"
+											name="folderCode" id="uploadFolderCode" />
+										<button type="button" class="btn btn-secondary"
+											id="btnOpenFolderModalFromUpload">선택</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- 오른쪽: 파일 업로드 -->
+							<div class="col-12 col-md-7 ps-md-4 d-flex flex-column">
+								<p class="text-muted small mb-3">파일을 선택하세요 (최대 50MB, 복수 선택
+									가능)</p>
+
+								<input type="file" name="files" id="uploadFiles"
+									class="form-control mb-2" multiple />
+
+								<!-- 미리보기 스크롤 영역 -->
+								<div class="flex-grow-1 overflow-auto"
+									style="max-height: 280px;">
+									<ul id="filePreviewList" class="file-preview-list"></ul>
+								</div>
+							</div>
+
+						</div>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+					<button class="btn btn-success" id="btnSubmitUpload">
+						<i class="fas fa-upload me-1"></i>업로드
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="projectSelectModal" tabindex="-1"
+		aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">프로젝트 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="projectModalSearch"
+						class="form-control mb-2" placeholder="프로젝트명 검색" />
+					<div class="list-group" id="projectModalList"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="folderSelectModal" tabindex="-1"
+		aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">폴더 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="folderModalSearch" class="form-control mb-2"
+						placeholder="폴더명 검색" />
+					<div id="folderBreadcrumb" class="folder-breadcrumb mb-2"></div>
+					<div id="folderModalTree"
+						class="folder-tree list-group list-group-flush"></div>
+				</div>
+
+				<!-- 폴더 생성 영역 (하단 고정) -->
+				<div class="modal-footer" id="folderCreateSection">
+
+					<!-- 토글 버튼 -->
+					<button type="button" class="btn btn-success btn-sm"
+						id="btnToggleFolderCreate">
+						<i class="fas fa-folder-plus me-1"></i>새 폴더 만들기
+					</button>
+
+					<!-- 생성 폼 (기본 숨김) -->
+					<div id="folderCreateForm"
+						class="w-100 border-top bg-light px-3 py-3" style="display: none;">
+						<div class="mb-2">
+							<label class="form-label form-label-sm mb-1">상위 폴더 <span
+								class="text-muted fw-normal">(없으면 루트)</span></label> <input type="text"
+								id="newFolderParentText" class="form-control form-control-sm"
+								readonly placeholder="트리에서 상위 폴더 클릭 (선택 안 하면 최상위)" /> <input
+								type="hidden" id="newFolderParentCode" /> <input type="hidden"
+								id="newFolderProjectCode" />
+						</div>
+						<div class="mb-3">
+							<label class="form-label form-label-sm mb-1">폴더명<span
+								class="req">*</span></label> <input type="text" id="newFolderName"
+								class="form-control form-control-sm" placeholder="폴더명 입력"
+								maxlength="50" />
+						</div>
+						<div class="d-flex gap-2 justify-content-end">
+							<button type="button" class="btn btn-sm btn-secondary"
+								id="btnCancelFolderCreate">취소</button>
+							<button type="button" class="btn btn-sm btn-success"
+								id="btnConfirmFolderCreate">
+								<i class="fas fa-check me-1"></i>생성
+							</button>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="creatorSelectModal" tabindex="-1"
+		aria-hidden="true">
+		<div class="modal-dialog modal-lg modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">등록자 선택</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal"
+						aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<input type="text" id="creatorModalSearch"
+						class="form-control mb-2" placeholder="등록자명 검색" />
+					<div class="type-tree list-group list-group-flush"
+						id="creatorModalTree"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

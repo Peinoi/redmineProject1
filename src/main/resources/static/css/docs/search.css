@@ -1,0 +1,189 @@
+/* css/docs/modal.css */
+/* 검색 영역 (모달 안 input) */
+.search-filters {
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	padding: 14px 14px 10px;
+	background: #f9fafb;
+	overflow-x: hidden;
+}
+
+.search-filters+.card {
+	margin-top: 10px;
+}
+
+.search-filters .form-label {
+	font-weight: 600;
+	margin-bottom: 6px;
+	color: #111827;
+}
+
+.search-filters .input-group .btn {
+	white-space: nowrap;
+}
+
+.search-filters input[type="date"] {
+	min-width: 0;
+	width: 100%;
+}
+
+.search-filters .input-group>.form-control {
+	min-width: 0;
+}
+
+/* required star */
+.form-label .req {
+	color: #ef4444;
+	font-weight: 900;
+	margin-left: 4px;
+	line-height: 1;
+}
+
+/* ========================= */
+/* 폴더 트리 (유형 트리와 동일 스타일) */
+/* ========================= */
+.folder-tree {
+	padding: 0;
+	border: none !important;
+	background-color: #fff;
+}
+
+.folder-project-group {
+	border: 1px solid #dee2e6;
+	border-radius: 6px;
+	overflow: hidden;
+	margin-bottom: 12px;
+	background-color: #f8f9fa;
+	box-shadow: none;
+}
+
+.folder-project-header {
+	background-color: #e9ecef;
+	color: #495057;
+	padding: 10px 14px;
+	font-weight: 600;
+	font-size: 16px;
+	border-bottom: 1px solid #dee2e6;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	transition: background-color 0.15s;
+}
+
+.folder-project-header:hover {
+	background-color: #dee2e6;
+}
+
+.folder-project-header::before {
+	content: "▶";
+	font-size: 12px;
+	transition: transform 0.2s ease;
+}
+
+.folder-project-header.active::before {
+	content: "▼";
+}
+
+.folder-project-content {
+	background-color: #fff;
+}
+
+.folder-tree ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.folder-item {
+	display: flex;
+	align-items: stretch; /* height: 100% 대신 stretch */
+	gap: 0;
+	padding: 0;
+	border-bottom: 1px solid #dee2e6;
+	background-color: #fff;
+	/* hover 제거 - folder-name에서만 처리 */
+}
+
+.folder-item:hover {
+	background-color: #e2e6ea;
+}
+
+.folder-item[data-depth="0"] .folder-name {
+	padding-left: 4px;
+}
+
+.folder-item[data-depth="1"] .folder-name {
+	padding-left: 20px;
+}
+
+.folder-item[data-depth="2"] .folder-name {
+	padding-left: 36px;
+}
+
+.folder-item[data-depth="3"] .folder-name {
+	padding-left: 52px;
+}
+
+.folder-item[data-depth="4"] .folder-name {
+	padding-left: 68px;
+}
+
+.folder-toggle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	min-width: 36px;
+	padding: 10px 0;
+	font-size: 11px;
+	color: #6c757d;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: color 0.15s;
+	align-self: stretch; /* 높이 꽉 채우기 */
+}
+
+.folder-toggle-spacer {
+	display: inline-flex;
+	width: 36px;
+	min-width: 36px;
+	flex-shrink: 0;
+}
+
+.folder-name {
+	flex: 1;
+	padding: 10px 14px 10px 4px;
+	font-size: 15px;
+	color: #495057;
+	cursor: pointer;
+	transition: background-color 0.15s;
+}
+
+.folder-name:hover {
+	background-color: #e2e6ea;
+	color: #212529;
+}
+
+/* 새 폴더 만들기 버튼 - 일감등록 버튼과 동일한 색상 */
+#btnToggleFolderCreate {
+	background-color: #198754 !important;
+	border-color: #198754 !important;
+	color: #fff !important;
+}
+
+#btnToggleFolderCreate:hover {
+	background-color: #157347 !important;
+	border-color: #146c43 !important;
+	color: #fff !important;
+}
+
+.folder-breadcrumb {
+	font-size: 14px;
+	color: #6c757d;
+}
+
+.folder-breadcrumb span:last-child {
+	font-weight: 600;
+	color: #212529;
+}
