@@ -10,10 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		btnFolderModal: document.getElementById("btnOpenFolderModal"),
 
 		// 업로드용
-		uploadProjectText: document.getElementById("uploadProjectText"),
 		uploadProjectValue: document.getElementById("uploadProjectValue"),
-		btnUploadProjectModal: document.getElementById("btnOpenProjectModalFromUpload"),
-
 		uploadFolderText: document.getElementById("uploadFolderText"),
 		uploadFolderValue: document.getElementById("uploadFolderCode"),
 		btnUploadFolderModal: document.getElementById("btnOpenFolderModalFromUpload"),  // ← 추가
@@ -208,37 +205,20 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	};
 
-	const openProjectModal = async (context = "filter") => {
+	const openProjectModal = async () => {
 		if (!projectModal) return;
-		currentProjectContext = context;
 		ui.projectModalSearch.value = "";
 
 		const ok = await ensureProjectCache();
 		if (!ok) return;
 
-		if (context === "upload" && uploadModal) {
-			uploadModal.hide();
-		}
-
 		renderListButtons(ui.projectModalList, projectCache, (picked) => {
-			if (currentProjectContext === "filter") {
-				ui.filterProjectText.value = picked.name;
-				ui.filterProjectValue.value = picked.code;
-			} else {
-				ui.uploadProjectText.value = picked.name;
-				ui.uploadProjectValue.value = picked.code;
-			}
+			ui.filterProjectText.value = picked.name;
+			ui.filterProjectValue.value = picked.code;
 			projectModal.hide();
-			if (currentProjectContext === "upload" && uploadModal) {
-				setTimeout(() => uploadModal.show(), 300);
-			}
 		});
 
-		if (context === "upload") {
-			setTimeout(() => projectModal.show(), 300);
-		} else {
-			projectModal.show();
-		}
+		projectModal.show();
 	};
 
 	ui.projectModalSearch?.addEventListener("input", async () => {
@@ -247,17 +227,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		const q = ui.projectModalSearch.value.trim().toLowerCase();
 		const filtered = projectCache.filter(p => p.name.toLowerCase().includes(q));
 		renderListButtons(ui.projectModalList, filtered, (picked) => {
-			if (currentProjectContext === "filter") {
-				ui.filterProjectText.value = picked.name;
-				ui.filterProjectValue.value = picked.code;
-			} else {
-				ui.uploadProjectText.value = picked.name;
-				ui.uploadProjectValue.value = picked.code;
-			}
+			ui.filterProjectText.value = picked.name;
+			ui.filterProjectValue.value = picked.code;
 			projectModal?.hide();
-			if (currentProjectContext === "upload" && uploadModal) {
-				setTimeout(() => uploadModal.show(), 300);
-			}
 		});
 	});
 
@@ -610,7 +582,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// ================= 버튼 이벤트 바인딩 =================
 	ui.btnProjectModal?.addEventListener("click", () => openProjectModal("filter"));
-	ui.btnUploadProjectModal?.addEventListener("click", () => openProjectModal("upload"));
 	ui.btnFolderModal?.addEventListener("click", () => openFolderModal("filter"));
 	ui.btnUploadFolderModal?.addEventListener("click", () => openFolderModal("upload")); // ← 추가
 
@@ -676,7 +647,14 @@ document.addEventListener("DOMContentLoaded", () => {
 			ui.uploadFolderValue.value = folder.code;
 			if (folder.projectCode) {
 				ui.uploadProjectValue.value = folder.projectCode;
-				ui.uploadProjectText.value = folder.projectName;
+
+				// 프로젝트명 힌트 표시
+				const hint = document.getElementById("uploadProjectHint");
+				const hintText = document.getElementById("uploadProjectText");
+				if (hint && hintText) {
+					hintText.textContent = folder.projectName || folder.projectCode;
+					hint.style.display = "block";
+				}
 			}
 		}
 
@@ -685,6 +663,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			setTimeout(() => uploadModal.show(), 300);
 		}
 	};
+
+	uploadModalEl?.addEventListener("hidden.bs.modal", () => {
+		managedFiles = new DataTransfer();
+		if (ui.uploadFiles) ui.uploadFiles.value = "";
+		if (ui.filePreviewList) ui.filePreviewList.innerHTML = "";
+		if (ui.uploadFolderText) ui.uploadFolderText.value = "";
+		if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+		if (ui.uploadProjectValue) ui.uploadProjectValue.value = "";
+
+		// 힌트 초기화
+		const hint = document.getElementById("uploadProjectHint");
+		if (hint) hint.style.display = "none";
+	});
 
 	// 폴더 생성 확인
 	btnConfirmFolderCreate?.addEventListener("click", async () => {

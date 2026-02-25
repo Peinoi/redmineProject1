@@ -139,31 +139,24 @@
 
 							<!-- 왼쪽: 메타 정보 -->
 							<div class="col-12 col-md-5 pe-md-4 border-end">
-								<p class="text-muted small mb-3">문서 업로드 경로를 설정하세요</p>
-
-								<!-- 프로젝트 -->
-								<div class="mb-3">
-									<label class="form-label fw-semibold">프로젝트<span
-										class="req">*</span></label>
-									<div class="input-group">
-										<input type="text" id="uploadProjectText" class="form-control"
-											placeholder="프로젝트 선택" readonly /> <input type="hidden"
-											id="uploadProjectValue" name="projectCode" />
-										<button type="button" class="btn btn-secondary"
-											id="btnOpenProjectModalFromUpload">선택</button>
-									</div>
-								</div>
+								<p class="text-muted small mb-3">문서를 저장할 폴더를 선택하세요</p>
 
 								<!-- 폴더 -->
 								<div class="mb-3">
-									<label class="form-label fw-semibold">폴더<span
+									<label class="form-label fw-semibold">저장 폴더<span
 										class="req">*</span></label>
 									<div class="input-group">
 										<input type="text" id="uploadFolderText" class="form-control"
 											readonly placeholder="폴더 선택" /> <input type="hidden"
-											name="folderCode" id="uploadFolderCode" />
+											name="folderCode" id="uploadFolderCode" /> <input
+											type="hidden" id="uploadProjectValue" name="projectCode" />
 										<button type="button" class="btn btn-secondary"
 											id="btnOpenFolderModalFromUpload">선택</button>
+									</div>
+									<!-- 선택된 프로젝트 표시 (읽기전용 안내) -->
+									<div id="uploadProjectHint" class="text-muted small mt-1"
+										style="display: none;">
+										📁 프로젝트: <span id="uploadProjectText"></span>
 									</div>
 								</div>
 							</div>
