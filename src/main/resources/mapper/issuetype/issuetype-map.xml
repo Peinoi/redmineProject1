@@ -6,25 +6,26 @@
 	<!-- 유형 타입 조회 -->
 	<select id="selectAllIssueType" resultType="IssueTypeVO">
 		SELECT
-			t.type_code,
-			t.project_code,
-			p.project_name,
-			t.type_name,
-			t.par_type_code,
-			pt.type_name  AS par_type_name,
-			t.start_at,
-			t.end_at,
-			t.is_deleted
+		    t.type_code,
+		    t.project_code,
+		    p.project_name,
+		    t.type_name,
+		    t.par_type_code,
+		    t.start_at,
+		    t.end_at,
+		    t.is_deleted,
+		    -- 부모 이름 가져오기
+		    (SELECT pt.type_name
+		       FROM types pt
+		      WHERE pt.type_code = t.par_type_code) AS par_type_name,
+		    LEVEL
 		FROM types t
 		JOIN projects p ON t.project_code = p.project_code
-		LEFT JOIN types pt ON t.par_type_code = pt.type_code
 		WHERE t.is_deleted != 1
 		  AND p.status != 'OD2'
-		ORDER BY
-			t.project_code                    ASC,   -- 프로젝트 단위 묶음
-		    NVL(t.par_type_code, t.type_code) ASC,   -- 같은 최상위 루트끼리 묶음
-		    t.par_type_code                   NULLS FIRST,  -- 최상위가 먼저
-		    t.type_code                       ASC    -- 같은 레벨 내 등록 순
+		START WITH t.par_type_code IS NULL
+		CONNECT BY PRIOR t.type_code = t.par_type_code
+		ORDER SIBLINGS BY t.type_code
 	</select>
 	
 	<!-- 유형타입 수정 삭제 유효성 체크 -->

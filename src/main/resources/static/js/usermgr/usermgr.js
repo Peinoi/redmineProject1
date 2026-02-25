@@ -1,4 +1,5 @@
 (() => {
+
 	const $ = (s) => document.querySelector(s);
 	const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -27,6 +28,8 @@
 
 	const rows = () => $$(".userRow");
 	const visibleRows = () => rows().filter((tr) => tr.dataset.filtered !== "1");
+
+
 
 	// ── 페이지네이션 ──────────────────────────────────────────────
 	const renderPagination = (totalPages) => {
@@ -157,7 +160,7 @@
 			});
 
 			if (res.status === 403) {
-				showToast('권한이 없습니다.', true);
+				alert('권한이 없습니다.', true);
 				return;
 			}
 			const data = await res.json();
@@ -189,10 +192,12 @@
 				headers: { "Content-Type": "application/json", 'X-Requested-With': 'XMLHttpRequest' },
 				body: JSON.stringify({ userCode: parseInt(userCode), isLock: newLock }),
 			});
+
 			if (res.status === 403) {
-				showToast('권한이 없습니다.', true);
+				alert('권한이 없습니다.', true);
 				return;
 			}
+
 			const data = await res.json();
 
 			if (data.success) {
@@ -229,7 +234,7 @@
 				body: JSON.stringify({ userCode: parseInt(userCode) }),
 			});
 			if (res.status === 403) {
-				showToast('권한이 없습니다.', true);
+				alert('권한이 없습니다.', true);
 				return;
 			}
 

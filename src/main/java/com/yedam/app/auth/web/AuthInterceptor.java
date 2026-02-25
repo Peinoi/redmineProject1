@@ -60,15 +60,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 3. 권한 체크가 필요한 URI인데 세션에 권한 정보가 없는 경우
 		HttpSession session = request.getSession();
-		
-	    UserVO user = (UserVO) session.getAttribute("user"); // 세션에서 유저 객체 꺼내기
 
-	    if (user != null && "Y".equals(user.getSysCk())) {
-	        System.out.println("관리자 접근 허용: " + requestUri);
-	        return true;
-	    }
-		
-		
+		UserVO user = (UserVO) session.getAttribute("user"); // 세션에서 유저 객체 꺼내기
+
+		if (user != null && "Y".equals(user.getSysCk())) {
+			System.out.println("관리자 접근 허용: " + requestUri);
+			return true;
+		}
+
 		@SuppressWarnings("unchecked")
 		List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>) session.getAttribute("userAuth");
 
@@ -89,14 +88,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 		UserVO findUser = usermgrService.userFindInfo(userAuth.getUserCode());
 
 		// 5. 상세 권한(읽기/쓰기 등) 체크
-		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth,findUser);
-
+		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth, findUser);
+		System.out.println("권한 허용 체크: "+hasPermission);
 		if (!hasPermission) {
 			String contentType = request.getHeader("Content-Type");
 			if (contentType != null && contentType.contains("application/json")) {
-			    response.sendError(HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다.");
+				response.sendError(HttpServletResponse.SC_FORBIDDEN, "접근 권한이 없습니다.");
 			} else {
-			    response.sendRedirect("/accessDenied");
+				response.sendRedirect("/accessDenied");
 			}
 			return false;
 		}
@@ -115,7 +114,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 			System.out.println("  - 패턴: " + pattern + " → 매칭: " + matches);
 
 			if (matches) {
+				UriAccessInfoVO matched = entry.getValue();
 				System.out.println("✅ 매칭 성공!");
+				System.out.println("   ├─ URI 패턴  : " + matched.getUri());
+				System.out.println("   ├─ 카테고리  : " + matched.getCategory());
+				System.out.println("   └─ 필요 권한 : [" + matched.getType() + "]");
 				return entry.getValue();
 			}
 		}
@@ -137,16 +140,18 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 	// 권한 체크
 	private boolean checkPermission(String type, UserProjectAuthVO userAuth, UserVO userVO) {
-	
-		if("Y".equals(userVO.getSysCk())) {
+
+		if ("Y".equals(userVO.getSysCk())) {
+			System.out.println("관리자 → 모든 권한 허용");
 			return true;
 		}
-		
-		// admin이면 모든 권한 허용
-	    if (userAuth.getAdmin() == 1) {
-	        return true;
-	    }
-		
+
+		// 마스터이면 모든 권한 허용
+		if (userAuth.getAdmin() == 1) {
+			System.out.println("마스터권한 → 모든 권한 허용");
+			return true;
+		}
+
 		switch (type) {
 		case "read":
 			return "Y".equals(userAuth.getRdRol());
