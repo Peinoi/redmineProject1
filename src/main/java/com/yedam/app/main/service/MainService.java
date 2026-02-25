@@ -35,4 +35,10 @@ public interface MainService {
 			Integer userCode, boolean isAdmin, int limit);
 	
 	public String findProjectName(Integer projectCode);
+	
+	// 달력 메모
+	public List<MainMemoDTO> findMemosByMonth(Integer userCode, String month); // "YYYY-MM"
+	public MainMemoDTO findMemoByDate(Integer userCode, String date);         // "YYYY-MM-DD"
+	public boolean saveMemo(Integer userCode, String date, String content);
+	public boolean removeMemo(Integer userCode, String date);
 }

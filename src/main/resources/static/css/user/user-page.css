@@ -143,3 +143,10 @@
 th, td {
 	text-align: center;
 }
+
+.work-link{
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.work-link:hover{ opacity:.85; }

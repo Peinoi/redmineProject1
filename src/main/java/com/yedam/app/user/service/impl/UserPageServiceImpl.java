@@ -112,7 +112,7 @@ public class UserPageServiceImpl implements UserPageService {
 			dto.setActionLabel(toKoreanAction(log.getActionType())); // 아래 함수
 			dto.setProjectName(log.getProjectName());
 			dto.setIssueTitle(log.getIssueTitle());
-
+			dto.setTargetCode(log.getTargetCode());
 			dto.setDetailHtml(buildDetailHtml(log.getMeta(), om)); // 아래 함수
 
 			grouped.computeIfAbsent(day, k -> new ArrayList<>()).add(dto);

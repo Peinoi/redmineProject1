@@ -485,4 +485,72 @@
   		WHERE p.status = 'OD1'
   		ORDER BY p.project_name
 	</select>
+	
+	<!-- ✅ ADMIN 드릴다운: 담당자(assignee)별 이슈 목록 -->
+	<select id="selectAssignedIssuesByProjectAndAssignee" resultType="MyIssueRowDTO">
+  		SELECT *
+  		FROM (
+    		SELECT
+      			i.issue_code   AS issueCode,
+      			i.project_code AS projectCode,
+      			p.project_name AS projectName,
+      			i.title        AS title,
+      			cc.code_name   AS statusName,
+      			i.progress     AS progress,
+      			i.due_at       AS dueAt,
+      			i.updated_at   AS updatedAt
+    		FROM issues i
+    		
+    		JOIN projects p
+      		ON p.project_code = i.project_code
+      		
+    		LEFT JOIN status st
+      		ON st.status_code = i.status_code
+      		
+    		LEFT JOIN common_code cc
+      		ON cc.code_id = st.code_id
+     		AND cc.group_code = 'OB'
+     		
+    		WHERE p.status = 'OD1'
+      		AND i.project_code = #{projectCode}
+      		AND i.assignee_code = #{assigneeCode}
+      		
+    		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+  		)
+  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+	</select>
+
+	<!-- ✅ ADMIN 드릴다운: 등록자(created_by)별 이슈 목록 -->
+	<select id="selectRegisteredIssuesByProjectAndCreator" resultType="MyIssueRowDTO">
+  		SELECT *
+  		FROM (
+    		SELECT
+      			i.issue_code   AS issueCode,
+      			i.project_code AS projectCode,
+      			p.project_name AS projectName,
+      			i.title        AS title,
+      			cc.code_name   AS statusName,
+      			i.progress     AS progress,
+      			i.due_at       AS dueAt,
+      			i.updated_at   AS updatedAt
+    		FROM issues i
+    		
+    		JOIN projects p
+      		ON p.project_code = i.project_code
+      		
+    		LEFT JOIN status st
+      		ON st.status_code = i.status_code
+      		
+    		LEFT JOIN common_code cc
+      		ON cc.code_id = st.code_id
+     		AND cc.group_code = 'OB'
+     		
+    		WHERE p.status = 'OD1'
+      		AND i.project_code = #{projectCode}
+      		AND i.created_by_code = #{creatorCode}
+      		
+    		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+  		)
+  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+	</select>
 </mapper>

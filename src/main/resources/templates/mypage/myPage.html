@@ -32,7 +32,8 @@
 						</select>
 					</div>
 
-					<button type="button" class="btn btn-success btn-sm" id="btnAddBlock">
+					<button type="button" class="btn btn-success btn-sm"
+						id="btnAddBlock">
 						<i class="fas fa-plus me-1"></i>블록 추가
 					</button>
 				</div>
@@ -40,7 +41,7 @@
 		</div>
 
 		<!-- 블록 그리드 -->
-		<div id="myBlockGrid" class="my-block-grid">
+		<div id="myBlockGrid" class="my-block-grid" th:attr="data-mode=${mode}">
 
 			<div th:each="b : ${blocks}" class="card my-block"
 				th:attr="data-block-code=${b.blockCode}, data-block-type=${b.blockType}">
@@ -50,21 +51,25 @@
 					<div class="my-block-title">
 						<i class="fas fa-grip-vertical me-2 drag-handle" title="드래그로 이동"></i>
 						<span
-							th:text="${b.blockType == 'ASSIGNED'} ? '할당된 일감'
-                     : (${b.blockType == 'REGISTERED'} ? '등록한 일감'
-                     : (${b.blockType == 'NOTICE'} ? '최근공지'
-                     : (${b.blockType == 'CALENDAR'} ? '달력(주간)'
-                     : (${b.blockType == 'WORKLOG'} ? '작업내역' : b.blockType))))">블록</span>
+							th:text="${
+						  b.blockType == 'ASSIGNED'   ? (mode == 'ADMIN' ? '담당자별 할당 일감 현황' : '내 할당 일감')
+						: b.blockType == 'REGISTERED'? (mode == 'ADMIN' ? '등록자별 등록 일감 현황' : '내 등록 일감')
+						: b.blockType == 'NOTICE'     ? (mode == 'ADMIN' ? '최근공지 (선택 프로젝트)' : '최근공지 (내 프로젝트)')
+						: b.blockType == 'CALENDAR'   ? (mode == 'ADMIN' ? '주간 간트 (프로젝트 전체)' : '주간 간트 (내 일감)')
+						: b.blockType == 'WORKLOG'    ? (mode == 'ADMIN' ? '프로젝트 작업내역' : '내 작업내역')
+						: b.blockType
+						}">블록</span>
 					</div>
 
 					<div class="my-block-actions">
 
 						<!-- WORKLOG일 때만 기간 선택(블록 헤더 안) -->
-						<form th:if="${b.blockType == 'WORKLOG'}" class="user-worklog-range"
-							th:action="@{/my}" method="get">
-							<input type="hidden" name="mode" th:value="${mode}">
-							<input type="hidden" name="projectCode" th:value="${adminProjectCode}">
-							<select class="form-select form-select-sm" name="days" style="width: 120px;">
+						<form th:if="${b.blockType == 'WORKLOG'}"
+							class="user-worklog-range" th:action="@{/my}" method="get">
+							<input type="hidden" name="mode" th:value="${mode}"> <input
+								type="hidden" name="projectCode" th:value="${adminProjectCode}">
+							<select class="form-select form-select-sm" name="days"
+								style="width: 120px;">
 								<option value="1" th:selected="${days == 1}">최근 1일</option>
 								<option value="3" th:selected="${days == 3}">최근 3일</option>
 								<option value="7" th:selected="${days == 7}">최근 7일</option>
@@ -75,14 +80,12 @@
 						</form>
 
 						<!-- CALENDAR일 때만 체크박스 2개 (기본 둘다 체크) -->
-						<div th:if="${b.blockType == 'CALENDAR' and mode != 'ADMIN'}" class="cal-filter">
-							<label class="cal-check">
-								<input type="checkbox" class="calFilterChk" data-kind="ASSIGNED" checked>
-								<span>할당</span>
-							</label>
-							<label class="cal-check">
-								<input type="checkbox" class="calFilterChk" data-kind="REGISTERED" checked>
-								<span>등록</span>
+						<div th:if="${b.blockType == 'CALENDAR' and mode != 'ADMIN'}"
+							class="cal-filter">
+							<label class="cal-check"> <input type="checkbox"
+								class="calFilterChk" data-kind="ASSIGNED" checked> <span>할당</span>
+							</label> <label class="cal-check"> <input type="checkbox"
+								class="calFilterChk" data-kind="REGISTERED" checked> <span>등록</span>
 							</label>
 						</div>
 
@@ -101,9 +104,8 @@
 
 						<!-- 내 모드: 이슈 리스트 -->
 						<div th:if="${mode != 'ADMIN'}">
-							<div th:if="${#lists.isEmpty(blockData['ASSIGNED'])}" class="text-muted">
-								할당된 일감이 없습니다.
-							</div>
+							<div th:if="${#lists.isEmpty(blockData['ASSIGNED'])}"
+								class="text-muted">할당된 일감이 없습니다.</div>
 
 							<table th:if="${!#lists.isEmpty(blockData['ASSIGNED'])}"
 								class="table table-hover mb-0 my-table" data-ellipsis-scope="1">
@@ -131,27 +133,28 @@
 										<td class="text-truncate td-proj" th:text="${iss.projectName}">프로젝트</td>
 										<td class="text-truncate td-title" th:text="${iss.title}">이슈</td>
 										<td th:text="${iss.statusName}">진행</td>
-										<td class="text-end">
-											<a class="icon-link"
-												th:href="@{/issueEdit(issueCode=${iss.issueCode})}" title="편집">
-												<i class="fas fa-pen"></i>
-											</a>
-										</td>
+										<td class="text-end"><a class="icon-link"
+											th:href="@{/issueEdit(issueCode=${iss.issueCode})}"
+											title="편집"> <i class="fas fa-pen"></i>
+										</a></td>
 									</tr>
 								</tbody>
 							</table>
 
 							<div class="block-spacer"></div>
 							<div class="block-pager" data-pager-for="ASSIGNED">
+								<button type="button"
+									class="btn btn-sm btn-outline-secondary pager-prev">이전</button>
 								<div class="pager-pages"></div>
+								<button type="button"
+									class="btn btn-sm btn-outline-secondary pager-next">다음</button>
 							</div>
 						</div>
 
-						<!-- 관리자 모드: 담당자별 통계 (issueCode 접근 금지) -->
+						<!-- 관리자 모드: 담당자별 통계 -->
 						<div th:if="${mode == 'ADMIN'}">
-							<div th:if="${#lists.isEmpty(blockData['ASSIGNED'])}" class="text-muted">
-								표시할 통계가 없습니다.
-							</div>
+							<div th:if="${#lists.isEmpty(blockData['ASSIGNED'])}"
+								class="text-muted">표시할 통계가 없습니다.</div>
 
 							<table th:if="${!#lists.isEmpty(blockData['ASSIGNED'])}"
 								class="table table-hover mb-0 my-table">
@@ -176,7 +179,8 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr th:each="stat : ${blockData['ASSIGNED']}">
+									<tr th:each="stat : ${blockData['ASSIGNED']}"
+										class="admin-stat-row" th:attr="data-user=${stat.userCode}">
 										<td th:text="${stat.userName}">홍길동</td>
 										<td class="text-center" th:text="${stat.newIss}">0</td>
 										<td class="text-center" th:text="${stat.progress}">0</td>
@@ -187,6 +191,7 @@
 									</tr>
 								</tbody>
 							</table>
+							
 						</div>
 
 					</div>
@@ -196,9 +201,8 @@
 
 						<!-- 내 모드: 이슈 리스트 -->
 						<div th:if="${mode != 'ADMIN'}">
-							<div th:if="${#lists.isEmpty(blockData['REGISTERED'])}" class="text-muted">
-								등록한 일감이 없습니다.
-							</div>
+							<div th:if="${#lists.isEmpty(blockData['REGISTERED'])}"
+								class="text-muted">등록한 일감이 없습니다.</div>
 
 							<table th:if="${!#lists.isEmpty(blockData['REGISTERED'])}"
 								class="table table-hover mb-0 my-table" data-ellipsis-scope="1">
@@ -226,27 +230,28 @@
 										<td class="text-truncate td-proj" th:text="${iss.projectName}">프로젝트</td>
 										<td class="text-truncate td-title" th:text="${iss.title}">이슈</td>
 										<td th:text="${iss.statusName}">신규</td>
-										<td class="text-end">
-											<a class="icon-link"
-												th:href="@{/issueEdit(issueCode=${iss.issueCode})}" title="편집">
-												<i class="fas fa-pen"></i>
-											</a>
-										</td>
+										<td class="text-end"><a class="icon-link"
+											th:href="@{/issueEdit(issueCode=${iss.issueCode})}"
+											title="편집"> <i class="fas fa-pen"></i>
+										</a></td>
 									</tr>
 								</tbody>
 							</table>
 
 							<div class="block-spacer"></div>
 							<div class="block-pager" data-pager-for="REGISTERED">
+								<button type="button"
+									class="btn btn-sm btn-outline-secondary pager-prev">이전</button>
 								<div class="pager-pages"></div>
+								<button type="button"
+									class="btn btn-sm btn-outline-secondary pager-next">다음</button>
 							</div>
 						</div>
 
-						<!-- 관리자 모드: 등록자별 통계 (issueCode 접근 금지) -->
+						<!-- 관리자 모드: 등록자별 통계 -->
 						<div th:if="${mode == 'ADMIN'}">
-							<div th:if="${#lists.isEmpty(blockData['REGISTERED'])}" class="text-muted">
-								표시할 통계가 없습니다.
-							</div>
+							<div th:if="${#lists.isEmpty(blockData['REGISTERED'])}"
+								class="text-muted">표시할 통계가 없습니다.</div>
 
 							<table th:if="${!#lists.isEmpty(blockData['REGISTERED'])}"
 								class="table table-hover mb-0 my-table">
@@ -271,7 +276,8 @@
 									</tr>
 								</thead>
 								<tbody>
-									<tr th:each="stat : ${blockData['REGISTERED']}">
+									<tr th:each="stat : ${blockData['REGISTERED']}"
+										class="admin-stat-row" th:attr="data-user=${stat.userCode}">
 										<td th:text="${stat.userName}">홍길동</td>
 										<td class="text-center" th:text="${stat.newIss}">0</td>
 										<td class="text-center" th:text="${stat.progress}">0</td>
@@ -282,19 +288,21 @@
 									</tr>
 								</tbody>
 							</table>
+							
 						</div>
 
 					</div>
 
 					<!-- NOTICE -->
 					<div th:if="${b.blockType == 'NOTICE'}" class="p-3 block-inner">
-						<div th:if="${#lists.isEmpty(blockData['NOTICE'])}" class="text-muted">
-							최근 공지가 없습니다.
-						</div>
+						<div th:if="${#lists.isEmpty(blockData['NOTICE'])}"
+							class="text-muted">최근 공지가 없습니다.</div>
 
 						<div th:if="${!#lists.isEmpty(blockData['NOTICE'])}"
-							class="table-responsive notice-table-wrap" data-ellipsis-scope="1">
-							<table class="table table-hover align-middle mb-0 text-center my-table my-notice-table">
+							class="table-responsive notice-table-wrap"
+							data-ellipsis-scope="1">
+							<table
+								class="table table-hover align-middle mb-0 text-center my-table my-notice-table">
 								<colgroup>
 									<col style="width: 70px;">
 									<col style="width: 200px;">
@@ -314,17 +322,14 @@
 										class="click-row notice-item"
 										th:attr="data-go=@{/noticeInfo(noticeCode=${n.noticeCode})}">
 										<td class="td-no" th:text="${stat.index + 1}">1</td>
-										<td class="text-start text-truncate notice-td-proj" th:text="${n.projectName}">
-											프로젝트명
-										</td>
-										<td class="text-start">
-											<span class="text-truncate d-block w-100 notice-td-title"
-												th:text="${n.title}">공지</span>
-										</td>
+										<td class="text-start text-truncate notice-td-proj"
+											th:text="${n.projectName}">프로젝트명</td>
+										<td class="text-start"><span
+											class="text-truncate d-block w-100 notice-td-title"
+											th:text="${n.title}">공지</span></td>
 										<td class="text-muted small notice-td-date"
 											th:text="${n.createdAt != null ? #dates.format(n.createdAt,'MM-dd') : ''}">
-											02-19
-										</td>
+											02-19</td>
 									</tr>
 								</tbody>
 							</table>
@@ -332,15 +337,18 @@
 
 						<div class="block-spacer"></div>
 						<div class="block-pager" data-pager-for="NOTICE">
+							<button type="button"
+								class="btn btn-sm btn-outline-secondary pager-prev">이전</button>
 							<div class="pager-pages"></div>
+							<button type="button"
+								class="btn btn-sm btn-outline-secondary pager-next">다음</button>
 						</div>
 					</div>
 
 					<!-- CALENDAR (주간 간트) : 내부 스크롤 -->
 					<div th:if="${b.blockType == 'CALENDAR'}" class="block-calendar">
-						<div th:if="${blockData['CALENDAR'] == null}" class="text-muted p-3">
-							달력 데이터가 없습니다.
-						</div>
+						<div th:if="${blockData['CALENDAR'] == null}"
+							class="text-muted p-3">달력 데이터가 없습니다.</div>
 
 						<div th:if="${blockData['CALENDAR'] != null}" class="gantt">
 
@@ -367,8 +375,10 @@
 
 									<div class="gantt-row gantt-empty-row"
 										th:attr="data-project=${p.projectCode}" style="display: none;">
-										<div class="gantt-left gantt-left--single" th:text="${p.projectName}">프로젝트</div>
-										<div class="gantt-bars" th:attr="data-week-start=${blockData['CALENDAR'].weekStart}">
+										<div class="gantt-left gantt-left--single"
+											th:text="${p.projectName}">프로젝트</div>
+										<div class="gantt-bars"
+											th:attr="data-week-start=${blockData['CALENDAR'].weekStart}">
 											<div class="gantt-gridlines" aria-hidden="true">
 												<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
 											</div>
@@ -404,7 +414,8 @@
 															data-bs-toggle="tooltip" data-bs-html="false"
 															th:title="|${it.projectName} / ${it.title}|"></div>
 
-														<div class="gantt-label text-truncate" th:text="${it.title}">이슈 제목</div>
+														<div class="gantt-label text-truncate"
+															th:text="${it.title}">이슈 제목</div>
 													</div>
 												</td>
 
@@ -414,8 +425,10 @@
 
 									<div class="gantt-row" th:if="${#lists.isEmpty(p.items)}"
 										th:attr="data-project=${p.projectCode}">
-										<div class="gantt-left gantt-left--single" th:text="${p.projectName}">프로젝트</div>
-										<div class="gantt-bars" th:attr="data-week-start=${blockData['CALENDAR'].weekStart}">
+										<div class="gantt-left gantt-left--single"
+											th:text="${p.projectName}">프로젝트</div>
+										<div class="gantt-bars"
+											th:attr="data-week-start=${blockData['CALENDAR'].weekStart}">
 											<div class="gantt-gridlines" aria-hidden="true">
 												<i></i><i></i><i></i><i></i><i></i><i></i><i></i>
 											</div>
@@ -429,36 +442,33 @@
 					</div>
 
 					<!-- WORKLOG : 내부 스크롤 -->
-					<div th:if="${b.blockType == 'WORKLOG'}" class="p-3 block-inner worklog-inner">
-						<div th:if="${#maps.isEmpty(blockData['WORKLOG'])}" class="text-muted">
-							표시할 작업 내역이 없습니다.
-						</div>
+					<div th:if="${b.blockType == 'WORKLOG'}"
+						class="p-3 block-inner worklog-inner">
+						<div th:if="${#maps.isEmpty(blockData['WORKLOG'])}"
+							class="text-muted">표시할 작업 내역이 없습니다.</div>
 
-						<div th:if="${!#maps.isEmpty(blockData['WORKLOG'])}" class="worklog-scroll">
+						<div th:if="${!#maps.isEmpty(blockData['WORKLOG'])}"
+							class="worklog-scroll">
 							<div th:each="dayEntry : ${blockData['WORKLOG']}">
 								<div class="work-day-title" th:text="${dayEntry.key}">2026-02-12</div>
 
 								<div th:each="w : ${dayEntry.value}" class="work-card">
 									<div class="work-head">
-										<span class="work-time" th:text="${w.time}">17:06</span>
-										<span class="work-slash">/</span>
-										<span class="work-action" th:text="${w.actionLabel}">수정</span>
-										<span class="work-slash">/</span>
+										<span class="work-time" th:text="${w.time}">17:06</span> <span
+											class="work-slash">/</span> <span class="work-action"
+											th:text="${w.actionLabel}">수정</span> <span class="work-slash">/</span>
 										<span class="work-actor" th:text="${w.actorName}">나</span>
 									</div>
 
 									<div class="work-title">
 										<span class="work-proj" th:text="${w.projectName}">프로젝트</span>
-										<span> / </span>
-
-										<a th:if="${w.targetLink}" class="work-link"
+										<span> / </span> <a th:if="${w.targetLink}" class="work-link"
 											th:href="${w.targetUrl}"
-											th:text="${w.issueTitle != null ? w.issueTitle : '-'}">[일감] 제목</a>
-
-										<span th:if="${!w.targetLink}" class="work-nolink"
-											th:text="${w.issueTitle != null ? w.issueTitle : '-'}">[문서] 파일명</span>
-
-										<span th:if="${!w.targetLink and #strings.contains(w.issueTitle,'[문서]')}"
+											th:text="${w.issueTitle != null ? w.issueTitle : '-'}">[일감]
+											제목</a> <span th:if="${!w.targetLink}" class="work-nolink"
+											th:text="${w.issueTitle != null ? w.issueTitle : '-'}">[문서]
+											파일명</span> <span
+											th:if="${!w.targetLink and #strings.contains(w.issueTitle,'[문서]')}"
 											class="work-badge">준비중</span>
 									</div>
 
@@ -476,7 +486,8 @@
 		<!-- grid -->
 
 		<!-- 블록 추가 모달 -->
-		<div class="modal fade" id="addBlockModal" tabindex="-1" aria-hidden="true">
+		<div class="modal fade" id="addBlockModal" tabindex="-1"
+			aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered">
 				<div class="modal-content">
 					<div class="modal-header">
@@ -486,18 +497,16 @@
 
 					<div class="modal-body">
 						<div class="list-group">
-							<div th:if="${#lists.isEmpty(addableBlocks)}" class="text-muted small">
-								추가할 수 있는 블록이 없습니다.
-							</div>
+							<div th:if="${#lists.isEmpty(addableBlocks)}"
+								class="text-muted small">추가할 수 있는 블록이 없습니다.</div>
 
 							<button th:each="ab : ${addableBlocks}"
 								class="list-group-item list-group-item-action add-block-item"
 								th:attr="data-type=${ab.type}" th:text="${ab.label}">블록</button>
 						</div>
 
-						<div class="text-muted small mt-2">
-							블록은 자유롭게 추가/삭제할 수 있습니다. (화면에 블록이 없을경우 기본 블럭이 자동생성)
-						</div>
+						<div class="text-muted small mt-2">블록은 자유롭게 추가/삭제할 수 있습니다.
+							(화면에 블록이 없을경우 기본 블럭이 자동생성)</div>
 					</div>
 				</div>
 			</div>
@@ -507,8 +516,8 @@
 	<!-- Content -->
 
 	<th:block layout:fragment="pageScript">
-		<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-		<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/plugins/AutoScroll/AutoScroll.min.js"></script>
+		<script
+			src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 		<script th:src="@{/js/mypage/my-page.js}"></script>
 	</th:block>
 

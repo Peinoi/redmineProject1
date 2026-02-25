@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yedam.app.mypage.mapper.MyPageMapper;
 import com.yedam.app.mypage.service.BlockVO;
+import com.yedam.app.mypage.service.MyIssueRowDTO;
 import com.yedam.app.mypage.service.MyPageService;
 import com.yedam.app.mypage.service.WeekGanttIssueDTO;
 import com.yedam.app.user.service.UserWorkLogVO;
@@ -246,6 +247,36 @@ public class MyPageServiceImpl implements MyPageService {
 		result.put("adminProjectName", isAdminMode ? selectedName : null);
 
 		return result;
+	}
+	
+	@Override
+	public List<MyIssueRowDTO> getAdminDrilldownIssues(
+	    Integer loginUserCode,
+	    String kind,
+	    Integer projectCode,
+	    Integer targetUserCode,
+	    int limit
+	) {
+	  if (loginUserCode == null || projectCode == null || targetUserCode == null) return null;
+
+	  // ✅ 이 프로젝트가 loginUser에게 admin 권한 있는지 확인
+	  var adminProjects = myPageMapper.selectAdminProjects(loginUserCode);
+	  boolean ok = false;
+	  for (var p : adminProjects) {
+	    if (p.getProjectCode() != null && p.getProjectCode().equals(projectCode)) { ok = true; break; }
+	  }
+	  if (!ok) return null;
+
+	  String k = (kind == null) ? "" : kind.trim().toUpperCase();
+	  int lim = Math.max(1, Math.min(limit, 200));
+
+	  if ("ASSIGNED".equals(k)) {
+	    return myPageMapper.selectAssignedIssuesByProjectAndAssignee(projectCode, targetUserCode, lim);
+	  }
+	  if ("REGISTERED".equals(k)) {
+	    return myPageMapper.selectRegisteredIssuesByProjectAndCreator(projectCode, targetUserCode, lim);
+	  }
+	  return null;
 	}
 
 	private void addIfNotExists(List<Map<String, String>> out, Set<String> existed, String type, String label) {
@@ -629,4 +660,6 @@ public class MyPageServiceImpl implements MyPageService {
 
 		  return grouped;
 		}
+	
+	
 }

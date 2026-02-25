@@ -98,4 +98,35 @@ public class MyPageController {
 		myPageService.saveOrder(login.getUserCode(), orderedBlockCodes);
 		return ResponseEntity.ok(Map.of("ok", true));
 	}
+	
+	/**
+	 * ✅ ADMIN 드릴다운: 담당자/등록자 클릭 시 이슈 목록 반환
+	 * - /my/admin/issues?kind=ASSIGNED&projectCode=1&userCode=2&limit=60
+	 */
+	@GetMapping("/my/admin/issues")
+	@ResponseBody
+	public ResponseEntity<?> adminIssueDrilldown(
+	    @RequestParam String kind,
+	    @RequestParam Integer projectCode,
+	    @RequestParam Integer userCode,
+	    @RequestParam(defaultValue = "60") int limit,
+	    HttpSession session
+	) {
+	  UserVO login = (UserVO) session.getAttribute("user");
+	  if (login == null) return ResponseEntity.status(401).build();
+
+	  var list = myPageService.getAdminDrilldownIssues(
+	      login.getUserCode(),
+	      kind,
+	      projectCode,
+	      userCode,
+	      limit
+	  );
+
+	  if (list == null) {
+	    return ResponseEntity.status(403).body(Map.of("ok", false, "msg", "권한 없음/요청 오류"));
+	  }
+
+	  return ResponseEntity.ok(list);
+	}
 }

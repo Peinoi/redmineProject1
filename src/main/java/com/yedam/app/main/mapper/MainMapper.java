@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 import com.yedam.app.main.service.AssigneeIssStaVO;
+import com.yedam.app.main.service.MainMemoDTO;
 import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MyTopIssueVO;
 import com.yedam.app.main.service.PickedIssueDTO;
@@ -49,4 +50,30 @@ public interface MainMapper {
 	
 	// 프로젝트명 조회
 	public String selectProjectName(Integer projectCode);
+	
+	// ✅ 월 메모 조회(캘린더 점/툴팁용)
+	  List<MainMemoDTO> selectMemosByMonth(
+	      @Param("userCode") Integer userCode,
+	      @Param("fromDate") String fromDate, // "YYYY-MM-DD"
+	      @Param("toDate") String toDate      // "YYYY-MM-DD" (exclusive)
+	  );
+
+	  // ✅ 하루 메모 조회(모달 열 때)
+	  MainMemoDTO selectMemoByDate(
+	      @Param("userCode") Integer userCode,
+	      @Param("memoDate") String memoDate  // "YYYY-MM-DD"
+	  );
+
+	  // ✅ 저장(업서트: 있으면 update, 없으면 insert)
+	  int upsertMemo(
+	      @Param("userCode") Integer userCode,
+	      @Param("memoDate") String memoDate, // "YYYY-MM-DD"
+	      @Param("content") String content
+	  );
+
+	  // ✅ 삭제
+	  int deleteMemo(
+	      @Param("userCode") Integer userCode,
+	      @Param("memoDate") String memoDate  // "YYYY-MM-DD"
+	  );
 }

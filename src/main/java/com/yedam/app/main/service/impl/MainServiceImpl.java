@@ -1,11 +1,15 @@
 package com.yedam.app.main.service.impl;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import com.yedam.app.main.mapper.MainMapper;
 import com.yedam.app.main.service.AssigneeIssStaVO;
+import com.yedam.app.main.service.MainMemoDTO;
 import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MainService;
 import com.yedam.app.main.service.MyTopIssueVO;
@@ -20,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class MainServiceImpl implements MainService{
 	
 	private final MainMapper mainMapper;
+	private static final DateTimeFormatter DTF = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
 	@Override
 	public List<MainProjectStatusVO> findCodeNameCnt(Integer userCode) {
@@ -75,4 +80,42 @@ public class MainServiceImpl implements MainService{
 	public String findProjectName(Integer projectCode) {
 	  return mainMapper.selectProjectName(projectCode);
 	}
+	
+	@Override
+	public List<MainMemoDTO> findMemosByMonth(Integer userCode, String month) {
+	  YearMonth ym = YearMonth.parse(month); // "YYYY-MM"
+	  LocalDate from = ym.atDay(1);
+	  LocalDate to = ym.plusMonths(1).atDay(1);
+
+	  return mainMapper.selectMemosByMonth(
+	      userCode,
+	      from.format(DTF),
+	      to.format(DTF)
+	  );
+	}
+
+	@Override
+	public MainMemoDTO findMemoByDate(Integer userCode, String date) {
+	  return mainMapper.selectMemoByDate(userCode, date);
+	}
+
+	@Override
+	public boolean saveMemo(Integer userCode, String date, String content) {
+	  if (date == null || date.isBlank()) return false;
+
+	  // 정책: 빈 내용이면 삭제 처리(UX 좋음)
+	  if (content == null || content.trim().isEmpty()) {
+	    mainMapper.deleteMemo(userCode, date);
+	    return true;
+	  }
+
+	  return mainMapper.upsertMemo(userCode, date, content) >= 0;
+	}
+
+	@Override
+	public boolean removeMemo(Integer userCode, String date) {
+	  if (date == null || date.isBlank()) return false;
+	  return mainMapper.deleteMemo(userCode, date) > 0;
+	}
+	
 }

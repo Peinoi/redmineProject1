@@ -14,4 +14,5 @@ public class MyIssueRowDTO {
 	  private String statusName;   // OB1~OB5 => code_name
 	  private Date dueAt;
 	  private Date updatedAt;
+	  private Integer progress; // 0~100
 }

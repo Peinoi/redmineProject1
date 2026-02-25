@@ -72,4 +72,18 @@ public interface MyPageMapper {
 	
 	// 관리자 프로젝트 목록(코드+이름)
 	List<AdminProjectOptionDTO> selectAdminProjects(@Param("userCode") Integer userCode);
+	
+	// ✅ ADMIN 드릴다운: 프로젝트 + 담당자(할당)
+	List<MyIssueRowDTO> selectAssignedIssuesByProjectAndAssignee(
+	    @Param("projectCode") Integer projectCode,
+	    @Param("assigneeCode") Integer assigneeCode,
+	    @Param("limit") int limit
+	);
+
+	// ✅ ADMIN 드릴다운: 프로젝트 + 등록자(등록)
+	List<MyIssueRowDTO> selectRegisteredIssuesByProjectAndCreator(
+	    @Param("projectCode") Integer projectCode,
+	    @Param("creatorCode") Integer creatorCode,
+	    @Param("limit") int limit
+	);
 }

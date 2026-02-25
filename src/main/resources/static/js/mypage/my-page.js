@@ -171,59 +171,44 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	});
 
-	// =========================
-	// Sortable + AutoScroll + ✅ 드래그 중 휠 스크롤
-	// =========================
+	// Sortable + ✅ 드래그 중 휠 스크롤 (window 스크롤 레이아웃용)
 	if (window.Sortable) {
-		// ✅ AutoScroll 플러그인 마운트 (있으면)
-		try {
-			const AutoScrollPlugin = window.SortableAutoScroll;
-			if (AutoScrollPlugin && Sortable.mount) {
-				Sortable.mount(new AutoScrollPlugin());
-			}
-		} catch (e) {
-			console.warn("AutoScroll mount failed:", e);
-		}
-
-		// ✅ 실제 스크롤 컨테이너 찾기
-		const scrollEl = findScrollContainer(grid);
-		const rootScroll = document.scrollingElement || document.documentElement;
-		const isWinScroll = scrollEl === rootScroll;
-
 		let isDragging = false;
-		let wheelHandler = null;
 
-		// ✅ 드래그 중에만 wheel 강제 스크롤 활성화
-		function enableWheelScroll() {
-			if (wheelHandler) return;
+		// ✅ 혹시 누가 overflow를 잠그면 원복하기 위해 저장
+		let prevOverflow = null;
 
-			wheelHandler = (e) => {
-				if (!isDragging) return;
+		const scrollRoot = () => document.scrollingElement || document.documentElement;
 
-				const unit = e.deltaMode === 1 ? 16 : 1;
-				const dy = (e.deltaY || 0) * unit;
-				const dx = (e.deltaX || 0) * unit;
+		const WHEEL_MULTIPLIER = 2.6;
 
-				if (isWinScroll) {
-					window.scrollBy(dx, dy);
-				} else {
-					scrollEl.scrollTop += dy;
-					scrollEl.scrollLeft += dx;
-				}
+		const wheelWhileDrag = (e) => {
+			if (!isDragging) return;
+			if (e.ctrlKey) return;
 
-				if (e.cancelable) e.preventDefault();
-				e.stopPropagation();
-				e.stopImmediatePropagation();
-			};
+			// ✅ 다른 wheel 핸들러보다 강하게 먼저 먹기
+			e.preventDefault();
+			e.stopImmediatePropagation();
 
-			window.addEventListener("wheel", wheelHandler, { capture: true, passive: false });
-		}
+			let dx = e.deltaX || 0;
+			let dy = e.deltaY || 0;
 
-		function disableWheelScroll() {
-			if (!wheelHandler) return;
-			window.removeEventListener("wheel", wheelHandler, { capture: true });
-			wheelHandler = null;
-		}
+			// deltaMode=1이면 라인 단위라서 픽셀로 보정(대충 16px)
+			if (e.deltaMode === 1) {
+				dx *= 16;
+				dy *= 16;
+			}
+
+			// ✅ 스크롤 가속
+			dx *= WHEEL_MULTIPLIER;
+			dy *= WHEEL_MULTIPLIER;
+
+			const root = scrollRoot();
+
+			// ✅ window.scrollBy 대신 실제 스크롤 엘리먼트를 직접 움직임
+			root.scrollLeft += dx;
+			root.scrollTop += dy;
+		};
 
 		new Sortable(grid, {
 			animation: 150,
@@ -231,23 +216,19 @@ document.addEventListener("DOMContentLoaded", () => {
 			filter: "a, button, input, label, select",
 			preventOnFilter: true,
 
+			// ✅ 핵심 (네이티브 드래그 끄고 fallback 사용)
+			forceFallback: true,
+			fallbackOnBody: true,     // 드래그 복제 엘리먼트를 body에 붙임(레이아웃 영향 줄임)
+			fallbackTolerance: 3,     // 클릭/드래그 판정 살짝 완화(선택)
+
+			// (선택) 자동 스크롤(가장자리로 드래그하면 스크롤)
+			scroll: true,
+			scrollSensitivity: 60,
+			scrollSpeed: 12,
+
 			ghostClass: "sortable-ghost",
 			chosenClass: "sortable-chosen",
 			dragClass: "sortable-drag",
-
-			scroll: isWinScroll ? true : scrollEl,
-			bubbleScroll: true,
-			scrollSensitivity: 80,
-			scrollSpeed: 15,
-
-			scrollFn: (offsetX, offsetY) => {
-				if (isWinScroll) {
-					window.scrollBy(offsetX, offsetY);
-				} else {
-					scrollEl.scrollLeft += offsetX;
-					scrollEl.scrollTop += offsetY;
-				}
-			},
 
 			onMove: (evt) => {
 				const t = evt.originalEvent?.target;
@@ -257,14 +238,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			onStart: () => {
 				isDragging = true;
-				enableWheelScroll();
-				document.body.classList.add("is-dragging");
+
+				// ✅ 여기서 wheel 리스너 붙임
+				document.addEventListener("wheel", wheelWhileDrag, {
+					capture: true,
+					passive: false
+				});
+
+				// ✅ 드래그 중 스크롤 잠금(overflow hidden) 걸리면 풀어버리기
+				prevOverflow = {
+					html: document.documentElement.style.overflow,
+					body: document.body.style.overflow,
+				};
+				document.documentElement.style.overflow = "";
+				document.body.style.overflow = "";
+
 			},
 
 			onEnd: async () => {
 				isDragging = false;
-				disableWheelScroll();
-				document.body.classList.remove("is-dragging");
+
+				// ✅ 여기서 제거
+				document.removeEventListener("wheel", wheelWhileDrag, {
+					capture: true
+				});
+
+				document.removeEventListener("wheel", wheelWhileDrag, { capture: true });
+
+				// ✅ overflow 원복
+				if (prevOverflow) {
+					document.documentElement.style.overflow = prevOverflow.html;
+					document.body.style.overflow = prevOverflow.body;
+					prevOverflow = null;
+				}
+
 				await saveOrder();
 			}
 		});
@@ -380,24 +387,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// ✅ 초기 1회(렌더 후)
 	requestAnimationFrame(() => applyEllipsisTooltips(document));
+
+	// 관리자 집계표 클릭 시 목록 fetch해서 렌더링
+	initAdminDrilldown();
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    const sel = document.getElementById("adminProjectSelect");
-    if (!sel) return;
+	const sel = document.getElementById("adminProjectSelect");
+	if (!sel) return;
 
-    sel.addEventListener("change", () => {
-      const pc = sel.value;
-      const params = new URLSearchParams(window.location.search);
-      const days = params.get("days") || "7";
+	sel.addEventListener("change", () => {
+		const pc = sel.value;
+		const params = new URLSearchParams(window.location.search);
+		const days = params.get("days") || "7";
 
-      if (!pc) {
-        window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ME`;
-      } else {
-        window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ADMIN&projectCode=${encodeURIComponent(pc)}`;
-      }
-    });
-  });
+		if (!pc) {
+			window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ME`;
+		} else {
+			window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ADMIN&projectCode=${encodeURIComponent(pc)}`;
+		}
+	});
+});
 
 function initBlockPaging() {
 	const PAGE_SIZE = 6;
@@ -785,7 +795,7 @@ function initWorklogAjax() {
 			const form = e.target;
 			if (!form) return;
 
-			if (!form.classList.contains("worklog-range")) return;
+			if (!form.classList.contains("user-worklog-range")) return;
 
 			e.preventDefault();
 			e.stopPropagation();
@@ -856,3 +866,215 @@ function findScrollContainer(el) {
 
 	return document.scrollingElement || document.documentElement;
 }
+
+function initAdminDrilldown() {
+	const mode = (new URLSearchParams(location.search).get("mode") || "ME").toUpperCase();
+	if (mode !== "ADMIN") return;
+
+	const params = new URLSearchParams(location.search);
+	const projectCode = params.get("projectCode");
+	if (!projectCode) return;
+
+	bindInlineDrilldown("ASSIGNED", "ASSIGNED");
+	bindInlineDrilldown("REGISTERED", "REGISTERED");
+
+	function bindInlineDrilldown(blockType, kind) {
+		const block = document.querySelector(`.my-block[data-block-type="${blockType}"]`);
+		if (!block) return;
+
+		const table = block.querySelector("table");
+		const tbody = table?.querySelector("tbody");
+		if (!tbody) return;
+
+		const statRows = Array.from(tbody.querySelectorAll("tr.admin-stat-row[data-user]"));
+		if (!statRows.length) return;
+
+		statRows.forEach((row) => {
+			row.style.cursor = "pointer";
+
+			row.addEventListener("click", async () => {
+				const userCode = row.dataset.user;
+				if (!userCode) return;
+
+				// ✅ 같은 행 클릭: 열려있으면 닫기
+				const next = row.nextElementSibling;
+				const alreadyOpen = next && next.classList.contains("admin-drill-row");
+
+				// 다른 열린 드릴다운은 닫기
+				closeAll(tbody);
+
+				statRows.forEach(r => r.classList.remove("table-active"));
+				row.classList.add("table-active");
+
+				if (alreadyOpen) {
+					// 닫기
+					row.classList.remove("table-active");
+					next.remove();
+					return;
+				}
+
+				// ✅ 드릴다운 row 생성
+				const colCount = table.querySelectorAll("thead th").length || 1;
+
+				const drillTr = document.createElement("tr");
+				drillTr.className = "admin-drill-row";
+				drillTr.innerHTML = `<td colspan="${colCount}">
+          <div class="admin-drill-box" data-ellipsis-scope="1">
+            <div class="text-muted small mb-2">불러오는 중...</div>
+          </div>
+        </td>`;
+
+				row.insertAdjacentElement("afterend", drillTr);
+
+				const box = drillTr.querySelector(".admin-drill-box");
+				const hint = box.querySelector(".text-muted");
+
+				try {
+					const url = new URL("/my/admin/issues", location.origin);
+					url.searchParams.set("kind", kind);
+					url.searchParams.set("projectCode", projectCode);
+					url.searchParams.set("userCode", userCode);
+					url.searchParams.set("limit", "200");
+
+					const res = await fetch(url.toString(), { headers: { "X-Requested-With": "fetch" } });
+					if (!res.ok) throw new Error("drilldown fetch failed " + res.status);
+
+					const list = await res.json();
+
+					if (!list || list.length === 0) {
+						box.innerHTML = `<div class="text-muted small">표시할 목록이 없습니다.</div>`;
+						return;
+					}
+
+					// ✅ 리스트 렌더
+					const ul = document.createElement("ul");
+					ul.className = "admin-drill-list";
+
+					list.forEach((iss, idx) => {
+						const li = document.createElement("li");
+						li.className = "admin-drill-item";
+						li.innerHTML = `
+			  <div class="admin-drill-no">${idx + 1}</div>
+			  <div class="admin-drill-title text-truncate">${escapeHtmlLite(iss.title || "")}</div>
+			  <div class="admin-drill-due">${formatDue(iss.dueAt)}(마감)</div>
+			  <div class="admin-drill-progress">${formatProgress(iss.progress)}</div>
+			  <div style="text-align:right;">${renderStatusChipByName(iss.statusName)}</div>
+			`;
+
+						li.addEventListener("click", (e) => {
+							e.stopPropagation();
+							if (iss.issueCode) {
+								location.href = `/issueInfo?issueCode=${encodeURIComponent(iss.issueCode)}`;
+							}
+						});
+
+						ul.appendChild(li);
+					});
+
+					box.innerHTML = "";
+					box.appendChild(ul);
+
+					// ✅ 드릴다운 렌더 후 말줄임 툴팁 적용
+					requestAnimationFrame(() => {
+						if (!(window.bootstrap && bootstrap.Tooltip)) return;
+
+						box.querySelectorAll('[data-ellipsis-scope="1"] .text-truncate').forEach((el) => {
+							if (el.offsetParent === null) return;
+
+							const text = (el.textContent || "").trim();
+							if (!text) return;
+
+							const isTruncated = el.scrollWidth > el.clientWidth;
+
+							const inst = bootstrap.Tooltip.getInstance(el);
+							if (inst) inst.dispose();
+
+							if (!isTruncated) {
+								el.removeAttribute("data-bs-toggle");
+								el.removeAttribute("data-bs-placement");
+								el.removeAttribute("data-bs-title");
+								el.removeAttribute("data-bs-html");
+								return;
+							}
+
+							el.setAttribute("data-bs-toggle", "tooltip");
+							el.setAttribute("data-bs-placement", "top");
+							el.setAttribute("data-bs-title", text);
+							el.setAttribute("data-bs-html", "false");
+							new bootstrap.Tooltip(el, { trigger: "hover", container: "body" });
+						});
+					});
+
+				} catch (e) {
+					console.error(e);
+					box.innerHTML = `<div class="text-muted small">목록을 불러오지 못했습니다.</div>`;
+				}
+			});
+		});
+	}
+
+	function closeAll(tbody) {
+		tbody.querySelectorAll("tr.admin-drill-row").forEach(tr => tr.remove());
+	}
+
+	function escapeHtmlLite(s) {
+		return String(s)
+			.replaceAll("&", "&amp;")
+			.replaceAll("<", "&lt;")
+			.replaceAll(">", "&gt;")
+			.replaceAll("\"", "&quot;")
+			.replaceAll("'", "&#39;");
+	}
+
+	// ✅ ADMIN 드릴다운: 부트스트랩 상태 칩(이름 기준)
+	function bsStatusChipClassByName(name) {
+		const s = (name || "").trim();
+		if (s.includes("신규")) return "text-bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25";
+		if (s.includes("진행")) return "text-bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25";
+		if (s.includes("해결")) return "text-bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 is-solution";
+		if (s.includes("반려")) return "text-bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25";
+		if (s.includes("완료")) return "text-bg-success bg-opacity-25 text-success border border-success border-opacity-25";
+		return "text-bg-light text-dark border";
+	}
+
+	function renderStatusChipByName(statusName) {
+		const label = (statusName || "").trim() || "기타";
+		const cls = bsStatusChipClassByName(label);
+		return `<span class="badge rounded-pill dd-chip ${cls}">${escapeHtmlLite(label)}</span>`;
+	}
+
+	function formatDue(dueAt) {
+		if (!dueAt) return "-";
+		try {
+			const dt = new Date(dueAt);
+			if (isNaN(dt.getTime())) return "-";
+
+			const yyyy = String(dt.getFullYear());
+			const mm = String(dt.getMonth() + 1).padStart(2, "0");
+			const dd = String(dt.getDate()).padStart(2, "0");
+
+			return `${yyyy}-${mm}-${dd}`;
+		} catch {
+			return "-";
+		}
+	}
+
+	function formatProgress(p) {
+		if (p === null || p === undefined || p === "") return "-";
+		const n = Number(p);
+		if (Number.isNaN(n)) return "-";
+		return `${Math.max(0, Math.min(100, n))}%`;
+	}
+}
+
+function bsStatusChipClass(statusId) {
+	switch ((statusId || "").trim()) {
+		case "OB1": return "text-bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25";
+		case "OB2": return "text-bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25";
+		case "OB3": return "text-bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25";
+		case "OB4": return "text-bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25";
+		case "OB5": return "text-bg-success bg-opacity-25 text-success border border-success border-opacity-25";
+		default: return "text-bg-light text-dark border";
+	}
+}
+

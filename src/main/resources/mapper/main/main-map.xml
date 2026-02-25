@@ -335,4 +335,70 @@
   		FROM projects p
   		WHERE p.project_code = #{projectCode}
 	</select>
+	
+	<!-- ======================= MAIN 메모 달력 ======================= -->
+
+	<select id="selectMemosByMonth" resultType="MainMemoDTO">
+  	<![CDATA[
+  		SELECT
+    		memo_code AS memoCode,
+    		user_code AS userCode,
+    		TO_CHAR(memo_date, 'YYYY-MM-DD') AS memoDate,
+    		content   AS content
+  		FROM user_memo
+  		WHERE user_code = #{userCode}
+    	AND memo_date >= TRUNC(TO_DATE(#{fromDate}, 'YYYY-MM-DD'))
+    	AND memo_date <  TRUNC(TO_DATE(#{toDate},   'YYYY-MM-DD'))
+    	
+  		ORDER BY memo_date ASC
+  	]]>
+	</select>
+
+	<select id="selectMemoByDate" resultType="MainMemoDTO">
+  	<![CDATA[
+  		SELECT
+    		memo_code AS memoCode,
+    		user_code AS userCode,
+    		TO_CHAR(memo_date, 'YYYY-MM-DD') AS memoDate,
+    		content   AS content
+  		FROM user_memo
+  		WHERE user_code = #{userCode}
+    	AND memo_date = TRUNC(TO_DATE(#{memoDate}, 'YYYY-MM-DD'))
+  	]]>
+	</select>
+
+	<insert id="upsertMemo">
+  	<![CDATA[
+  		MERGE INTO user_memo t
+  		USING (
+    		SELECT
+      			#{userCode} AS user_code,
+      			TRUNC(TO_DATE(#{memoDate}, 'YYYY-MM-DD')) AS memo_date,
+      			#{content} AS content
+    		FROM dual
+  		) s
+  		ON (t.user_code = s.user_code AND t.memo_date = s.memo_date)
+
+  		WHEN MATCHED THEN
+    	UPDATE SET
+      	t.content = s.content
+
+  		WHEN NOT MATCHED THEN
+    	INSERT (memo_code, user_code, memo_date, content)
+    	VALUES (
+      		(SELECT NVL(MAX(memo_code), 0) + 1 FROM user_memo),
+      		s.user_code,
+      		s.memo_date,
+      		s.content
+    	)
+  	]]>
+	</insert>
+
+	<delete id="deleteMemo">
+  	<![CDATA[
+  		DELETE FROM user_memo
+  		WHERE user_code = #{userCode}
+    	AND memo_date = TRUNC(TO_DATE(#{memoDate}, 'YYYY-MM-DD'))
+  	]]>
+	</delete>
 </mapper>

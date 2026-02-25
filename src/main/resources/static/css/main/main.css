@@ -332,7 +332,143 @@
 }
 
 /* ✅ 최근공지 행 높이 살짝 줄이기(테이블에만 적용) */
+#mainIssueTable tbody td,
 #mainNoticeTable tbody td{
-  padding-top: 7px;   /* 기존보다 살짝 줄임 */
-  padding-bottom: 7px;
+  padding-top: 10px;   /* 기존보다 살짝 줄임 */
+  padding-bottom: 10px;
+}
+
+/* =========================
+   진행률 카드는 반 높이
+   ========================= */
+.today-card{
+  height: 173px; /* 360의 대략 반 */
+}
+
+/* =========================
+   메모 달력 카드
+   ========================= */
+.memo-cal-card{
+  height: 173px;
+}
+
+.memo-cal-grid{
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.memo-cal-dow{
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b7280;
+  text-align: center;
+  padding: 2px 0 6px;
+}
+
+.memo-cal-cell{
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 6px 6px 4px;
+  min-height: 38px;
+  cursor: pointer;
+  background: #fff;
+  position: relative;
+}
+
+.memo-cal-cell:hover{ background: #fafafa; }
+
+.memo-cal-cell.is-out{
+  opacity: .35;
+  cursor: default;
+}
+
+.memo-cal-day{
+  font-size: 12px;
+  font-weight: 900;
+  color: #111827;
+  line-height: 1;
+}
+
+.memo-cal-dot{
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #6366f1;
+  position: absolute;
+  right: 8px;
+  top: 8px;
+}
+
+.memo-cal-cell.has-memo{
+  border-color: #c7d2fe;
+  background: #f8faff;
+}
+
+/* =========================
+   오른쪽 아래 1칸: 진행률 + 달력 좌우 반반 분할
+   ========================= */
+.main-split{
+  height: 360px;              /* 기존 main-card 높이와 동일 */
+  display: flex;
+  flex-direction: row;        /* ✅ column → row */
+  gap: 14px;
+  min-height: 0;
+}
+
+/* split 내부 카드: 높이 고정 풀고, 가로 반반 */
+.main-split .split-card{
+  height: 100% !important;    /* ✅ 세로는 wrapper 높이 꽉 */
+  flex: 1 1 0;                /* ✅ 가로 반반 */
+  min-width: 0;               /* ✅ 테이블/달력 overflow 방지 */
+  display: flex;              /* ✅ 카드 내부도 column 유지 */
+  flex-direction: column;
+}
+
+/* 카드 바디가 남은 높이 다 먹고 내부 스크롤/레이아웃 정상 */
+.main-split .split-card .card-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* 달력은 카드 안에서 꽉 차게 */
+.memo-cal-wrap{
+  height: 100%;
+  padding: 10px 12px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* =========================
+   메모 삭제 확인 모달(심플)
+   ========================= */
+#memoDeleteConfirmModal .modal-content.memo-confirm-simple{
+  border-radius: 12px;
+}
+
+/* ✅ footer 윗줄 제거 */
+#memoDeleteConfirmModal .modal-footer{
+  border-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+#memoDeleteConfirmModal .modal-body{
+  padding-bottom: 16px !important;
+  padding-top: 25px !important;
+}
+
+/* 메모 달력 이전/다음: 꺽쇠 버튼 */
+.memo-nav-btn{
+  width: 32px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
 }
