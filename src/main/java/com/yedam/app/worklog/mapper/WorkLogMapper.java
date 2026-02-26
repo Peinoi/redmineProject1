@@ -35,10 +35,10 @@ int updateWorkLog(WorkLogVO vo);
 int deleteWorkLog(@Param("workLogCode") Long workLogCode);
 
 List<Map<String, Object>> selectWorklogStats(
-	    @Param("loginUserCode") Integer loginUserCode,
-	    @Param("groupBy") String groupBy,
-	    @Param("includeIssue") boolean includeIssue,
-
+		@Param("loginUserCode") Integer loginUserCode,
+	    @Param("includeType") int includeType,
+	    @Param("includeWorker") int includeWorker,
+	    @Param("includeIssue") int includeIssue,
 	    @Param("projectCode") Long projectCode,
 	    @Param("typeCode") Long typeCode,
 	    @Param("workerCode") Integer workerCode,

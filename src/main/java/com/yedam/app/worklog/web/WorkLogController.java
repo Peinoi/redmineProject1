@@ -131,8 +131,9 @@ public class WorkLogController {
   @ResponseBody
   @GetMapping("/api/worklogs/stats")
   public Map<String, Object> stats(
-      @RequestParam(defaultValue = "worker") String groupBy,
-      @RequestParam(defaultValue = "false") boolean includeIssue,
+		  @RequestParam(defaultValue = "0") int includeType,
+		  @RequestParam(defaultValue = "0") int includeWorker,
+		  @RequestParam(defaultValue = "0") int includeIssue,
 
       @RequestParam(required = false) Long projectCode,
       @RequestParam(required = false) Long typeCode,
@@ -145,11 +146,10 @@ public class WorkLogController {
     Map<String, Object> res = new HashMap<>();
     try {
       List<Map<String, Object>> data = workLogService.getStats(
-          groupBy, includeIssue,
+          includeType, includeWorker, includeIssue,
           projectCode, typeCode, workerCode, issueTitle, workTime,
           session
       );
-
       res.put("success", true);
       res.put("data", data);
     } catch (Exception e) {

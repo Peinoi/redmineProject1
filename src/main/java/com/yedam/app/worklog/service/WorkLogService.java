@@ -19,13 +19,14 @@ public interface WorkLogService {
   void deleteWorklog(Long workLogCode, HttpSession session);
   
   List<Map<String, Object>> getStats(
-		    String groupBy,
-		    boolean includeIssue,
-		    Long projectCode,
-		    Long typeCode,
-		    Integer workerCode,
-		    String issueTitle,
-		    String workTime,
-		    HttpSession session
+		  int includeType,
+		  int includeWorker,
+		  int includeIssue,
+	      Long projectCode,
+	      Long typeCode,
+	      Integer workerCode,
+	      String issueTitle,
+	      String workTime,
+	      HttpSession session
 		);
 }

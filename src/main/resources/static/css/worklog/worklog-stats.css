@@ -263,6 +263,9 @@
   color: #111827;
   border-bottom: 1px solid #e5e7eb;
   padding: 10px 10px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #statsTable tbody td {
@@ -271,28 +274,35 @@
   color: #111827;
   border-color: #eeeeee;
   padding: 8px 10px;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #statsTable.table-hover > tbody > tr:hover > * {
   background-color: #f9fafb;
 }
 
-/* 컬럼 폭(4열 고정) */
+/* 컬럼 폭(5열 고정) */
 #statsTable th:nth-child(1),
 #statsTable td:nth-child(1) {
-  width: 35%;
+  width: 25%;
 }
 #statsTable th:nth-child(2),
 #statsTable td:nth-child(2) {
-  width: 25%;
+  width: 20%;
 }
 #statsTable th:nth-child(3),
 #statsTable td:nth-child(3) {
-  width: 25%;
+  width: 20%;
 }
 #statsTable th:nth-child(4),
 #statsTable td:nth-child(4) {
-  width: 15%;
+  width: 25%;
+}
+#statsTable th:nth-child(5),
+#statsTable td:nth-child(5) {
+  width: 10%;
 }
 
 /* =========================================================
@@ -314,9 +324,15 @@
 }
 
 .stats-lv2 {
-  padding-left: 36px !important;
   font-weight: 600;
   color: #374151;
+}
+
+/* level 3 들여쓰기(일감까지 깊어질 때) */
+.stats-lv3 {
+  padding-left: 54px !important;
+  font-weight: 600;
+  color: #4b5563;
 }
 
 .stats-time {
@@ -583,4 +599,9 @@
   #statsTable tbody {
     max-height: 380px;
   }
+}
+
+#statsSummary {
+  font-weight: 700;
+  white-space: nowrap;
 }

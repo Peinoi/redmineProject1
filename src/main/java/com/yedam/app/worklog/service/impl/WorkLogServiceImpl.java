@@ -198,8 +198,9 @@ public class WorkLogServiceImpl implements WorkLogService {
   
   @Override
   public List<Map<String, Object>> getStats(
-      String groupBy,
-      boolean includeIssue,
+		  int includeType,
+		  int includeWorker,
+		  int includeIssue,
       Long projectCode,
       Long typeCode,
       Integer workerCode,
@@ -212,17 +213,12 @@ public class WorkLogServiceImpl implements WorkLogService {
       throw new IllegalStateException("로그인이 필요합니다.");
     }
 
-    // groupBy 기본값 정리 (project/worker/type 허용)
-    String g = (groupBy == null) ? "worker" : groupBy.toLowerCase();
-    if (!"project".equals(g) && !"worker".equals(g) && !"type".equals(g)) {
-      g = "worker";
-    }
-
     Integer minMinutes = parseWorkTimeToMinutes(workTime);
 
     return workLogMapper.selectWorklogStats(
         user.getUserCode(),
-        g,
+        includeType,
+        includeWorker,
         includeIssue,
         projectCode,
         typeCode,

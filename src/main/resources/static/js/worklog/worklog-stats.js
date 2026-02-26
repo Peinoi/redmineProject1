@@ -26,11 +26,14 @@
     btnApply: $("#btnApplyFilters"),
     btnReset: $("#btnResetFilters"),
 
-    // group options
-    groupByProject: $("#groupByProject"),
-    groupByWorker: $("#groupByWorker"),
-    groupByType: $("#groupByType"),
+    // group options (checkbox)
+    optType: $("#optType"),
+    optWorker: $("#optWorker"),
     optIssue: $("#optIssue"),
+
+    includeTypeHidden: $("#includeTypeHidden"),
+    includeWorkerHidden: $("#includeWorkerHidden"),
+    includeIssueHidden: $("#includeIssueHidden"),
 
     // table
     tbody: $("#statsTbody"),
@@ -55,9 +58,10 @@
     workerModalEl: $("#workerSelectModal"),
     workerModalSearch: $("#workerModalSearch"),
     workerModalTree: $("#workerModalTree"),
-  };
 
-  const includeIssueHidden = $("#includeIssueHidden");
+    statsSummary: $("#statsSummary"),
+    btnExcelDownload: $("#btnExcelDownload"),
+  };
 
   if (!ui.tbody || !ui.theadRow) return;
 
@@ -89,10 +93,8 @@
   const clampInt = (val, min, max) => {
     const s = String(val ?? "").trim();
     if (s === "") return "";
-
     const n = Number(s);
     if (!Number.isFinite(n)) return "";
-
     const x = Math.max(min, Math.min(max, Math.trunc(n)));
     return String(x);
   };
@@ -153,13 +155,19 @@
   // options + filters read
   // -------------------------
   const readOptions = () => ({
-    groupBy: ui.groupByWorker?.checked
-      ? "worker"
-      : ui.groupByType?.checked
-        ? "type"
-        : "project",
+    showType: !!ui.optType?.checked,
+    showWorker: !!ui.optWorker?.checked,
     showIssue: !!ui.optIssue?.checked,
   });
+
+  const syncHidden = () => {
+    if (ui.includeTypeHidden)
+      ui.includeTypeHidden.value = ui.optType?.checked ? "1" : "0";
+    if (ui.includeWorkerHidden)
+      ui.includeWorkerHidden.value = ui.optWorker?.checked ? "1" : "0";
+    if (ui.includeIssueHidden)
+      ui.includeIssueHidden.value = ui.optIssue?.checked ? "1" : "0";
+  };
 
   const readFilters = () => {
     syncWorkTimeHidden();
@@ -172,54 +180,30 @@
     };
   };
 
-  const syncIncludeIssueHidden = () => {
-    if (!includeIssueHidden) return;
-    includeIssueHidden.value = ui.optIssue?.checked ? "true" : "false";
-  };
-
   // -------------------------
   // state
   // -------------------------
   let state = {
-    groupBy: "project",
-    showIssue: false,
     rows: [],
     collapsed: new Set(),
     keyToRowIndex: new Map(),
     columns: [],
-    filter: {
-      projectCode: "",
-      typeCode: "",
-      workerCode: "",
-      issueTitle: "",
-      workTime: "",
-    },
-  };
-
-  const updateStateFromUI = () => {
-    clampFilterInputs();
-    syncIncludeIssueHidden();
-
-    const opt = readOptions();
-    state.groupBy = opt.groupBy;
-    state.showIssue = opt.showIssue;
-    state.filter = readFilters();
   };
 
   // -------------------------
   // fetch stats (필터 포함)
   // -------------------------
   const fetchStats = async () => {
-    // 여기서 최신값을 강제로 동기화
     clampFilterInputs();
-    syncIncludeIssueHidden();
+    syncHidden();
 
     const opt = readOptions();
     const f = readFilters();
 
     const qs = new URLSearchParams({
-      groupBy: opt.groupBy,
-      includeIssue: opt.showIssue ? "true" : "false",
+      includeType: opt.showType ? "1" : "0",
+      includeWorker: opt.showWorker ? "1" : "0",
+      includeIssue: opt.showIssue ? "1" : "0",
 
       projectCode: f.projectCode,
       typeCode: f.typeCode,
@@ -233,12 +217,36 @@
     });
 
     const json = await res.json().catch(() => ({}));
-    return json && json.success ? json.data || [] : [];
+    if (!json || json.success !== true) {
+      console.warn("stats api failed:", json);
+      return [];
+    }
+    return json.data || [];
   };
 
   // -------------------------
   // table render
   // -------------------------
+  const minutesToHHMMText = (m) => {
+    m = Number(m || 0);
+    const h = Math.floor(m / 60);
+    const mm = m % 60;
+    if (h && mm) return `${h}시간 ${mm}분`;
+    if (h) return `${h}시간`;
+    return `${mm}분`;
+  };
+
+  const updateSummary = (raw) => {
+    if (!ui.statsSummary) return;
+
+    const totalCount = Array.isArray(raw) ? raw.length : 0;
+    const totalMinutes = Array.isArray(raw)
+      ? raw.reduce((acc, r) => acc + Number(r?.minutes || 0), 0)
+      : 0;
+
+    ui.statsSummary.textContent = `총 ${totalCount}건 / 총 ${minutesToHHMMText(totalMinutes)}`;
+  };
+
   const minutesToText = (m) => {
     m = Number(m || 0);
     const h = Math.floor(m / 60);
@@ -248,13 +256,14 @@
     return `${mm}분`;
   };
 
-  // 4열 고정
+  // 5열 고정
   const setColumns = () => {
     state.columns = [
-      { key: "c0", label: "프로젝트", width: "35%", align: "left" },
-      { key: "c1", label: "작업자/유형", width: "25%", align: "left" },
-      { key: "c2", label: "일감", width: "25%", align: "left" },
-      { key: "time", label: "시간", width: "15%", align: "right" },
+      { key: "c0", label: "프로젝트", width: "25%", align: "left" },
+      { key: "c1", label: "유형", width: "20%", align: "left" },
+      { key: "c2", label: "작업자", width: "20%", align: "left" },
+      { key: "c3", label: "일감", width: "25%", align: "left" },
+      { key: "time", label: "시간", width: "10%", align: "right" },
     ];
   };
 
@@ -316,62 +325,125 @@
     return a;
   };
 
+  const arrowColumnByRow = (row) => {
+    // 프로젝트
+    if (row.level === 0) return "c0";
+    // 나머지는 "실제로 값이 들어간 첫 컬럼"
+    if (row.c1) return "c1";
+    if (row.c2) return "c2";
+    return "c3";
+  };
+
+  // 핵심: 프로젝트 -> (유형) -> (작업자) -> (일감)
+  // 서버 응답은 typeCode/typeName/workerCode/workerName/issueCode/issueTitle로 온다고 가정
   const buildRows = (raw) => {
     state.rows = [];
     state.keyToRowIndex.clear();
 
+    const opt = readOptions();
+
     const pMap = new Map();
 
     raw.forEach((r) => {
-      const pKey = String(r.projectCode ?? "");
-      if (!pMap.has(pKey)) {
-        pMap.set(pKey, {
-          projectCode: pKey,
+      const pCode = String(r.projectCode ?? "");
+      if (!pMap.has(pCode)) {
+        pMap.set(pCode, {
+          projectCode: pCode,
           projectName: r.projectName || "",
           minutes: 0,
-          mids: new Map(),
+          types: new Map(),
+          workers: new Map(),
           issues: new Map(),
         });
       }
 
-      const p = pMap.get(pKey);
-      p.minutes += Number(r.minutes || 0);
+      const p = pMap.get(pCode);
+      const minutes = Number(r.minutes || 0);
+      p.minutes += minutes;
 
-      const issueCode = r.issueCode != null ? String(r.issueCode) : "";
-      const issueTitle = r.issueTitle || "";
+      const typeKey = String(r.typeCode ?? "0");
+      const typeName = r.typeName || "-";
 
-      // groupBy=project
-      if (state.groupBy === "project") {
-        if (state.showIssue && issueCode) {
-          if (!p.issues.has(issueCode)) {
-            p.issues.set(issueCode, { issueCode, issueTitle, minutes: 0 });
+      const workerKey = String(r.workerCode ?? "0");
+      const workerName = r.workerName || "-";
+
+      const issueKey = String(r.issueCode ?? "0");
+      const issueTitle = r.issueTitle || "-";
+
+      // 1) 유형 사용
+      if (opt.showType) {
+        if (!p.types.has(typeKey)) {
+          p.types.set(typeKey, {
+            typeKey,
+            typeName,
+            minutes: 0,
+            workers: new Map(),
+            issues: new Map(),
+          });
+        }
+        const t = p.types.get(typeKey);
+        t.minutes += minutes;
+
+        // 2) 작업자 사용
+        if (opt.showWorker) {
+          if (!t.workers.has(workerKey)) {
+            t.workers.set(workerKey, {
+              workerKey,
+              workerName,
+              minutes: 0,
+              issues: new Map(),
+            });
           }
-          p.issues.get(issueCode).minutes += Number(r.minutes || 0);
+          const w = t.workers.get(workerKey);
+          w.minutes += minutes;
+
+          // 3) 일감 사용
+          if (opt.showIssue && issueKey !== "0") {
+            if (!w.issues.has(issueKey)) {
+              w.issues.set(issueKey, { issueKey, issueTitle, minutes: 0 });
+            }
+            w.issues.get(issueKey).minutes += minutes;
+          }
+        } else {
+          // 유형만 있고 작업자는 없음 -> 유형 아래 일감
+          if (opt.showIssue && issueKey !== "0") {
+            if (!t.issues.has(issueKey)) {
+              t.issues.set(issueKey, { issueKey, issueTitle, minutes: 0 });
+            }
+            t.issues.get(issueKey).minutes += minutes;
+          }
         }
         return;
       }
 
-      // worker/type
-      const gKey = r.groupKey != null ? String(r.groupKey) : "";
-      const gName = r.groupName || "-";
+      // 유형 미사용 + 작업자 사용 -> 프로젝트 아래 작업자
+      if (opt.showWorker) {
+        if (!p.workers.has(workerKey)) {
+          p.workers.set(workerKey, {
+            workerKey,
+            workerName,
+            minutes: 0,
+            issues: new Map(),
+          });
+        }
+        const w = p.workers.get(workerKey);
+        w.minutes += minutes;
 
-      if (!p.mids.has(gKey)) {
-        p.mids.set(gKey, {
-          groupKey: gKey,
-          name: gName,
-          minutes: 0,
-          issues: new Map(),
-        });
+        if (opt.showIssue && issueKey !== "0") {
+          if (!w.issues.has(issueKey)) {
+            w.issues.set(issueKey, { issueKey, issueTitle, minutes: 0 });
+          }
+          w.issues.get(issueKey).minutes += minutes;
+        }
+        return;
       }
 
-      const mid = p.mids.get(gKey);
-      mid.minutes += Number(r.minutes || 0);
-
-      if (state.showIssue && issueCode) {
-        if (!mid.issues.has(issueCode)) {
-          mid.issues.set(issueCode, { issueCode, issueTitle, minutes: 0 });
+      // 유형/작업자 둘 다 미사용 -> 프로젝트 아래 일감
+      if (opt.showIssue && issueKey !== "0") {
+        if (!p.issues.has(issueKey)) {
+          p.issues.set(issueKey, { issueKey, issueTitle, minutes: 0 });
         }
-        mid.issues.get(issueCode).minutes += Number(r.minutes || 0);
+        p.issues.get(issueKey).minutes += minutes;
       }
     });
 
@@ -382,6 +454,7 @@
     projects.forEach((p) => {
       const pRowKey = `p-${p.projectCode}`;
 
+      // level 0: 프로젝트
       state.rows.push({
         level: 0,
         key: pRowKey,
@@ -389,11 +462,141 @@
         c0: p.projectName,
         c1: "",
         c2: "",
+        c3: "",
         time: minutesToText(p.minutes),
       });
 
-      // project + issue
-      if (state.groupBy === "project" && state.showIssue) {
+      if (opt.showType) {
+        const types = Array.from(p.types.values()).sort((a, b) =>
+          String(a.typeName).localeCompare(String(b.typeName), "ko"),
+        );
+
+        types.forEach((t) => {
+          const tKey = `t-${p.projectCode}-${t.typeKey}`;
+
+          state.rows.push({
+            level: 1,
+            key: tKey,
+            parent: pRowKey,
+            c0: "",
+            c1: t.typeName,
+            c2: "",
+            c3: "",
+            time: minutesToText(t.minutes),
+          });
+
+          if (opt.showWorker) {
+            const workers = Array.from(t.workers.values()).sort((a, b) =>
+              String(a.workerName).localeCompare(String(b.workerName), "ko"),
+            );
+
+            workers.forEach((w) => {
+              const wKey = `w-${p.projectCode}-${t.typeKey}-${w.workerKey}`;
+
+              state.rows.push({
+                level: 2,
+                key: wKey,
+                parent: tKey,
+                c0: "",
+                c1: "",
+                c2: w.workerName,
+                c3: "",
+                time: minutesToText(w.minutes),
+                userCode: w.workerKey,
+              });
+
+              if (opt.showIssue) {
+                const issues = Array.from(w.issues.values()).sort((a, b) =>
+                  String(a.issueTitle).localeCompare(
+                    String(b.issueTitle),
+                    "ko",
+                  ),
+                );
+
+                issues.forEach((it) => {
+                  state.rows.push({
+                    level: 3,
+                    key: `i-${p.projectCode}-${t.typeKey}-${w.workerKey}-${it.issueKey}`,
+                    parent: wKey,
+                    c0: "",
+                    c1: "",
+                    c2: "",
+                    c3: it.issueTitle,
+                    time: minutesToText(it.minutes),
+                    issueCode: it.issueKey,
+                  });
+                });
+              }
+            });
+          } else if (opt.showIssue) {
+            const issues = Array.from(t.issues.values()).sort((a, b) =>
+              String(a.issueTitle).localeCompare(String(b.issueTitle), "ko"),
+            );
+
+            issues.forEach((it) => {
+              state.rows.push({
+                level: 2,
+                key: `i-${p.projectCode}-${t.typeKey}-${it.issueKey}`,
+                parent: tKey,
+                c0: "",
+                c1: "",
+                c2: "",
+                c3: it.issueTitle,
+                time: minutesToText(it.minutes),
+                issueCode: it.issueKey,
+              });
+            });
+          }
+        });
+
+        return;
+      }
+
+      if (opt.showWorker) {
+        const workers = Array.from(p.workers.values()).sort((a, b) =>
+          String(a.workerName).localeCompare(String(b.workerName), "ko"),
+        );
+
+        workers.forEach((w) => {
+          const wKey = `w-${p.projectCode}-${w.workerKey}`;
+
+          state.rows.push({
+            level: 1,
+            key: wKey,
+            parent: pRowKey,
+            c0: "",
+            c1: "",
+            c2: w.workerName,
+            c3: "",
+            time: minutesToText(w.minutes),
+            userCode: w.workerKey,
+          });
+
+          if (opt.showIssue) {
+            const issues = Array.from(w.issues.values()).sort((a, b) =>
+              String(a.issueTitle).localeCompare(String(b.issueTitle), "ko"),
+            );
+
+            issues.forEach((it) => {
+              state.rows.push({
+                level: 2,
+                key: `i-${p.projectCode}-${w.workerKey}-${it.issueKey}`,
+                parent: wKey,
+                c0: "",
+                c1: "",
+                c2: "",
+                c3: it.issueTitle,
+                time: minutesToText(it.minutes),
+                issueCode: it.issueKey,
+              });
+            });
+          }
+        });
+
+        return;
+      }
+
+      if (opt.showIssue) {
         const issues = Array.from(p.issues.values()).sort((a, b) =>
           String(a.issueTitle).localeCompare(String(b.issueTitle), "ko"),
         );
@@ -401,61 +604,15 @@
         issues.forEach((it) => {
           state.rows.push({
             level: 1,
-            key: `i-${p.projectCode}-${it.issueCode}`,
+            key: `i-${p.projectCode}-${it.issueKey}`,
             parent: pRowKey,
             c0: "",
             c1: "",
-            c2: it.issueTitle,
-            time: minutesToText(it.minutes),
-            issueCode: it.issueCode,
-          });
-        });
-
-        return;
-      }
-
-      // worker/type modes
-      if (state.groupBy !== "project") {
-        const mids = Array.from(p.mids.values()).sort((a, b) =>
-          String(a.name).localeCompare(String(b.name), "ko"),
-        );
-
-        mids.forEach((m) => {
-          const mRowKey = `m-${p.projectCode}-${m.groupKey}`;
-          const isWorkerMode = state.groupBy === "worker";
-
-          state.rows.push({
-            level: 1,
-            key: mRowKey,
-            parent: pRowKey,
-            c0: "",
-            c1: m.name,
             c2: "",
-            time: minutesToText(m.minutes),
-            userCode: isWorkerMode ? m.groupKey : null,
-            userName: isWorkerMode ? m.name : null,
+            c3: it.issueTitle,
+            time: minutesToText(it.minutes),
+            issueCode: it.issueKey,
           });
-
-          if (state.showIssue) {
-            const issues = Array.from(m.issues.values()).sort((a, b) =>
-              String(a.issueTitle).localeCompare(String(b.issueTitle), "ko"),
-            );
-
-            issues.forEach((it) => {
-              state.rows.push({
-                level: 2,
-                key: `i-${p.projectCode}-${m.groupKey}-${it.issueCode}`,
-                parent: mRowKey,
-                c0: "",
-                c1: "",
-                c2: it.issueTitle,
-                time: minutesToText(it.minutes),
-                issueCode: it.issueCode,
-                userCode: isWorkerMode ? m.groupKey : null,
-                userName: isWorkerMode ? m.name : null,
-              });
-            });
-          }
         });
       }
     });
@@ -466,11 +623,6 @@
     state.collapsed.clear();
     for (let i = 0; i < state.rows.length; i++) {
       if (hasChildrenByIndex(i)) state.collapsed.add(state.rows[i].key);
-    }
-
-    // project only는 아코디언 없음
-    if (state.groupBy === "project" && !state.showIssue) {
-      state.collapsed.clear();
     }
   };
 
@@ -485,6 +637,8 @@
       const expandable = hasChildrenByIndex(i);
       if (expandable) tr.classList.add("stats-expandable");
 
+      const arrowCol = arrowColumnByRow(r);
+
       state.columns.forEach((colDef) => {
         const td = document.createElement("td");
         td.style.textAlign = colDef.align;
@@ -498,20 +652,12 @@
         } else {
           td.classList.add("stats-cell");
           if (r.level === 0 && key === "c0") td.classList.add("stats-lv0");
-          if (r.level === 1 && key === "c1") td.classList.add("stats-lv1");
-          if (r.level === 2 && key === "c2") td.classList.add("stats-lv2");
-
-          if (state.groupBy === "project" && r.level === 1 && key === "c2") {
-            td.classList.add("stats-lv1");
-          }
+          if (r.level === 1) td.classList.add("stats-lv1");
+          if (r.level === 2) td.classList.add("stats-lv2");
+          if (r.level === 3) td.classList.add("stats-lv3");
         }
 
-        // 화살표 위치: 프로젝트 행(c0), 중간그룹 행(c1)
-        let showArrow = false;
-        if (expandable) {
-          showArrow =
-            (r.level === 0 && key === "c0") || (r.level === 1 && key === "c1");
-        }
+        const showArrow = expandable && key === arrowCol;
 
         if (showArrow) {
           const wrap = document.createElement("div");
@@ -520,18 +666,12 @@
           const arrow = document.createElement("span");
           arrow.className = "stats-arrow";
           arrow.textContent = state.collapsed.has(r.key) ? "▶" : "▼";
-
           wrap.appendChild(arrow);
 
-          const isWorkerAccordionHeader =
-            state.groupBy === "worker" &&
-            r.level === 1 &&
-            key === "c1" &&
-            r.userCode;
-
-          if (isWorkerAccordionHeader) {
-            wrap.appendChild(makeUserLink(r.userCode, text));
-          } else {
+          // 작업자 행이면 링크로
+          const isWorkerRow = key === "c2" && r.userCode && text;
+          if (isWorkerRow) wrap.appendChild(makeUserLink(r.userCode, text));
+          else {
             const label = document.createElement("span");
             label.textContent = text;
             wrap.appendChild(label);
@@ -540,26 +680,12 @@
           td.appendChild(wrap);
           td.style.cursor = "pointer";
         } else {
-          const isIssueRow =
-            (state.groupBy === "project" &&
-              state.showIssue &&
-              r.level === 1 &&
-              key === "c2") ||
-            (state.groupBy !== "project" &&
-              state.showIssue &&
-              r.level === 2 &&
-              key === "c2");
+          const isIssueCell = key === "c3" && r.issueCode && text;
+          const isUserCell = key === "c2" && r.userCode && text;
 
-          const isUserCell =
-            state.groupBy === "worker" && key === "c1" && r.userCode && text;
-
-          if (isIssueRow && r.issueCode) {
-            td.appendChild(makeIssueBadge(r.issueCode, text));
-          } else if (isUserCell) {
-            td.appendChild(makeUserLink(r.userCode, text));
-          } else {
-            td.textContent = text;
-          }
+          if (isIssueCell) td.appendChild(makeIssueBadge(r.issueCode, text));
+          else if (isUserCell) td.appendChild(makeUserLink(r.userCode, text));
+          else td.textContent = text;
         }
 
         tr.appendChild(td);
@@ -584,6 +710,7 @@
     try {
       renderThead();
       const raw = await fetchStats();
+      updateSummary(raw);
       buildRows(raw);
       renderBody();
     } finally {
@@ -767,7 +894,7 @@
     if (ui.projectText) ui.projectText.value = name;
     if (ui.projectValue) ui.projectValue.value = code;
 
-    // 프로젝트 바꾸면 하위 필터는 초기화(목록과 동일)
+    // 프로젝트 바꾸면 하위 필터는 초기화
     if (ui.typeText) ui.typeText.value = "";
     if (ui.typeValue) ui.typeValue.value = "";
     if (ui.workerText) ui.workerText.value = "";
@@ -839,7 +966,7 @@
         if (ui.typeText) ui.typeText.value = type.name || "";
         if (ui.typeValue) ui.typeValue.value = type.code || "";
 
-        // 유형 클릭 시 프로젝트도 자동 셋(목록과 동일)
+        // 유형 클릭 시 프로젝트도 자동 셋
         if (type.projectCode && type.projectName) {
           if (ui.projectValue) ui.projectValue.value = type.projectCode;
           if (ui.projectText) ui.projectText.value = type.projectName;
@@ -1055,22 +1182,19 @@
   });
 
   // -------------------------
-  // apply/reset (핵심 수정)
+  // apply/reset
   // -------------------------
   ui.btnApply?.addEventListener("click", async (e) => {
     e.preventDefault();
-
-    // 여기서 "현재 입력값"을 state에 반영해야 필터가 먹음
-    updateStateFromUI();
-
-    // 폼 submit(페이지 리로드) 대신, 테이블만 갱신
+    clampFilterInputs();
+    syncHidden();
     await renderAll();
   });
 
-  // 혹시 엔터로 submit 하는 경우도 막고 동일하게 처리
   ui.form?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    updateStateFromUI();
+    clampFilterInputs();
+    syncHidden();
     await renderAll();
   });
 
@@ -1092,23 +1216,92 @@
     if (ui.workMinute) ui.workMinute.value = "";
     if (ui.workTimeHidden) ui.workTimeHidden.value = "";
 
-    if (ui.groupByProject) ui.groupByProject.checked = true;
+    if (ui.optType) ui.optType.checked = false;
+    if (ui.optWorker) ui.optWorker.checked = false;
     if (ui.optIssue) ui.optIssue.checked = false;
-    syncIncludeIssueHidden();
 
-    updateStateFromUI();
+    syncHidden();
     await renderAll();
   });
 
-  ui.optIssue?.addEventListener("change", syncIncludeIssueHidden);
+  ui.optType?.addEventListener("change", syncHidden);
+  ui.optWorker?.addEventListener("change", syncHidden);
+  ui.optIssue?.addEventListener("change", syncHidden);
+
+  // -------------------------
+  // Excel download (SheetJS)
+  // -------------------------
+  const getVisibleRowsForExport = () =>
+    state.rows.map((r) => ({
+      프로젝트: r.c0 || "",
+      유형: r.c1 || "",
+      작업자: r.c2 || "",
+      일감: r.c3 || "",
+      시간: r.time || "0분",
+    }));
+
+  const formatTodayYmd = () => {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}${m}${day}`;
+  };
+
+  const downloadXlsx = () => {
+    // SheetJS 로드 체크
+    if (typeof XLSX === "undefined") {
+      alert(
+        "엑셀 라이브러리(XLSX)가 로드되지 않았습니다. CDN 스크립트 추가를 확인해주세요.",
+      );
+      return;
+    }
+
+    // 현재 화면 기준: 보이는 행만
+    const rows = getVisibleRowsForExport();
+    if (!rows.length) {
+      alert("다운로드할 데이터가 없습니다.");
+      return;
+    }
+
+    // 워크시트 생성
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: ["프로젝트", "유형", "작업자", "일감", "시간"],
+    });
+
+    // 보기 좋은 컬럼 폭
+    ws["!cols"] = [
+      { wch: 22 }, // 프로젝트
+      { wch: 18 }, // 유형
+      { wch: 16 }, // 작업자
+      { wch: 32 }, // 일감
+      { wch: 14 }, // 시간
+    ];
+
+    // 워크북 생성 후 시트 추가
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "통계");
+
+    // 파일명
+    const filename = `소요시간_통계_${formatTodayYmd()}.xlsx`;
+
+    // 다운로드
+    XLSX.writeFile(wb, filename);
+  };
+
+  ui.btnExcelDownload?.addEventListener("click", () => {
+    clampFilterInputs();
+    syncHidden();
+
+    downloadXlsx();
+  });
 
   // -------------------------
   // init
   // -------------------------
   (() => {
-    syncIncludeIssueHidden();
+    syncHidden();
     syncWorkTimeHidden();
-    updateStateFromUI();
     renderAll();
   })();
 })();

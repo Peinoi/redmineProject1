@@ -67,7 +67,7 @@
                 type="hidden"
                 id="filterTypeValue"
                 name="typeCode"
-                th:value="${param.typeCode}"
+                th:value="${param.typeCode != null ? param.typeCode[0] : ''}"
               />
               <button
                 type="button"
@@ -88,7 +88,7 @@
               name="issueTitle"
               class="form-control"
               placeholder="일감명 입력"
-              th:value="${param.issueTitle}"
+              th:value="${param.issueTitle != null ? param.issueTitle[0] : ''}"
             />
           </div>
 
@@ -108,7 +108,7 @@
                 type="hidden"
                 id="filterWorkerValue"
                 name="workerCode"
-                th:value="${param.workerCode}"
+                th:value="${param.workerCode != null ? param.workerCode[0] : ''}"
               />
               <button
                 type="button"
@@ -153,57 +153,60 @@
             />
           </div>
 
-          <!-- 그룹 토글 -->
+          <!-- 그룹 토글 (체크박스) -->
           <div class="col-12 col-md-6 stats-group-col">
             <div class="stats-group-wrap">
               <div class="stats-group-box">
-                <div class="stats-radio">
-                  <label class="stats-opt">
-                    <input
-                      type="radio"
-                      name="groupBy"
-                      id="groupByProject"
-                      value="project"
-                      th:checked="${param.groupBy == null or param.groupBy == 'project'}"
-                    />
+                <label class="stats-opt">
+                  <input
+                    type="checkbox"
+                    id="optType"
+                    th:checked="${param.includeType != null and param.includeType[0] == 'true'}"
+                  />
+                  <span>유형</span>
+                </label>
 
-                    <span>프로젝트</span>
-                  </label>
-
-                  <label class="stats-opt">
-                    <input
-                      type="radio"
-                      name="groupBy"
-                      id="groupByWorker"
-                      value="worker"
-                      th:checked="${param.groupBy == 'worker'}"
-                    />
-                    <span>작업자</span>
-                  </label>
-
-                  <label class="stats-opt">
-                    <input
-                      type="radio"
-                      name="groupBy"
-                      id="groupByType"
-                      value="type"
-                      th:checked="${param.groupBy == 'type'}"
-                    />
-                    <span>유형</span>
-                  </label>
-                </div>
+                <label class="stats-opt">
+                  <input
+                    type="checkbox"
+                    id="optWorker"
+                    th:checked="${param.includeWorker != null and param.includeWorker[0] == 'true'}"
+                  />
+                  <span>작업자</span>
+                </label>
 
                 <label class="stats-opt">
                   <input
                     type="checkbox"
                     id="optIssue"
-                    th:checked="${param.includeIssue == 'true'}"
+                    th:checked="${param.includeIssue != null and param.includeIssue[0] == 'true'}"
                   />
                   <span>일감</span>
                 </label>
               </div>
             </div>
           </div>
+
+          <!-- hidden (API/GET용) -->
+          <input
+            type="hidden"
+            id="includeTypeHidden"
+            name="includeType"
+            th:value="${param.includeType != null ? param.includeType[0] : 'false'}"
+          />
+          <input
+            type="hidden"
+            id="includeWorkerHidden"
+            name="includeWorker"
+            th:value="${param.includeWorker != null ? param.includeWorker[0] : 'false'}"
+          />
+          <input
+            type="hidden"
+            id="includeIssueHidden"
+            name="includeIssue"
+            th:value="${param.includeIssue != null ? param.includeIssue[0] : 'false'}"
+          />
+
           <!-- 버튼 -->
           <div class="col-12 col-md-3 d-flex justify-content-end gap-2">
             <button
@@ -220,12 +223,6 @@
           </div>
         </div>
       </div>
-      <input
-        type="hidden"
-        id="includeIssueHidden"
-        name="includeIssue"
-        th:value="${param.includeIssue}"
-      />
     </form>
 
     <!-- 탭 + 테이블 -->
@@ -258,11 +255,23 @@
           </ul>
         </div>
 
-        <div class="text-muted small" id="statsPageInfo"></div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="text-muted small" id="statsSummary"></div>
+
+          <button
+            type="button"
+            class="btn btn-success btn-sm"
+            id="btnExcelDownload"
+          >
+            <i class="fa-solid fa-file-excel me-1"></i>Excel
+          </button>
+        </div>
       </div>
+
       <div id="statsOverlay" class="stats-overlay d-none">
         <div class="spinner-border text-primary"></div>
       </div>
+
       <div class="card-body">
         <div class="table-responsive">
           <table
@@ -282,7 +291,7 @@
       </div>
     </div>
 
-    <!-- 프로젝트/유형/작업자 모달 (목록 페이지와 동일 구조 재사용) -->
+    <!-- 프로젝트/유형/작업자 모달 -->
     <div
       class="modal fade"
       id="projectSelectModal"
@@ -370,6 +379,7 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script th:src="@{/js/worklog/worklog-stats.js}"></script>
   </body>
 </html>

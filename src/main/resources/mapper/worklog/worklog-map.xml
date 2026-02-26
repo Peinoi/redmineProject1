@@ -180,36 +180,33 @@
 
 <!-- 통계 -->
 <select id="selectWorklogStats" resultType="map">
+  WITH flags AS (
+    SELECT
+      #{includeType}  AS it,
+      #{includeWorker} AS iw,
+      #{includeIssue} AS ii
+    FROM dual
+  )
   SELECT
     p.project_code AS "projectCode",
     p.project_name AS "projectName",
 
-    <choose>
-      <when test="groupBy == 'type'">
-        NVL(t.type_code, 0) AS "groupKey",
-        NVL(t.type_name, '-') AS "groupName",
-      </when>
-      <when test="groupBy == 'project'">
-        0 AS "groupKey",
-        '-' AS "groupName",
-      </when>
-      <otherwise>
-        u.user_code AS "groupKey",
-        u.name AS "groupName",
-      </otherwise>
-    </choose>
+    CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END AS "typeCode",
+    CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END AS "typeName",
 
-    <if test="includeIssue">
-      i.issue_code AS "issueCode",
-      i.title AS "issueTitle",
-    </if>
+    CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END AS "workerCode",
+    CASE WHEN f.iw = 1 THEN u.name ELSE '-' END AS "workerName",
+
+    CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END AS "issueCode",
+    CASE WHEN f.ii = 1 THEN i.title ELSE '-' END AS "issueTitle",
 
     SUM(wl.spent_minutes) AS "minutes"
 
-  FROM work_logs wl
-  JOIN issues i ON i.issue_code = wl.issue_code
+  FROM flags f
+  JOIN work_logs wl ON 1=1
+  JOIN issues i   ON i.issue_code = wl.issue_code
   JOIN projects p ON p.project_code = i.project_code
-  JOIN users u ON u.user_code = wl.worker_code
+  JOIN users u    ON u.user_code = wl.worker_code
   LEFT JOIN types t ON t.type_code = i.type_code
 
   <where>
@@ -235,32 +232,20 @@
     <if test="issueTitle != null and issueTitle != ''">
       AND i.title LIKE '%' || #{issueTitle} || '%'
     </if>
-
-    <!-- 여기서 minMinutes 조건 제거 (개별 row 기준 필터링 방지) -->
   </where>
 
   GROUP BY
     p.project_code,
     p.project_name,
 
-    <choose>
-      <when test="groupBy == 'type'">
-        t.type_code,
-        t.type_name
-      </when>
-      <when test="groupBy == 'project'">
-        0
-      </when>
-      <otherwise>
-        u.user_code,
-        u.name
-      </otherwise>
-    </choose>
+    CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END,
+    CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END,
 
-    <if test="includeIssue">
-      , i.issue_code,
-        i.title
-    </if>
+    CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END,
+    CASE WHEN f.iw = 1 THEN u.name ELSE '-' END,
+
+    CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END,
+    CASE WHEN f.ii = 1 THEN i.title ELSE '-' END
 
   <if test="minMinutes != null">
     HAVING SUM(wl.spent_minutes) &gt;= #{minMinutes}
