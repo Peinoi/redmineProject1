@@ -192,7 +192,7 @@
 		const adminCkBox = row.querySelector('input[name="adminck"]');
 		const adminCk = adminCkBox.checked ? 'Y' : 'N';
 
-		if (!confirm(`"${roleName}"의 관리자 권한을 변경하시겠습니까?`)) return;
+		if (!confirm(`"${roleName}"의 마스터 권한을 변경하시겠습니까?`)) return;
 
 		try {
 			const response = await fetch(`/api/auth/${adminCk}/${roleCode}/adminmodify`, {

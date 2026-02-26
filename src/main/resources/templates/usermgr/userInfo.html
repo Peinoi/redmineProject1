@@ -55,7 +55,7 @@ table {
 				<div class="col-4 col-md-2">
 					<label class="form-label">관리자</label> <input type="checkbox"
 						id="sysBtn" th:checked="${user.sysCk == 'Y'}"
-						th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}" />
+						th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}"  />
 				</div>
 				<div class="col-12 col-md-4">
 					<label class="form-label">직책</label> <input type="text"
@@ -194,7 +194,7 @@ table {
 
 	</div>
 	<th:block layout:fragment="pageScript">
-		<script th:src="@{/js/usermgr/userinfo.js}"></script>
+		<script th:inline="javascript"  th:src="@{/js/usermgr/userinfo.js}"></script>
 	</th:block>
 </body>
 </html>
