@@ -14,6 +14,13 @@
 		assigneeText: $("#filterAssigneeText"),
 		assigneeValue: $("#filterAssigneeValue"),
 
+		// 담당자
+		assigneeSelect: $(".manager select"),
+
+		// 날짜 필터
+		dateFrom: $("#filterDateFrom"),
+		dateTo: $("#filterDateTo"),
+
 		btnApply: $("#btnApplyFilters"),
 		btnReset: $("#btnResetFilters"),
 		btnAssigneeModal: $("#btnOpenAssigneeModal"),
@@ -132,16 +139,34 @@
 	function applyFilters() {
 		const t = ui.title.value.trim().toLowerCase();
 		const prCode = ui.priority.value.trim();
-		const prLabel = prCode ? STATUS_LABEL[prCode] : "";
-		const managerName = ui.assigneeText.value.trim();
+		const prLabel = (prCode && prCode !== "all") ? STATUS_LABEL[prCode] : "";
+		// 1. 담당자 필터 값 (Select의 textContent 혹은 value)
+		const selectedManager = ui.assigneeSelect.options[ui.assigneeSelect.selectedIndex]?.text || "";
+		const isManagerSelected = ui.assigneeSelect.value !== "";
+
+		// 2. 날짜 필터 값
+		const dateFrom = ui.dateFrom.value; // YYYY-MM-DD
+		const dateTo = ui.dateTo.value;
 
 		rowsAll().forEach((tr) => {
 			const d = rowData(tr);
 			let ok = true;
 
+			// 프로젝트명 검색
 			if (t && !d.projectName.toLowerCase().includes(t)) ok = false;
+
+			// 상태 검색
 			if (prLabel && d.status !== prLabel) ok = false;
-			if (managerName && d.managerName !== managerName) ok = false;
+
+			// 담당자(관리자) 검색: 선택된 경우에만 비교
+			if (isManagerSelected && d.managerName !== selectedManager) ok = false;
+
+			// 등록일 범위 검색
+			if (dateFrom || dateTo) {
+				const rowDate = d.createdOn; // "YYYY-MM-DD"
+				if (dateFrom && rowDate < dateFrom) ok = false;
+				if (dateTo && rowDate > dateTo) ok = false;
+			}
 
 			tr.dataset.filtered = ok ? "0" : "1";
 		});
@@ -153,8 +178,10 @@
 	function resetFilters() {
 		ui.title.value = "";
 		ui.priority.value = "OD1";
-		ui.assigneeText.value = "";
-		ui.assigneeValue.value = "";
+		// 담당자 및 날짜 필터 초기화
+		if (ui.assigneeSelect) ui.assigneeSelect.selectedIndex = 0;
+		ui.dateFrom.value = "";
+		ui.dateTo.value = "";
 
 		rowsAll().forEach((tr) => (tr.dataset.filtered = "0"));
 		currentPage = 1;
@@ -450,16 +477,14 @@
 	});
 
 	// 초기 화면
-	rowsAll().forEach((tr) => {
+	$$("#projectTbody tr.projectRow").forEach(tr => {
 		const d = rowData(tr);
-
-		// 상태가 '삭제'인 경우 목록에서 제외
 		if (d.status === "삭제") {
 			tr.dataset.filtered = "1";
 		} else {
-			tr.dataset.filtered = "0";
+			// 초기 로드 시 진행(OD1,OD3) 상태만 노출
+			tr.dataset.filtered = (d.status === STATUS_LABEL["OD1"] || d.status === STATUS_LABEL["OD3"]) ? "0" : "1";
 		}
-
 		updateRowStyle(tr);
 	});
 

@@ -440,4 +440,18 @@
 	       SET stored_name = #{newStoredName}
 	     WHERE file_detail_code = #{fileDetailCode}
 	</update>
+	
+	
+	<select id="selectManager" parameterType="Integer"
+		resultType="ProjectManagerVO">
+		SELECT DISTINCT 
+			u.user_code,
+	    	u.name AS name
+			FROM vw_user_auth vua
+			JOIN projects p ON vua.project_code = p.project_code
+			JOIN users u    ON p.user_code = u.user_code  -- 프로젝트 테이블의 담당자 ID와 사용자 테이블 조인
+			WHERE vua.user_code = #{userCode}                       -- '본인'의 user_code
+			  AND ( vua.status = 'OD1' 
+			        OR (vua.status = 'OD3' AND vua.admin_ck = 'Y') )
+	</select>
 </mapper>

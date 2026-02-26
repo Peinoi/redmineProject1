@@ -573,7 +573,10 @@ function addMemberRow(mappCode, userCode, userName, roleCode, roleName) {
 	row.dataset.roleCode = roleCode;
 
 	row.innerHTML = `
-		<td>👤 ${userName}</td>
+		<td>👤 	<a href="/userInfo/${userCode}" 
+	                  style="color: #0d6efd; text-decoration: underline; font-weight: 500;">
+	                ${userName}
+	            </a></td>
 		<td>${roleName}</td>
 		<td>
 			<button type="button" class="btn btn-success btn-sm btn-edit-role">
@@ -604,7 +607,10 @@ function addGroupRow(grProCode, grCode, grName, roleCode, roleName) {
 	row.dataset.roleCode = roleCode;
 
 	row.innerHTML = `
-		<td>👥 ${grName}</td>
+		<td>👥 	<a href="/groupmgr/${grCode}" 
+	                  style="color: #0d6efd; text-decoration: underline; font-weight: 500;">
+	                ${grName}
+	            </a></td>
 		<td>${roleName}</td>
 		<td>
 			<button type="button" class="btn btn-success btn-sm btn-edit-role">

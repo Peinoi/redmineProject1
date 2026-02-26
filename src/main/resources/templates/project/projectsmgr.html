@@ -33,11 +33,29 @@
 				<div class="col-12 col-md-2">
 					<label class="form-label">상태</label> <select id="filterPriority"
 						class="form-select">
-						<option value="OD1" selected>진행</option>
+						<option value="all" selected>전체</option>
+						<option value="OD1" >진행</option>
 						<option value="OD3">종료</option>
 					</select>
 				</div>
-
+				<!-- 셀렉트 옵션 검색 담당자 -->
+				<div class="col-12 col-md-2 manager">
+					<label class="form-label">담당자</label> <select id="assigneeSelect"
+						class="form-select">
+						<option value="">전체</option>
+						<option th:each="m : ${manager}" th:value="${m.userCode}"
+							th:text="${m.name}"></option>
+					</select>
+				</div>
+				<!--  날짜 필터 -->
+				<div class="col-12 col-md-5">
+					<label class="form-label">등록일</label>
+					<div class="d-flex align-items-center gap-2">
+						<input type="date" id="filterDateFrom" class="form-control" /> <span
+							class="text-muted">~</span> <input type="date" id="filterDateTo"
+							class="form-control" />
+					</div>
+				</div>
 				<!-- 모달 담당자 선택 검색 -->
 
 				<div class="col-12 col-md-3" style="display: none">

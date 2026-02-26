@@ -11,6 +11,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import com.yedam.app.auth.service.UriAccessInfoVO;
 import com.yedam.app.auth.service.UriAccessService;
 import com.yedam.app.login.service.UserVO;
+import com.yedam.app.project.service.ProjectService;
 import com.yedam.app.project.service.UserProjectAuthVO;
 import com.yedam.app.usermgr.service.UsermgrService;
 
@@ -27,6 +28,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 	private final UriAccessService uriAccessService;
 	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 	private final UsermgrService usermgrService;
+	private final ProjectService projectService;
+	
 	// URI 정보를 메모리에 캐싱 (성능 향상)
 	private Map<String, UriAccessInfoVO> uriCache = new ConcurrentHashMap<>();
 
@@ -68,8 +71,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 			return true;
 		}
 
-		@SuppressWarnings("unchecked")
-		List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>) session.getAttribute("userAuth");
+		// @SuppressWarnings("unchecked")
+		// List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>)
+		// session.getAttribute("userAuth");
+
+		List<UserProjectAuthVO> userAuths = projectService.getUserProjectAuthAll(user.getUserCode());
 
 		// 권한 데이터가 아예 없으면 (프로젝트 미소속 등) 차단
 		if (userAuths == null || userAuths.isEmpty()) {
@@ -80,6 +86,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 4. 사용자의 해당 카테고리 권한 찾기
 		UserProjectAuthVO userAuth = findUserAuthByCategory(userAuths, uriInfo.getCategory());
+
 		if (userAuth == null) {
 			System.out.println("해당 카테고리에 대한 권한이 없음!");
 			response.sendRedirect("/accessDenied");
@@ -89,7 +96,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		// 5. 상세 권한(읽기/쓰기 등) 체크
 		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth, findUser);
-		System.out.println("권한 허용 체크: "+hasPermission);
+		System.out.println("권한 허용 체크: " + hasPermission);
 		if (!hasPermission) {
 			String contentType = request.getHeader("Content-Type");
 			if (contentType != null && contentType.contains("application/json")) {

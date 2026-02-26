@@ -23,6 +23,7 @@ import com.yedam.app.project.service.ProjectAddVO;
 import com.yedam.app.project.service.ProjectCopyVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
+import com.yedam.app.project.service.ProjectManagerVO;
 import com.yedam.app.project.service.ProjectMemberDetailVO;
 import com.yedam.app.project.service.ProjectPrVO;
 import com.yedam.app.project.service.ProjectRequestDTO;
@@ -319,5 +320,10 @@ public class ProjectServiceImpl implements ProjectService {
 		}
 
 		return projectCopyVO.getResultCode();
+	}
+
+	@Override
+	public List<ProjectManagerVO> findSelectManager(Integer userCode) {
+		return projectMapper.selectManager(userCode);
 	}
 }

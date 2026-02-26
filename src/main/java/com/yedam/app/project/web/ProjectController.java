@@ -17,6 +17,7 @@ import com.yedam.app.project.service.GroupVO;
 import com.yedam.app.project.service.ProjectCopyVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
+import com.yedam.app.project.service.ProjectManagerVO;
 import com.yedam.app.project.service.ProjectMemberDetailVO;
 import com.yedam.app.project.service.ProjectPrVO;
 import com.yedam.app.project.service.ProjectRequestDTO;
@@ -58,11 +59,14 @@ public class ProjectController {
 			progMap.put(prog.getProjectCode(), prog);
 		}
 
+		// 4. 프로젝트 매니저
+		List<ProjectManagerVO> manager = projectService.findSelectManager(userCode);
+
 		model.addAttribute("list", projects);
 		model.addAttribute("progMap", progMap);
 		model.addAttribute("auth", auth);
 		model.addAttribute("userCode", userCode); // userCode 추가
-
+		model.addAttribute("manager", manager);
 		return "project/projects";
 	}
 
@@ -88,12 +92,14 @@ public class ProjectController {
 		for (ProjectPrVO prog : progVO) {
 			progMap.put(prog.getProjectCode(), prog);
 		}
+		// 4. 프로젝트 매니저
+		List<ProjectManagerVO> manager = projectService.findSelectManager(userCode);
 
 		model.addAttribute("list", projects);
 		model.addAttribute("progMap", progMap);
 		model.addAttribute("auth", auth);
 		model.addAttribute("userCode", userCode); // userCode 추가
-
+		model.addAttribute("manager", manager);
 		return "project/projectsmgr";
 	}
 

@@ -14,6 +14,7 @@ import com.yedam.app.project.service.ProjectAddVO;
 import com.yedam.app.project.service.ProjectCopyVO;
 import com.yedam.app.project.service.ProjectDetailVO;
 import com.yedam.app.project.service.ProjectGroupDetailVO;
+import com.yedam.app.project.service.ProjectManagerVO;
 import com.yedam.app.project.service.ProjectMemberDetailVO;
 import com.yedam.app.project.service.ProjectPrVO;
 import com.yedam.app.project.service.ProjectVO;
@@ -93,4 +94,6 @@ public interface ProjectMapper {
 	// 물리 파일 복사 후 stored_name 업데이트
 	public int updateStoredName(@Param("fileDetailCode") Integer fileDetailCode,
 	                            @Param("newStoredName")  String  newStoredName);
+	
+	public List<ProjectManagerVO> selectManager(Integer userCode);
 }

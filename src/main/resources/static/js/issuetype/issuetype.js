@@ -365,14 +365,20 @@
 			const typeName = (d.typename || "").toLowerCase();
 			const projectCode = (d.projectcode || "").trim();
 			const projectName = (d.projectname || "").trim();
-			const typeCode = (d.typecode || "").trim();
+			const typeCode = (d.typecode || "").trim();           // 현재 행의 유형 코드
+			const parTypeCode = (d.partypecode || "").trim();     // 현재 행의 상위 유형 코드 (추가)FF
 			const startAt = (d.startat || "").trim().slice(0, 10);
 			const endAt = (d.endat || "").trim().slice(0, 10);
 
 			let ok = true;
 			if (titleQ) ok = ok && typeName.includes(titleQ);
 			if (pCode) ok = ok && (projectCode === pCode || (!projectCode && projectName === pName));
-			if (tCode) ok = ok && typeCode === tCode;
+			// 선택한 코드(tCode)가 현재 행의 코드와 같거나, 현재 행의 부모 코드와 같으면 통과
+			if (tCode) {
+				if (!(typeCode === tCode || parTypeCode === tCode)) {
+					ok = false;
+				}
+			}
 			if (from || to) {
 				const target = dateType === "start" ? startAt : endAt;
 				if (from) ok = ok && target >= from;

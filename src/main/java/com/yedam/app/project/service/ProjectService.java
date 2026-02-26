@@ -49,5 +49,8 @@ public interface ProjectService {
 	
 	// 프로젝트 복사
 	public int copyNewProject(ProjectCopyVO projectCopyVO);
+	
+	// 프로젝트 담당자 목록
+	public List<ProjectManagerVO> findSelectManager(Integer userCode);
 
 }

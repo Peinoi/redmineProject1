@@ -110,8 +110,10 @@
 									th:data-mapp-code="${member.mappCode}"
 									th:data-user-code="${member.userCode}"
 									th:data-role-code="${member.roleCode}">
-									<td>👤 <span>[[ ${member.userName} ]]([[
-											${member.email} ]])</span></td>
+									<td>👤 <a
+										th:href="@{/userInfo/{code}(code=${member.userCode})}"
+										style="color: #0d6efd; text-decoration: underline; font-weight: 500;">
+											[[ ${member.userName} ]]([[ ${member.email} ]]) </a></td>
 									<td th:text="${member.roleName}"></td>
 									<td>
 										<button type="button"
@@ -132,7 +134,11 @@
 									th:data-gr-pro-code="${group.grProCode}"
 									th:data-gr-code="${group.grCode}"
 									th:data-role-code="${group.roleCode}">
-									<td>👥 <span th:text="${group.grName}"></span></td>
+									<td>👥 <a
+										th:href="@{/groupmgr/{code}(code=${group.grCode})}"
+										style="color: #0d6efd; text-decoration: underline; font-weight: 500;">
+											<span th:text="${group.grName}"></span>
+									</a></td>
 									<td th:text="${group.roleName}"></td>
 									<td>
 										<button type="button"
