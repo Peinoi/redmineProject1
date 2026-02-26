@@ -1,0 +1,138 @@
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;          /* ✅ 가운데 */
+  justify-content: center;      /* ✅ 가운데 */
+  padding: 24px 12px;
+  background: #f8fafc;
+  font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif;
+  color: #111827;
+}
+
+.wrap {
+  width: min(560px, 92vw);
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .06);
+  padding: 22px;
+}
+
+.page-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #4f46e5;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.sub {
+  color: #6b7280;
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+.box {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.box-h {
+  background: rgb(224, 229, 243);
+  padding: 10px 12px;
+  font-weight: 900;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.box-h small {
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+
+.item:first-child { border-top: 0; }
+
+.meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.proj {
+  font-size: 12px;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.ttl {
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.due {
+  font-size: 12px;
+  color: #374151;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.empty {
+  padding: 14px 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* 스켈레톤(로딩 중 리스트 예쁘게) */
+.skel-row {
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+}
+.skel-row:first-child { border-top: 0; }
+.skeleton {
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 37%, #eee 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+}
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}

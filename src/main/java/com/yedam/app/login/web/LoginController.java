@@ -206,7 +206,7 @@ public class LoginController {
 			return "redirect:/firstLogin";
 		}
 		
-		return "redirect:/G2main";
+		return "redirect:/login-success";
 	}
 	
 	@GetMapping("/firstLogin")
@@ -302,6 +302,11 @@ public class LoginController {
 		
 		session.invalidate(); // 세션 제거
 		return "redirect:/login";
+	}
+	
+	@GetMapping("/login-success")
+	public String loginSuccess() {
+	  return "login/login-success"; // templates/login/login-success.html
 	}
 	
 	// 널이거나 공백을 체크하는 메서드

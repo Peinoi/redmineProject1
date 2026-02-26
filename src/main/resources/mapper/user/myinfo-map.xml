@@ -40,43 +40,66 @@
   		WHERE user_code = #{userCode}
 	</update>
 	
-	<!-- 내가 속한 프로젝트 + 역할 -->
-	<select id="selectMyProjectsWithRoles"
-	        resultType="MyProjectRoleVO">
-	  SELECT
-	      p.project_code AS projectCode,
-	      p.project_name AS projectName,
-	      LISTAGG(r.role_name, ', ') WITHIN GROUP (ORDER BY r.role_name) AS roles
-	  FROM project_role_user pru
-	  JOIN projects p
-	    ON p.project_code = pru.project_code
-	  JOIN role r
-	    ON r.role_code = pru.role_code
-	  WHERE pru.user_code = #{userCode}
-	  GROUP BY p.project_code, p.project_name
-	  ORDER BY p.project_name
-	</select>
+	<!-- 
+	   - 내가 속한 프로젝트 + 역할 + 상태명
+       - 종료(OD3)는 기본 숨김
+       - 단, 내가 관리자 역할(admin_ck='Y')로 속한 프로젝트면 종료도 보이게
+  	-->
+  	<select id="selectMyProjectsWithRoles" resultType="MyProjectRoleVO">
+  	<![CDATA[
+    	SELECT
+      		p.project_code AS projectCode,
+      		p.project_name AS projectName,
+      		p.status       AS status,
+      		cc.code_name   AS statusName,
+      		LISTAGG(r.role_name, ', ') WITHIN GROUP (ORDER BY r.role_name) AS roles
+    	FROM project_role_user pru
+    		
+    	JOIN projects p
+      	ON p.project_code = pru.project_code
+      	
+    	JOIN role r
+      	ON r.role_code = pru.role_code
+      	
+    	LEFT JOIN common_code cc
+      	ON cc.group_code = 'OD'
+     	AND cc.code_id = p.status
+     	
+    	WHERE pru.user_code = #{userCode}
+    	AND p.status <> 'OD2'
+      		AND (
+        		p.status <> 'OD3'
+        		OR EXISTS (
+          			SELECT 1
+          			FROM project_role_user pru2
+          			JOIN role r2
+            		ON r2.role_code = pru2.role_code
+          			WHERE pru2.user_code = #{userCode}
+            		AND pru2.project_code = p.project_code
+            		AND r2.admin_ck = 'Y'
+        		)
+      		)
+    	GROUP BY p.project_code, p.project_name, p.status, cc.code_name
+    	ORDER BY p.project_name
+    ]]>
+  	</select>
 
-	<!-- 내가 속한 그룹 + (프로젝트 + 역할) -->
-	<select id="selectMyGroupsWithProjectRoles"
-	        resultType="MyGroupProjectRoleVO">
-	  SELECT
-	      g.group_code AS groupCode,
-	      g.gr_name    AS groupName,
-	      p.project_code AS projectCode,
-	      p.project_name AS projectName,
-	      LISTAGG(r.role_name, ', ') WITHIN GROUP (ORDER BY r.role_name) AS roles
-	  FROM group_member gm
-	  JOIN "GROUP" g
-	    ON g.group_code = gm.gr_code
-	  LEFT JOIN gr_pro_role gpr
-	    ON gpr.gr_code = gm.gr_code
-	  LEFT JOIN projects p
-	    ON p.project_code = gpr.project_code
-	  LEFT JOIN role r
-	    ON r.role_code = gpr.role_code
-	  WHERE gm.user_code = #{userCode}
-	  GROUP BY g.group_code, g.gr_name, p.project_code, p.project_name
-	  ORDER BY g.gr_name, p.project_name
-	</select>
+  	<!-- 내가 속한 그룹 (인원수, 설명) -->
+  	<select id="selectMyGroupsInfo" resultType="com.yedam.app.user.service.MyGroupInfoVO">
+  		SELECT
+      		g.group_code AS groupCode,
+      		g.gr_name    AS groupName,
+      		g.description AS description,
+      		(SELECT COUNT(*)
+        		FROM group_member gm2
+        		WHERE gm2.gr_code = g.group_code
+      		) AS memberCount
+    	FROM group_member gm
+    	
+    	JOIN "GROUP" g
+      	ON g.group_code = gm.gr_code
+      	
+    	WHERE gm.user_code = #{userCode}
+    	ORDER BY g.gr_name
+  	</select>
 </mapper>

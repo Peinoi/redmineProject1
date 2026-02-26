@@ -1,0 +1,42 @@
+.fixed-project-badge{
+  display:flex;
+  align-items:center;
+  gap:8px;
+
+  max-width: 240px;
+  padding: 6px 10px;
+
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.10);
+  border-radius: 10px;
+}
+
+.fixed-project-name{
+  color:#fff;
+  font-size: 12px;
+  font-weight: 800;
+
+  overflow:hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fixed-project-close{
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0;
+
+  border: 0;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.fixed-project-close:hover{
+  background: rgba(255,255,255,0.28);
+}

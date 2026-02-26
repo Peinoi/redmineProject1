@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.yedam.app.login.service.UserVO;
 import com.yedam.app.user.mapper.MyInfoMapper;
-import com.yedam.app.user.service.MyGroupProjectRoleVO;
+import com.yedam.app.user.service.MyGroupInfoVO;
 import com.yedam.app.user.service.MyInfoService;
 import com.yedam.app.user.service.MyInfoUpdateReqDTO;
 import com.yedam.app.user.service.MyProjectRoleVO;
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class MyInfoServiceImpl implements MyInfoService {
-	
+
 	private final MyInfoMapper myInfoMapper;
 
 	@Override
@@ -45,8 +45,8 @@ public class MyInfoServiceImpl implements MyInfoService {
 	}
 
 	@Override
-	public List<MyGroupProjectRoleVO> findMyGroupsWithProjectRoles(Integer userCode) {
-		return myInfoMapper.selectMyGroupsWithProjectRoles(userCode);
+	public List<MyGroupInfoVO> findMyGroupsInfo(Integer userCode) {
+		return myInfoMapper.selectMyGroupsInfo(userCode);
 	}
 
 }
