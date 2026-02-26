@@ -33,6 +33,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 	// 기존 테이블 버튼에 이벤트 등록
 	attachMemberTableEvents();
+
+	// 돌아가기 버튼
+	const backBtn = document.getElementById('back-btn');
+	if (backBtn) {
+		backBtn.addEventListener('click', handleBackNavigation);
+	}
 });
 
 // ============================================
@@ -1010,4 +1016,23 @@ function initializeTabNavigation() {
 			setupAddMembersButton();
 		});
 	});
+}
+
+// ============================================
+// 29. 목록으로(돌아가기) 로직
+// ============================================
+function handleBackNavigation(e) {
+	if (e) e.preventDefault();
+
+	const ref = document.referrer || "";
+
+	// 이전 페이지가 없거나, 특정 예외 페이지에서 왔거나, 히스토리가 없는 경우
+	if (!ref || history.length <= 1) {
+		// 안전하게 프로젝트 목록 메인으로 이동
+		window.location.replace("/projects");
+		return;
+	}
+
+	// 그 외에는 정상적으로 이전 페이지 이동
+	history.back();
 }

@@ -40,6 +40,7 @@ public class ProjectController {
 	@GetMapping("projects")
 	public String projectList(HttpSession session, Model model) {
 		UserVO user = (UserVO) session.getAttribute("user");
+		session.removeAttribute("currentProject");
 
 		if (user == null) {
 			return "redirect:/login";
@@ -74,7 +75,7 @@ public class ProjectController {
 	@GetMapping("projectsmgr")
 	public String projectmgrList(HttpSession session, Model model) {
 		UserVO user = (UserVO) session.getAttribute("user");
-
+		session.removeAttribute("currentProject");
 		if (user == null) {
 			return "redirect:/login";
 		}
@@ -255,6 +256,13 @@ public class ProjectController {
 		model.addAttribute("users", allUsers);
 		model.addAttribute("roles", allRoles);
 		model.addAttribute("allGroups", allGroups);
+		
+		// 프로젝트 컨텍스트용 세션저장
+		// currentProject에 코드 + 이름 같이 저장
+		Map<String, Object> currentProject = new HashMap<>();
+		currentProject.put("projectCode", projectCode);
+		currentProject.put("projectName", project.getProjectName());
+		session.setAttribute("currentProject", currentProject);
 
 		return "project/projectinfo";
 	}

@@ -1,6 +1,8 @@
 package com.yedam.app.overview.web;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -98,6 +100,11 @@ public class OverviewController {
 		model.addAttribute("issueStatusList", issueStatusList);
 		model.addAttribute("adminProjectList", adminProList != null ? adminProList : List.of());
 		model.addAttribute("isAdmin", isAdmin);
+		
+		Map<String, Object> currentProject = new HashMap<>();
+		currentProject.put("projectCode", projectCode);
+		currentProject.put("projectName", project.getProjectName());
+		session.setAttribute("currentProject", currentProject);
 
 		return "overview/overview";
 	}

@@ -34,7 +34,7 @@ public class MainController {
 	public String G2main(HttpSession session
 						,Model model) {
 		UserVO user = (UserVO) session.getAttribute("user");
-		
+		session.removeAttribute("currentProject");
 		if(user == null) {
 			return "login/login";
 		}

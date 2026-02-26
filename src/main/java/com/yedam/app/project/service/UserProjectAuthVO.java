@@ -7,6 +7,7 @@ import lombok.Data;
 public class UserProjectAuthVO {
     private Integer admin;
     private Integer userCode;
+    private Integer projectCode;
     private String name;
     private String category;
     private String rdRol;

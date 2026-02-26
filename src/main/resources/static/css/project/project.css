@@ -81,7 +81,7 @@ thead th {
 	text-align: center;
 }
 
-tbody td:not(:nth-child(2)) {
+tbody td {
 	text-align: center;
 }
 /* project.css에 추가 */

@@ -3,6 +3,7 @@ package com.yedam.app.auth.web;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -29,7 +30,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 	private final AntPathMatcher pathMatcher = new AntPathMatcher();
 	private final UsermgrService usermgrService;
 	private final ProjectService projectService;
-	
+
 	// URI 정보를 메모리에 캐싱 (성능 향상)
 	private Map<String, UriAccessInfoVO> uriCache = new ConcurrentHashMap<>();
 
@@ -48,55 +49,48 @@ public class AuthInterceptor implements HandlerInterceptor {
 
 		String requestUri = request.getRequestURI();
 
-		// 1. 제외할 공통 리소스 체크 (필요시 추가)
 		if (requestUri.startsWith("/css") || requestUri.startsWith("/js") || requestUri.equals("/accessDenied")) {
 			return true;
 		}
 
-		// 2. 해당 URI가 권한 체크가 필요한 '관리 대상'인지 먼저 확인
 		UriAccessInfoVO uriInfo = findMatchingUri(requestUri);
-
-		// DB(URI_ACCESS_INFO 테이블)에 등록되지 않은 URI는 권한 체크 없이 통과
-		if (uriInfo == null) {
+		if (uriInfo == null)
 			return true;
-		}
 
-		// 3. 권한 체크가 필요한 URI인데 세션에 권한 정보가 없는 경우
 		HttpSession session = request.getSession();
+		UserVO user = (UserVO) session.getAttribute("user");
 
-		UserVO user = (UserVO) session.getAttribute("user"); // 세션에서 유저 객체 꺼내기
-
-		if (user != null && "Y".equals(user.getSysCk())) {
-			System.out.println("관리자 접근 허용: " + requestUri);
-			return true;
+		if (user == null) {
+			response.sendRedirect("/login");
+			return false;
 		}
 
-		// @SuppressWarnings("unchecked")
-		// List<UserProjectAuthVO> userAuths = (List<UserProjectAuthVO>)
-		// session.getAttribute("userAuth");
+		if ("Y".equals(user.getSysCk()))
+			return true;
 
+		// DB에서 최신 권한 조회 (프로젝트코드 포함)
 		List<UserProjectAuthVO> userAuths = projectService.getUserProjectAuthAll(user.getUserCode());
 
-		// 권한 데이터가 아예 없으면 (프로젝트 미소속 등) 차단
 		if (userAuths == null || userAuths.isEmpty()) {
-			System.out.println("권한이 필요한 페이지이나 사용자의 권한 정보가 전혀 없음!");
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
 
-		// 4. 사용자의 해당 카테고리 권한 찾기
-		UserProjectAuthVO userAuth = findUserAuthByCategory(userAuths, uriInfo.getCategory());
+		// 현재 프로젝트 컨텍스트
+		@SuppressWarnings("unchecked")
+		Map<String, Object> currentProject = (Map<String, Object>) session.getAttribute("currentProject");
 
-		if (userAuth == null) {
-			System.out.println("해당 카테고리에 대한 권한이 없음!");
+		Integer currentProjectCode = currentProject != null ? (Integer) currentProject.get("projectCode") : null;
+
+		// 유효 권한 계산
+		UserProjectAuthVO effectiveAuth = resolveEffectiveAuth(userAuths, uriInfo.getCategory(), currentProjectCode);
+
+		if (effectiveAuth == null) {
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
-		UserVO findUser = usermgrService.userFindInfo(userAuth.getUserCode());
 
-		// 5. 상세 권한(읽기/쓰기 등) 체크
-		boolean hasPermission = checkPermission(uriInfo.getType(), userAuth, findUser);
-		System.out.println("권한 허용 체크: " + hasPermission);
+		boolean hasPermission = checkPermission(uriInfo.getType(), effectiveAuth, user);
 		if (!hasPermission) {
 			String contentType = request.getHeader("Content-Type");
 			if (contentType != null && contentType.contains("application/json")) {
@@ -106,8 +100,41 @@ public class AuthInterceptor implements HandlerInterceptor {
 			}
 			return false;
 		}
-
 		return true;
+	}
+
+	// 프로젝트 컨텍스트 고려한 권한 결정
+	private UserProjectAuthVO resolveEffectiveAuth(List<UserProjectAuthVO> userAuths, String category,
+			Integer currentProjectCode) {
+
+		List<UserProjectAuthVO> targets;
+
+		if (currentProjectCode != null) {
+			// 프로젝트 컨텍스트 있음 → 해당 프로젝트 권한만
+			targets = userAuths.stream()
+					.filter(a -> category.equals(a.getCategory()) && currentProjectCode.equals(a.getProjectCode()))
+					.collect(Collectors.toList());
+		} else {
+			// 컨텍스트 없음 → 전체 프로젝트 권한 유니온
+			targets = userAuths.stream().filter(a -> category.equals(a.getCategory())).collect(Collectors.toList());
+		}
+
+		if (targets.isEmpty())
+			return null;
+
+		return mergeAuths(targets);
+	}
+
+	// Y 우선 유니온 합산
+	private UserProjectAuthVO mergeAuths(List<UserProjectAuthVO> auths) {
+		UserProjectAuthVO merged = new UserProjectAuthVO();
+		merged.setRdRol(auths.stream().anyMatch(a -> "Y".equals(a.getRdRol())) ? "Y" : "N");
+		merged.setWrRol(auths.stream().anyMatch(a -> "Y".equals(a.getWrRol())) ? "Y" : "N");
+		merged.setMoRol(auths.stream().anyMatch(a -> "Y".equals(a.getMoRol())) ? "Y" : "N");
+		merged.setDelRol(auths.stream().anyMatch(a -> "Y".equals(a.getDelRol())) ? "Y" : "N");
+		merged.setAdmin(auths.stream().anyMatch(a -> a.getAdmin() == 1) ? 1 : 0);
+		merged.setUserCode(auths.get(0).getUserCode());
+		return merged;
 	}
 
 	// URI 패턴 매칭
