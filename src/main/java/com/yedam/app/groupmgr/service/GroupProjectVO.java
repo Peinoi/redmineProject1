@@ -14,4 +14,5 @@ public class GroupProjectVO {
     private String projectName; // 프로젝트명
     private Integer roleCode; // 역할 코드
     private String roleName; // 역할 명
+    private String status;// 프로젝트 상태
 }

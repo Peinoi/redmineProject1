@@ -65,12 +65,13 @@ public class AuthInterceptor implements HandlerInterceptor {
 			return false;
 		}
 
-		if ("Y".equals(user.getSysCk()))
-			return true;
-
 		// DB에서 최신 권한 조회 (프로젝트코드 포함)
 		List<UserProjectAuthVO> userAuths = projectService.getUserProjectAuthAll(user.getUserCode());
-
+		session.setAttribute("userAuth", userAuths);
+		
+		if ("Y".equals(user.getSysCk()))
+			return true;
+		
 		if (userAuths == null || userAuths.isEmpty()) {
 			response.sendRedirect("/accessDenied");
 			return false;
@@ -86,6 +87,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 		UserProjectAuthVO effectiveAuth = resolveEffectiveAuth(userAuths, uriInfo.getCategory(), currentProjectCode);
 
 		if (effectiveAuth == null) {
+			if ("main".equals(uriInfo.getType())) return true;
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
@@ -197,6 +199,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 			return "Y".equals(userAuth.getDelRol());
 		case "admin":
 			return "Y".equals(userVO.getSysCk());
+		case "main":
+			return true;
 		default:
 			return false;
 		}
