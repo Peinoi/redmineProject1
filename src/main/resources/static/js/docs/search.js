@@ -10,10 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		btnFolderModal: document.getElementById("btnOpenFolderModal"),
 
 		// 업로드용
-		uploadProjectText: document.getElementById("uploadProjectText"),
 		uploadProjectValue: document.getElementById("uploadProjectValue"),
-		btnUploadProjectModal: document.getElementById("btnOpenProjectModalFromUpload"),
-
 		uploadFolderText: document.getElementById("uploadFolderText"),
 		uploadFolderValue: document.getElementById("uploadFolderCode"),
 		btnUploadFolderModal: document.getElementById("btnOpenFolderModalFromUpload"),  // ← 추가
@@ -30,10 +27,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		folderModalSearch: document.getElementById("folderModalSearch")
 	};
 
-	let currentProjectContext = "filter";
 	let currentFolderContext = "filter";
 
-	let selectedFolderPath = [];
+	// ===== context별 selectedFolderPath =====
+	let selectedFolderPath = {
+		filter: [],  // 검색용
+		upload: []   // 문서등록용
+	};
+
+	// 업로드/필터 폴더 텍스트 초기화
+	if (ui.filterFolderText) ui.filterFolderText.value = "";
+	if (ui.filterFolderValue) ui.filterFolderValue.value = "";
+	if (ui.uploadFolderText) ui.uploadFolderText.value = "";
+	if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+
+	// 필요하면 트리 전체 초기화
+	const folderTreeEl = document.getElementById("folderModalTree");
+	if (folderTreeEl) folderTreeEl.innerHTML = "";
 
 	// ================= Toast =================
 	const showToast = (message) => {
@@ -85,6 +95,165 @@ document.addEventListener("DOMContentLoaded", () => {
 		} catch (e) {
 			showToast(e.message);
 			return false;
+		}
+	};
+
+	// ================= Breadcrumb =================
+	const renderBreadcrumb = (context) => {
+		const el = document.getElementById("folderBreadcrumb");
+		if (!el) return;
+		const path = selectedFolderPath[context] || [];
+
+		if (!path.length) {
+			el.innerHTML = "";
+			el.style.display = "none";
+			return;
+		}
+
+		el.style.display = "flex";
+
+		el.innerHTML = path.map((item, i) => {
+			const isLast = i === path.length - 1;
+			const icon = item.type === "project" ? "🗂️" : "📁";
+			return `
+	            <span 
+	                class="bc-item ${isLast ? "bc-item--active" : "bc-item--link"}" 
+	                data-code="${item.code}" 
+	                data-type="${item.type}"
+	                title="${item.name}"
+	            >${icon} ${item.name}</span>
+	            ${!isLast ? `<span class="bc-sep">›</span>` : ""}
+	        `;
+		}).join("");
+
+		el.querySelectorAll(".bc-item").forEach(span => {
+			span.addEventListener("click", onBreadcrumbClick);
+		});
+	};
+
+	const onBreadcrumbClick = (e) => {
+		const code = e.target.dataset.code;
+		const type = e.target.dataset.type;
+		const context = currentFolderContext;
+		let fullPath = selectedFolderPath[context] || [];
+		if (!fullPath.length) return;
+
+		const idx = fullPath.findIndex(p => String(p.code) === String(code));
+		if (idx === -1) return;
+
+		const newPath = fullPath.slice(0, idx + 1);
+		selectedFolderPath[context] = newPath;
+
+		const treeData = buildFolderTreeForJS(folderCache);
+		const selectedProjectCode = context === "filter"
+			? ui.filterProjectValue?.value || ""
+			: ui.uploadProjectValue?.value || "";
+		const filteredTreeData = selectedProjectCode
+			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
+			: treeData;
+
+		renderFolderTree(filteredTreeData, document.getElementById("folderModalTree"));
+
+		// 🔥 프로젝트 클릭이면 트리만 초기화, 폴더 열기 생략
+		if (type !== "project") {
+			openAndSelectFolder(newPath);
+		}
+
+		renderBreadcrumb(context);
+	};
+
+	// 트리에서 폴더 클릭 시 → 생성폼이 열려있으면 "상위 폴더"로 세팅
+	// createNode의 click 이벤트에 아래 분기 추가
+	const handleFolderClick = (folder, e, context) => {
+		e.stopPropagation();
+
+		if (folderCreateForm && folderCreateForm.style.display !== "none") {
+			// 생성폼에 (프로젝트명 > 폴더명 형태) 세팅
+			newFolderParentText.value = `${folder.projectName || ""} > ${folder.name}`;
+			newFolderParentCode.value = folder.code;
+			newFolderProjectCode.value = folder.projectCode;
+			newFolderName.focus();
+			return;
+		}
+
+		// 선택 경로 저장
+		const treeData = buildFolderTreeForJS(folderCache);
+		selectedFolderPath[currentFolderContext] =
+			findFolderPath(treeData, folder.code);
+
+		renderBreadcrumb(currentFolderContext);
+
+		if (context === "filter") {
+			ui.filterFolderText.value = folder.name;
+			ui.filterFolderValue.value = folder.code;
+		} else if (context === "upload") {
+			// 업로드 모달에서는 검색 선택 무시
+			ui.uploadFolderText.value = folder.name;
+			ui.uploadFolderValue.value = folder.code;
+			ui.uploadProjectValue.value = folder.projectCode || "";
+
+			const hint = document.getElementById("uploadProjectHint");
+			const hintText = document.getElementById("uploadProjectText");
+			if (hint && hintText) {
+				hintText.textContent = folder.projectName || folder.projectCode;
+				hint.style.display = "block";
+			}
+		}
+
+		folderModal?.hide();
+
+		if (context === "upload" && uploadModal) {
+			setTimeout(() => uploadModal.show(), 300);
+		}
+	};
+
+	// ================= 폴더 모달 열기 =================
+	const openFolderModal = async (context = "filter") => {
+		// 모달 열 때 항상 트리 상태 초기화
+		document.querySelectorAll(".folder-item.selected")
+			.forEach(el => el.classList.remove("selected"));
+
+		document.querySelectorAll(".folder-toggle")
+			.forEach(el => el.textContent = "▶");
+
+		document.querySelectorAll("#folderModalTree ul")
+			.forEach(ul => ul.style.display = "none");
+
+		if (!folderModal) return;
+		currentFolderContext = context;
+		if (ui.folderModalSearch) ui.folderModalSearch.value = "";
+
+		const folderCreateSection = document.getElementById("folderCreateSection");
+		if (folderCreateSection) {
+			folderCreateSection.style.display = context === "upload" ? "" : "none";
+		}
+
+		if (context === "filter" && folderCreateForm) {
+			btnCancelFolderCreate?.click();
+		}
+
+		const ok = await ensureFolderCache();
+		if (!ok) return;
+
+		const selectedProjectCode = context === "filter" ? ui.filterProjectValue?.value : "";
+		const treeData = buildFolderTreeForJS(folderCache);
+		const filteredTreeData = selectedProjectCode
+			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
+			: treeData;
+
+		renderFolderTree(filteredTreeData, document.getElementById("folderModalTree"));
+
+		// 이전 선택 폴더 열기 (context별)
+		const path = selectedFolderPath[context];
+		if (path.length) {
+			openAndSelectFolder(path);
+		}
+
+		if (context === "upload" && uploadModal) {
+			uploadModal.hide();
+			setTimeout(() => folderModal.show(), 300);
+		} else {
+			folderModal.show();
 		}
 	};
 
@@ -208,37 +377,20 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 	};
 
-	const openProjectModal = async (context = "filter") => {
+	const openProjectModal = async () => {
 		if (!projectModal) return;
-		currentProjectContext = context;
 		ui.projectModalSearch.value = "";
 
 		const ok = await ensureProjectCache();
 		if (!ok) return;
 
-		if (context === "upload" && uploadModal) {
-			uploadModal.hide();
-		}
-
 		renderListButtons(ui.projectModalList, projectCache, (picked) => {
-			if (currentProjectContext === "filter") {
-				ui.filterProjectText.value = picked.name;
-				ui.filterProjectValue.value = picked.code;
-			} else {
-				ui.uploadProjectText.value = picked.name;
-				ui.uploadProjectValue.value = picked.code;
-			}
+			ui.filterProjectText.value = picked.name;
+			ui.filterProjectValue.value = picked.code;
 			projectModal.hide();
-			if (currentProjectContext === "upload" && uploadModal) {
-				setTimeout(() => uploadModal.show(), 300);
-			}
 		});
 
-		if (context === "upload") {
-			setTimeout(() => projectModal.show(), 300);
-		} else {
-			projectModal.show();
-		}
+		projectModal.show();
 	};
 
 	ui.projectModalSearch?.addEventListener("input", async () => {
@@ -247,17 +399,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		const q = ui.projectModalSearch.value.trim().toLowerCase();
 		const filtered = projectCache.filter(p => p.name.toLowerCase().includes(q));
 		renderListButtons(ui.projectModalList, filtered, (picked) => {
-			if (currentProjectContext === "filter") {
-				ui.filterProjectText.value = picked.name;
-				ui.filterProjectValue.value = picked.code;
-			} else {
-				ui.uploadProjectText.value = picked.name;
-				ui.uploadProjectValue.value = picked.code;
-			}
+			ui.filterProjectText.value = picked.name;
+			ui.filterProjectValue.value = picked.code;
 			projectModal?.hide();
-			if (currentProjectContext === "upload" && uploadModal) {
-				setTimeout(() => uploadModal.show(), 300);
-			}
 		});
 	});
 
@@ -325,90 +469,89 @@ document.addEventListener("DOMContentLoaded", () => {
 		return null;
 	};
 
-	const renderBreadcrumb = () => {
-		const el = document.getElementById("folderBreadcrumb");
-		if (!el) return;
-
-		if (!selectedFolderPath.length) {
-			el.innerHTML = "";
-			return;
-		}
-
-		el.innerHTML = selectedFolderPath
-			.map((item, i) => {
-				const isLast = i === selectedFolderPath.length - 1;
-				return `
-	                <span class="bc-item ${isLast ? "active" : ""}"
-	                      data-code="${item.code}"
-	                      data-type="${item.type}"
-	                      style="cursor: pointer;"> <!-- ← 포인터 -->
-	                    ${item.name}
-	                </span>
-	                ${isLast ? "" : " &gt; "}
-	            `;
-			})
-			.join("");
-
-		// 클릭 이벤트 바인딩
-		el.querySelectorAll(".bc-item").forEach(span => {
-			span.addEventListener("click", onBreadcrumbClick);
-		});
-	};
-
-	const onBreadcrumbClick = (e) => {
-		const code = e.target.dataset.code;
-		const type = e.target.dataset.type;
-
-		if (type === "project") {
-			// 프로젝트만 열고 폴더는 접기
-			document.querySelectorAll(".folder-project-content").forEach(el => el.style.display = "none");
-			document.querySelectorAll(".folder-project-header").forEach(el => el.classList.remove("active"));
-
-			const projHeader = Array.from(document.querySelectorAll(".folder-project-header"))
-				.find(h => h.textContent === e.target.textContent);
-			const projContent = projHeader?.nextElementSibling;
-			if (projHeader && projContent) {
-				projContent.style.display = "block";
-				projHeader.classList.add("active");
-			}
-		} else {
-			// 폴더 클릭으로 이동
-			openAndSelectFolder(code);
-		}
-	};
-
 	// ================= 트리 펼치기 =================
-	const openAndSelectFolder = (folderCode) => {
-		const nodeEl = document.querySelector(`[data-folder-code="${folderCode}"]`);
-		if (!nodeEl) return;
+	const openAndSelectFolder = (path) => {
+		if (!Array.isArray(path) || !path.length) return;
 
-		// 먼저 모든 하위 ul 닫기
-		document.querySelectorAll(".folder-children").forEach(ul => {
-			ul.style.display = "none";
+		// 🔥 0️⃣ 기존 선택/열림 초기화
+		document.querySelectorAll(".folder-item.selected")
+			.forEach(el => el.classList.remove("selected"));
+
+		document.querySelectorAll(".folder-project-content")
+			.forEach(el => el.style.display = "none");
+
+		document.querySelectorAll(".folder-project-header")
+			.forEach(el => el.classList.remove("active"));
+
+		// 🔥 1️⃣ 프로젝트 먼저 정확히 열기
+		const projectNode = path.find(p => p.type === "project");
+
+		if (projectNode) {
+			const header = document.querySelector(
+				`.folder-project-header[data-project-code="${projectNode.code}"]`
+			);
+
+			if (header) {
+				header.classList.add("active");
+
+				const content = header.nextElementSibling;
+				if (content) content.style.display = "block";
+			} else {
+				console.warn("❌ 프로젝트 header 못 찾음:", projectNode.code);
+			}
+		}
+
+		// 🔥 2️⃣ 폴더 조상 전체 열기
+		path.forEach(node => {
+			if (node.type !== "folder") return;
+
+			const nameEl = document.querySelector(
+				`.folder-name[data-folder-code="${node.code}"]`
+			);
+
+			if (!nameEl) {
+				console.warn("❌ DOM에 폴더 없음:", node.code);
+				return;
+			}
+
+			let li = nameEl.closest("li");
+
+			while (li) {
+				const parentUl = li.parentElement;
+
+				if (parentUl && parentUl.tagName === "UL") {
+					parentUl.style.display = "block";
+
+					const parentLi = parentUl.closest("li");
+					if (parentLi) {
+						const toggle = parentLi.querySelector(":scope > .folder-item .folder-toggle");
+						if (toggle) toggle.textContent = "▼";
+					}
+				}
+
+				li = parentUl?.closest("li");
+			}
+
+			// 현재 노드 화살표
+			const toggle = nameEl.closest("li")
+				?.querySelector(":scope > .folder-item .folder-toggle");
+
+			if (toggle) toggle.textContent = "▼";
 		});
 
-		// 부모들만 펼치기
-		let parent = nodeEl.parentElement;
-		while (parent) {
-			if (parent.classList?.contains("folder-children")) {
-				parent.style.display = "block"; // 부모 ul만 열기
+		// 🔥 3️⃣ 마지막 선택 표시
+		const last = path[path.length - 1];
+
+		if (last?.type === "folder") {
+			const lastEl = document.querySelector(
+				`.folder-name[data-folder-code="${last.code}"]`
+			);
+
+			if (lastEl) {
+				lastEl.closest(".folder-item")?.classList.add("selected");
+				lastEl.scrollIntoView({ block: "nearest" });
 			}
-			parent = parent.parentElement;
 		}
-
-		// 프로젝트도 펼치기
-		const projectContent = nodeEl.closest(".folder-project-content");
-		if (projectContent) {
-			projectContent.style.display = "block";
-			projectContent.previousElementSibling?.classList.add("active");
-		}
-
-		// 스크롤 이동
-		nodeEl.scrollIntoView({ behavior: "smooth", block: "center" });
-
-		// 선택 표시 (배경 등)
-		document.querySelectorAll(".folder-name.selected").forEach(el => el.classList.remove("selected"));
-		nodeEl.classList.add("selected");
 	};
 
 	const renderFolderTree = (items, container) => {
@@ -427,6 +570,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			const div = document.createElement("div");
 			div.className = "folder-item";
 			div.dataset.depth = depth;
+
+			div.dataset.code = folder.code;
+			div.dataset.type = folder.type || "folder";
 
 			// 앞쪽 화살표만
 			if (hasChildren) {
@@ -455,7 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			nameSpan.addEventListener("click", (e) => {
 				e.stopPropagation();
-				handleFolderClick(folder, e);
+				handleFolderClick(folder, e, currentFolderContext);
 			});
 
 			div.appendChild(nameSpan);
@@ -464,13 +610,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			// 자식 노드 ul
 			if (hasChildren) {
 				const ul = document.createElement("ul");
-				const selectedCodes = selectedFolderPath.map(f => f.code);
-				const shouldOpen = selectedCodes.includes(folder.code);
-				ul.style.display = shouldOpen ? "block" : "none";
+				ul.style.display = "none";
 
 				// 화살표 초기 상태
 				const toggleEl = div.querySelector(".folder-toggle");
-				if (shouldOpen && toggleEl) toggleEl.textContent = "▼";
+				if (toggleEl) toggleEl.textContent = "▶";
 
 				folder.children.forEach(c => ul.appendChild(createNode(c, depth + 1)));
 				li.appendChild(ul);
@@ -488,6 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			const projHeader = document.createElement("div");
 			projHeader.className = "folder-project-header";
 			projHeader.textContent = p.name;
+			projHeader.dataset.projectCode = p.code;
 
 			const contentWrapper = document.createElement("div");
 			contentWrapper.className = "folder-project-content";
@@ -507,6 +652,15 @@ document.addEventListener("DOMContentLoaded", () => {
 					contentWrapper.style.display = "block";
 					projHeader.classList.add("active");
 				}
+
+				// 새 폴더 생성 폼이 열려있으면 프로젝트 루트로 세팅
+				if (folderCreateForm && folderCreateForm.style.display !== "none") {
+					if (newFolderProjectCode) newFolderProjectCode.value = p.code;
+					if (newFolderParentCode) newFolderParentCode.value = "";  // 상위폴더 없음 = 루트
+					if (newFolderParentText) newFolderParentText.value = `${p.name} (루트)`;
+					projHeader.style.outline = "2px solid #4a90d9";
+					setTimeout(() => projHeader.style.outline = "", 1000);
+				}
 			});
 
 			if (p.children?.length > 0) {
@@ -524,53 +678,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			groupWrapper.appendChild(contentWrapper);
 			container.appendChild(groupWrapper);
 		});
-	};
-
-	// ================= 폴더 모달 열기 =================
-	const openFolderModal = async (context = "filter") => {
-		if (!folderModal) return;
-		currentFolderContext = context;
-		if (ui.folderModalSearch) ui.folderModalSearch.value = "";
-
-		// 컨텍스트에 따라 폴더 생성 영역 표시/숨김
-		const folderCreateSection = document.getElementById("folderCreateSection");
-		if (folderCreateSection) {
-			folderCreateSection.style.display = context === "upload" ? "" : "none";
-		}
-
-		// 폴더 생성 폼도 혹시 열려있으면 닫기
-		if (context === "filter" && folderCreateForm) {
-			btnCancelFolderCreate?.click();
-		}
-
-		const ok = await ensureFolderCache();
-		if (!ok) return;
-
-		const selectedProjectCode =
-			context === "filter"
-				? ui.filterProjectValue?.value
-				: ""; // upload에서는 전체 표시
-
-		const treeData = buildFolderTreeForJS(folderCache);
-		const filteredTreeData = selectedProjectCode
-			? treeData.filter(p => String(p.code) === String(selectedProjectCode))
-			: treeData;
-
-		renderFolderTree(filteredTreeData, document.getElementById("folderModalTree"));
-
-		// 이전 선택 폴더가 있으면 펼치고 스크롤 이동
-		if (selectedFolderPath.length) {
-			const lastFolder = selectedFolderPath[selectedFolderPath.length - 1];
-			openAndSelectFolder(lastFolder.code);
-		}
-
-		// 업로드에서 왔으면 업로드 모달 hide 후 폴더 모달 오픈
-		if (context === "upload" && uploadModal) {
-			uploadModal.hide();
-			setTimeout(() => folderModal.show(), 300);
-		} else {
-			folderModal.show();
-		}
 	};
 
 	ui.folderModalSearch?.addEventListener("input", async () => {
@@ -610,12 +717,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// ================= 버튼 이벤트 바인딩 =================
 	ui.btnProjectModal?.addEventListener("click", () => openProjectModal("filter"));
-	ui.btnUploadProjectModal?.addEventListener("click", () => openProjectModal("upload"));
 	ui.btnFolderModal?.addEventListener("click", () => openFolderModal("filter"));
 	ui.btnUploadFolderModal?.addEventListener("click", () => openFolderModal("upload")); // ← 추가
 
 	// ================= 문서 등록 버튼 =================
 	document.getElementById("btnDocsCreate")?.addEventListener("click", () => {
+		// 🔥 업로드는 항상 초기 상태
+		selectedFolderPath.upload = [];
+
+		if (ui.uploadFolderText) ui.uploadFolderText.value = "";
+		if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+
+		renderBreadcrumb("upload");
+
 		uploadModal?.show();
 	});
 
@@ -648,43 +762,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		newFolderProjectCode.value = "";
 	});
 
-	// 트리에서 폴더 클릭 시 → 생성폼이 열려있으면 "상위 폴더"로 세팅
-	// createNode의 click 이벤트에 아래 분기 추가
-	const handleFolderClick = (folder, e) => {
-		e.stopPropagation();
+	uploadModalEl?.addEventListener("hidden.bs.modal", () => {
+		managedFiles = new DataTransfer();
+		if (ui.uploadFiles) ui.uploadFiles.value = "";
+		if (ui.filePreviewList) ui.filePreviewList.innerHTML = "";
+		if (ui.uploadFolderText) ui.uploadFolderText.value = "";
+		if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+		if (ui.uploadProjectValue) ui.uploadProjectValue.value = "";
 
-		// 폴더 생성 폼이 열려있으면 상위 폴더 선택으로 동작
-		if (folderCreateForm && folderCreateForm.style.display !== "none") {
-			newFolderParentText.value = folder.name;
-			newFolderParentCode.value = folder.code;
-			newFolderProjectCode.value = folder.projectCode;
-			newFolderName.focus();
-			return; // 선택으로 넘어가지 않음
-		}
-
-		// breadcrumb 경로 계산
-		const treeData = buildFolderTreeForJS(folderCache);
-		selectedFolderPath = findFolderPath(treeData, folder.code);
-		renderBreadcrumb();
-
-		// 기존 폴더 선택 동작
-		if (currentFolderContext === "filter") {
-			ui.filterFolderText.value = folder.name;
-			ui.filterFolderValue.value = folder.code;
-		} else {
-			ui.uploadFolderText.value = folder.name;
-			ui.uploadFolderValue.value = folder.code;
-			if (folder.projectCode) {
-				ui.uploadProjectValue.value = folder.projectCode;
-				ui.uploadProjectText.value = folder.projectName;
-			}
-		}
-
-		folderModal?.hide();
-		if (currentFolderContext === "upload" && uploadModal) {
-			setTimeout(() => uploadModal.show(), 300);
-		}
-	};
+		// 힌트 초기화
+		const hint = document.getElementById("uploadProjectHint");
+		if (hint) hint.style.display = "none";
+	});
 
 	// 폴더 생성 확인
 	btnConfirmFolderCreate?.addEventListener("click", async () => {
@@ -736,5 +825,36 @@ document.addEventListener("DOMContentLoaded", () => {
 		} catch (e) {
 			showToast(e.message);
 		}
+	});
+
+	document.getElementById("btnSubmitUpload")?.addEventListener("click", () => {
+		// 유효성 검사
+		if (!ui.uploadFolderValue?.value) {
+			showToast("저장 폴더를 선택해주세요.");
+			return;
+		}
+		if (managedFiles.files.length === 0) {
+			showToast("파일을 선택해주세요.");
+			return;
+		}
+
+		// 에러 파일 있는지 체크
+		const hasError = Array.from(managedFiles.files).some(f => {
+			const ext = f.name.split(".").pop().toLowerCase();
+			return f.size > FILE_MAX_SIZE || !ALLOWED_EXTS.includes(ext);
+		});
+		if (hasError) {
+			showToast("업로드 불가한 파일이 있습니다. 제거 후 다시 시도하세요.");
+			return;
+		}
+
+		// submit 직전 hidden input에 값 강제 세팅
+		document.getElementById("uploadFolderCode").value = ui.uploadFolderValue.value;
+		document.getElementById("uploadProjectValue").value = ui.uploadProjectValue.value;
+
+		// form에 최신 파일 목록 반영 후 submit
+		ui.uploadFiles.files = managedFiles.files;
+
+		document.getElementById("uploadForm").submit();
 	});
 });

@@ -1,7 +1,6 @@
 package com.yedam.app.docs.web;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -39,11 +38,23 @@ public class DocsController {
 	private String uploadDir;
 
 	// ===== 문서 목록 화면 =====
-	@GetMapping("docs")
-	public String docs(Model model) {
-		model.addAttribute("documentList", new ArrayList<>());
-		model.addAttribute("projectList", new ArrayList<>());
-		model.addAttribute("folderList", new ArrayList<>());
+	@GetMapping({ "docs", "searchList" })
+	public String docs(DocsVO docsVO, HttpSession session, Model model) {
+		UserVO user = (UserVO) session.getAttribute("user");
+		if (user == null)
+			return "redirect:/login";
+
+		boolean isAdmin = "Y".equals(user.getSysCk());
+		docsVO.setUserCode(user.getUserCode());
+
+		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
+			docsVO.setProjectStatusName("OD1");
+		}
+
+		List<DocsVO> docsList = docsService.getDocsList(docsVO);
+		model.addAttribute("docsList", docsList);
+		model.addAttribute("isAdmin", isAdmin);
+
 		return "docs/list";
 	}
 
@@ -79,12 +90,13 @@ public class DocsController {
 	public String uploadFiles(@RequestParam("projectCode") Integer projectCode,
 			@RequestParam("folderCode") Integer folderCode, @RequestParam("files") List<MultipartFile> files,
 			HttpSession session, Model model) {
+
 		try {
 			UserVO user = (UserVO) session.getAttribute("user"); // ← 세션 수정
 			if (user == null)
 				return "redirect:/login";
 
-			File uploadDirFile = new File(uploadDir);
+			File uploadDirFile = new File(uploadDir + File.separator + "docs");
 			if (!uploadDirFile.exists())
 				uploadDirFile.mkdirs();
 
@@ -105,9 +117,9 @@ public class DocsController {
 				}
 
 				String storedName = UUID.randomUUID().toString() + ext;
-				String filePath = uploadDir + File.separator + storedName;
+				String filePath = uploadDirFile.getAbsolutePath() + File.separator + storedName;
 
-				file.transferTo(new File(filePath));
+				file.transferTo(new File(filePath).getAbsoluteFile());
 
 				DocsVO docsVO = new DocsVO();
 				docsVO.setProjectCode(projectCode);
@@ -120,6 +132,7 @@ public class DocsController {
 				docsVO.setUserCode(user.getUserCode()); // ← 수정
 				docsVO.setUploadedAt(new java.util.Date()); // ← uploadedAt 세팅
 
+				docsVO.setPath(filePath);
 				docsService.addFiles(docsVO);
 			}
 			return "redirect:/docs";

@@ -37,7 +37,7 @@
 	
 	<insert id="insertFiles" parameterType="DocsVO">
 	  <selectKey keyProperty="fileCode"
-	             resultType="long"
+	             resultType="Integer"
 	             order="BEFORE">
 	    SELECT NVL(MAX(file_code),0)+1
 	    FROM documents_attachments
@@ -68,4 +68,109 @@
 	        #{projectCode}
 	  )
 	</insert>
+	
+	<select id="selectDocsList" parameterType="DocsVO" resultType="DocsVO">
+	    SELECT *
+		FROM (
+		    /* ===== 기존 UNION ALL 전체 그대로 ===== */
+		
+		    /* 1. 프로젝트 행 */
+		    SELECT
+		        NULL AS file_code,
+		        NULL AS original_name,
+		        NULL AS size_bytes,
+		        NULL AS uploaded_at,
+		        NULL AS mime_type,
+		        NULL AS folder_code,
+		        p.project_code,
+		        p.project_name,
+		        NULL AS uploaderName,
+		        NULL AS folder_path,
+		        0 AS folder_depth,
+		        NULL AS folder_name,
+		        TO_CHAR(p.project_code, 'FM0000000000') AS sort_path,
+		        'PROJECT' AS row_type
+		    FROM projects p
+		    WHERE EXISTS (
+		        SELECT 1 FROM VW_USER_PROJECT_AUTH v
+		        WHERE v.user_code = #{userCode}
+		          AND v.project_code = p.project_code
+		    )
+		
+		    UNION ALL
+		
+		    /* 2. 폴더 행 */
+		    SELECT
+		        NULL AS file_code,
+		        NULL AS original_name,
+		        NULL AS size_bytes,
+		        NULL AS uploaded_at,
+		        NULL AS mime_type,
+		        fh.folder_code,
+		        fh.project_code,
+		        p.project_name,
+		        NULL AS uploaderName,
+		        fh.folder_path,
+		        fh.folder_depth,
+		        fh.folder_name,
+		        TO_CHAR(fh.project_code, 'FM0000000000') || fh.sort_path AS sort_path,
+		        'FOLDER' AS row_type
+		    FROM (
+			    SELECT
+			        f.folder_code,
+			        f.project_code,
+			        f.folder_name,
+			        LEVEL AS folder_depth,
+			        SYS_CONNECT_BY_PATH(f.folder_name, '/') AS folder_path,
+			        SYS_CONNECT_BY_PATH(LPAD(f.folder_code, 10, '0'), '/') AS sort_path
+			    FROM folders f
+			    START WITH f.parent_folder_code IS NULL
+			    CONNECT BY PRIOR f.folder_code = f.parent_folder_code
+			) fh
+		
+		    UNION ALL
+		
+		    /* 3. 파일 행 */
+		    SELECT
+		        da.file_code,
+		        da.original_name,
+		        da.size_bytes,
+		        da.uploaded_at,
+		        da.mime_type,
+		        da.folder_code,
+		        da.project_code,
+		        p.project_name,
+		        u.name AS uploaderName,
+		        fh.folder_path,
+		        fh.folder_depth,
+		        fh.folder_name,
+		        TO_CHAR(da.project_code, 'FM0000000000')
+		            || fh.sort_path
+		            || '/' || LPAD(da.file_code, 10, '0') AS sort_path,
+		        'FILE' AS row_type
+		    FROM documents_attachments da
+		    LEFT JOIN projects p ON da.project_code = p.project_code
+		    LEFT JOIN users u ON da.user_code = u.user_code
+		    LEFT JOIN (
+			    SELECT
+			        f.folder_code,
+			        f.project_code,
+			        f.folder_name,
+			        LEVEL AS folder_depth,
+			        SYS_CONNECT_BY_PATH(f.folder_name, '/') AS folder_path,
+			        SYS_CONNECT_BY_PATH(LPAD(f.folder_code, 10, '0'), '/') AS sort_path
+			    FROM folders f
+			    START WITH f.parent_folder_code IS NULL
+			    CONNECT BY PRIOR f.folder_code = f.parent_folder_code
+			) fh ON da.folder_code = fh.folder_code
+		    WHERE EXISTS (
+		        SELECT 1 FROM VW_USER_PROJECT_AUTH v
+		        WHERE v.user_code = #{userCode}
+		          AND v.project_code = da.project_code
+		    )
+		) t
+		ORDER BY
+		    t.sort_path,
+		    DECODE(t.row_type, 'PROJECT', 1, 'FOLDER', 2, 'FILE', 3);
+	</select>
 </mapper>

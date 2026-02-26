@@ -1,4 +1,4 @@
-/* css/docs/modal.css */
+/* css/docs/search.css */
 /* 검색 영역 (모달 안 input) */
 .search-filters {
 	border: 1px solid #e5e7eb;
@@ -186,4 +186,53 @@
 .folder-breadcrumb span:last-child {
 	font-weight: 600;
 	color: #212529;
+}
+
+/* Breadcrumb */
+#folderBreadcrumb {
+	display: none;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 2px;
+	padding: 6px 10px;
+	background: #f8f9fa;
+	border: 1px solid #e0e0e0;
+	border-radius: 6px;
+	font-size: 0.82rem;
+	min-height: 34px;
+	margin-bottom: 8px;
+}
+
+.bc-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 3px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	white-space: nowrap;
+}
+
+.bc-item--link {
+	color: #212529;
+	cursor: pointer;
+	transition: background 0.15s;
+}
+
+.bc-item--link:hover {
+	background: #e9ecef;
+	text-decoration: none;
+}
+
+.bc-item--active {
+	color: #212529;
+	font-weight: 600;
+	background: #dee2e6;
+	cursor: default;
+}
+
+.bc-sep {
+	color: #adb5bd;
+	font-size: 1rem;
+	line-height: 1;
+	user-select: none;
 }

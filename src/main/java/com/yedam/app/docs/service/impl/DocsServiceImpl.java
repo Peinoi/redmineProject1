@@ -1,5 +1,8 @@
 package com.yedam.app.docs.service.impl;
 
+import java.text.SimpleDateFormat;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import com.yedam.app.docs.mapper.DocsMapper;
@@ -26,4 +29,16 @@ public class DocsServiceImpl implements DocsService {
 		return docsMapper.insertFiles(docsVO);
 	}
 
+	// 문서 조회
+	@Override
+	public List<DocsVO> getDocsList(DocsVO docsVO) {
+		List<DocsVO> list = docsMapper.selectDocsList(docsVO);
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+		list.forEach(doc -> {
+			if (doc.getUploadedAt() != null) {
+				doc.setUploadedAtStr(sdf.format(doc.getUploadedAt()));
+			}
+		});
+		return list;
+	}
 }

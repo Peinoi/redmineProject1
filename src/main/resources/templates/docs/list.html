@@ -18,8 +18,7 @@
 		</div>
 
 		<!-- 검색/필터 -->
-		<div
-			th:replace="~{docs/search :: searchCondition(view='docs/list')}"></div>
+		<div th:replace="~{docs/search :: searchCondition(view='docs/list')}"></div>
 
 		<!-- 폴더 + 파일 테이블 -->
 		<div class="card">
@@ -28,30 +27,30 @@
 					<thead class="table-light">
 						<tr>
 							<th>구분</th>
-							<th>파일 크기</th>
-							<th>다운로드</th>
-							<th>파일 등록일</th>
-							<th>파일 등록자</th>
-							<th>삭제</th>
+							<th style="width: 10%">파일 크기</th>
+							<th style="width: 8%">다운로드</th>
+							<th style="width: 12%">파일 등록일</th>
+							<th style="width: 12%">파일 등록자</th>
+							<th style="width: 8%">삭제</th>
 						</tr>
 					</thead>
-					<tbody>
-						<!-- 폴더 트리 + 파일 반복 -->
-						<tr th:each="doc : ${documentList}">
-							<td th:text="${doc.isFolder ? '📁' : '📄'}"></td>
-							<td th:text="${doc.size}"></td>
-							<td><a th:if="!${doc.isFolder}"
-								th:href="@{'/documents/download/' + ${doc.fileCode}}"
-								class="btn btn-sm btn-primary btn-download">다운</a></td>
-							<td th:text="${doc.uploadDt}"></td>
-							<td th:text="${doc.uploadUser}"></td>
-							<td>
-								<button th:if="!${doc.isFolder}"
-									class="btn btn-sm btn-danger btn-delete">삭제</button>
-							</td>
+					<tbody id="docsTableBody">
+						<tr th:if="${#lists.isEmpty(docsList)}">
+							<td colspan="6" class="text-center py-4">등록된 문서가 없습니다.</td>
 						</tr>
-						<tr th:if="${documentList == null or documentList.isEmpty()}">
-							<td colspan="12" class="text-center">등록된 문서가 없습니다.</td>
+						<tr th:unless="${#lists.isEmpty(docsList)}"
+							th:each="doc : ${docsList}" class="doc-row"
+							th:data-project-code="${doc.projectCode}"
+							th:data-project-name="${doc.projectName}"
+							th:data-file-code="${doc.fileCode}"
+							th:data-file-name="${doc.originalName}"
+							th:data-folder-path="${doc.folderPath}"
+							th:data-folder-depth="${doc.folderDepth}"
+							th:data-size="${doc.sizeBytes}"
+							th:data-uploaded-at="${doc.uploadedAtStr}"
+							th:data-uploader="${doc.uploaderName}"
+							th:data-row-type="${doc.rowType}"
+							style="display:none">
 						</tr>
 					</tbody>
 				</table>
