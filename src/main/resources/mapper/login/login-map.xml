@@ -84,4 +84,23 @@
     	DELETE FROM user_auto_login
     	WHERE token_hash = #{tokenHash}
 	</delete>
+	
+	<!-- 오늘 마감 TOP N -->
+	<select id="selectTodayDueTopN" resultType="TodayDueDTO">
+    	SELECT *
+  		FROM (
+    		SELECT
+      			i.issue_code   AS issueCode,
+      			p.project_name AS projectName,
+      			i.title        AS subject,
+      			TO_CHAR(i.due_at, 'YYYY-MM-DD') AS dueDate
+    		FROM issues i
+    		JOIN projects p ON p.project_code = i.project_code
+    		WHERE i.assignee_code = #{userCode}
+      		AND i.due_at IS NOT NULL
+      		AND TRUNC(i.due_at) = TRUNC(SYSDATE)
+    		ORDER BY i.due_at ASC, i.issue_code DESC
+  		)
+  		WHERE ROWNUM &lt;= #{n}
+  	</select>
 </mapper>

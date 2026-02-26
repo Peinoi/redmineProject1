@@ -39,16 +39,33 @@ public class MainController {
 			return "login/login";
 		}
 		
-		Integer userCode = user.getUserCode();
-		
-		List<MainProjectStatusVO> listCnt = mainService.findCodeNameCnt(userCode);
-		List<ProIssStaVO> proIssList = mainService.findProIssSta(userCode);
-		List<Integer> adminProList = mainService.findAdminProByUserCode(userCode);
-		Integer todayProRate = mainService.findTodayProgressRate(userCode);
-		
 		int limit = 8;
-		List<MyNoticeDTO> recentNotices = mainService.findRecentNoticesForMain(userCode, limit);
 		
+		Integer userCode = user.getUserCode();
+		long t0 = System.currentTimeMillis();
+		
+		long t = System.currentTimeMillis();
+		List<MainProjectStatusVO> listCnt = mainService.findCodeNameCnt(userCode);
+		System.out.println("[G2main] codeNameCnt=" + (System.currentTimeMillis()-t) + "ms");
+		
+		t = System.currentTimeMillis();
+		List<ProIssStaVO> proIssList = mainService.findProIssSta(userCode);
+		System.out.println("[G2main] proIssSta=" + (System.currentTimeMillis()-t) + "ms");
+		
+		t = System.currentTimeMillis();
+		List<Integer> adminProList = mainService.findAdminProByUserCode(userCode);
+		System.out.println("[G2main] adminProList=" + (System.currentTimeMillis()-t) + "ms");
+		
+		t = System.currentTimeMillis();
+		Integer todayProRate = mainService.findTodayProgressRate(userCode);
+		System.out.println("[G2main] todayProgressRate=" + (System.currentTimeMillis()-t) + "ms");
+		
+		t = System.currentTimeMillis();
+		List<MyNoticeDTO> recentNotices = mainService.findRecentNoticesForMain(userCode, limit);
+		System.out.println("[G2main] recentNotices=" + (System.currentTimeMillis()-t) + "ms");
+		 
+		System.out.println("[G2main] TOTAL=" + (System.currentTimeMillis()-t0) + "ms");
+		 
 		model.addAttribute("statusListCnt", listCnt != null ? listCnt : List.of());
 	    model.addAttribute("ProIssStatusList", proIssList != null ? proIssList : List.of());
 	    model.addAttribute("adminProjectList", adminProList != null ? adminProList : List.of());

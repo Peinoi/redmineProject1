@@ -314,6 +314,7 @@ function initMemoCalendar() {
 	const btnSave = document.getElementById("btnMemoSave");
 	const btnDelete = document.getElementById("btnMemoDelete");
 	const btnDeleteConfirm = document.getElementById("btnMemoDeleteConfirm");
+	const dowLabel = document.getElementById("memoModalDowLabel");
 
 	const hasBS = !!(window.bootstrap && bootstrap.Tooltip);
 
@@ -464,6 +465,7 @@ function initMemoCalendar() {
 
 				openDateStr = dateStr;
 				dateLabel.textContent = dateStr;
+				if (dowLabel) dowLabel.textContent = `(${dowKorean(dateStr)})`;
 				contentEl.value = memoMap.get(dateStr) || "";
 				btnDelete.style.display = (memoMap.get(dateStr) || "").trim() ? "" : "none";
 				modal.show();
@@ -531,6 +533,13 @@ function initMemoCalendar() {
 
 		// 2) body에 남아있는 tooltip DOM 강제 제거(유령 방지)
 		document.querySelectorAll(".tooltip").forEach((t) => t.remove());
+	}
+	
+	function dowKorean(dateStr){ // "YYYY-MM-DD"
+	  const [y,m,d] = (dateStr || "").split("-").map(Number);
+	  const dt = new Date(y, (m||1)-1, d||1);
+	  const arr = ["일","월","화","수","목","금","토"];
+	  return arr[dt.getDay()];
 	}
 
 	prevBtn?.addEventListener("click", () => {

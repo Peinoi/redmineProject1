@@ -1,0 +1,44 @@
+<!doctype html>
+<html xmlns:th="https://www.thymeleaf.org/">
+<head>
+<meta charset="UTF-8" />
+<title>이동 중...</title>
+<link rel="stylesheet" th:href="@{/css/login/login-success.css}" />
+</head>
+<body>
+  <div class="wrap">
+
+    <div class="page-title">
+      <div class="spinner"></div>
+      로그인 완료
+    </div>
+    <p class="sub"></p>
+
+    <div class="box">
+      <div class="box-h">
+        <div>오늘 마감 일감</div>
+        <small id="countText">불러오는 중…</small>
+      </div>
+
+      <ul class="list" id="list">
+        <!-- ✅ 로딩 스켈레톤 3줄 -->
+        <li class="skel-row">
+          <div class="skeleton" style="height:12px;width:55%;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:14px;width:85%;"></div>
+        </li>
+        <li class="skel-row">
+          <div class="skeleton" style="height:12px;width:50%;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:14px;width:80%;"></div>
+        </li>
+        <li class="skel-row">
+          <div class="skeleton" style="height:12px;width:60%;margin-bottom:6px;"></div>
+          <div class="skeleton" style="height:14px;width:75%;"></div>
+        </li>
+      </ul>
+    </div>
+
+  </div>
+
+  <script th:src="@{/js/login/login-success.js}"></script>
+</body>
+</html>

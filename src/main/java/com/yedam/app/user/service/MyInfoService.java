@@ -22,5 +22,5 @@ public interface MyInfoService {
 	public List<MyProjectRoleVO> findMyProjectsWithRoles(Integer userCode);
 
 	// 내가 속한 그룹 + (프로젝트 + 역할)
-	public List<MyGroupProjectRoleVO> findMyGroupsWithProjectRoles(Integer userCode);
+	public List<MyGroupInfoVO> findMyGroupsInfo(Integer userCode);
 }

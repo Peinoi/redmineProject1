@@ -154,7 +154,7 @@
 
 /* 프로젝트명 */
 .proj-name {
-  font-weight: 800;
+  font-weight: 400;
   color: #111827;
 }
 
@@ -297,7 +297,7 @@
   width: 200px;
   min-width: 200px;
   max-width: 200px;
-  font-weight: 800;
+  font-weight: 400;
   color: #111827;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -310,7 +310,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 700;
+  font-weight: 400;
   color: #111827;
 }
 
