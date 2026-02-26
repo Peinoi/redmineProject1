@@ -55,7 +55,7 @@ table {
 				<div class="col-4 col-md-2">
 					<label class="form-label">관리자</label> <input type="checkbox"
 						id="sysBtn" th:checked="${user.sysCk == 'Y'}"
-						th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}" />
+						th:data-sysck="${user.sysCk}" th:data-usercode="${user.userCode}"  />
 				</div>
 				<div class="col-12 col-md-4">
 					<label class="form-label">직책</label> <input type="text"
@@ -102,8 +102,8 @@ table {
 		<div class="row g-3 mb-4">
 
 			<!-- 내 프로젝트 -->
-			<div class="col-12">
-				<div class="card">
+			<div class="col-12 col-lg-6">
+				<div class="card myinfo-card-fixed">
 					<div
 						class="card-header d-flex align-items-center justify-content-between">
 						<div>
@@ -114,23 +114,29 @@ table {
 
 					<div class="card-body p-0">
 						<div class="table-responsive">
-							<table class="table table-sm mb-0 align-middle">
+							<table class="table table-sm mb-0 align-middle myinfo-table">
 								<thead class="table-light">
 									<tr>
-										<th style="width: 55%;">프로젝트</th>
+										<th style="width: 45%;">프로젝트</th>
+										<th style="width: 20%;">상태</th>
 										<th>역할</th>
 									</tr>
 								</thead>
 								<tbody>
 									<tr th:if="${myProjects == null || #lists.isEmpty(myProjects)}">
-										<td colspan="2" class="text-center text-muted py-3">소속
+										<td colspan="3" class="text-center text-muted py-3">소속
 											프로젝트가 없습니다.</td>
 									</tr>
 
 									<tr th:each="p : ${myProjects}">
-										<td th:text="${p.projectName}">프로젝트명</td>
-										<td><span th:text="${p.roles != null ? p.roles : '-'}">역할</span>
-										</td>
+										<td class="td-left"><a
+											th:href="@{/project/overview/{projectCode}(projectCode=${p.projectCode})}"
+											th:text="${p.projectName}" class="project-link">프로젝트명</a></td>
+										<td><span class="badge rounded-pill myinfo-status-badge"
+											th:classappend="${p.status == 'OD3' ? ' text-bg-secondary' : ' text-bg-primary'}"
+											th:text="${p.statusName != null ? p.statusName : '-'}">
+												상태 </span></td>
+										<td th:text="${p.roles != null ? p.roles : '-'}">역할</td>
 									</tr>
 								</tbody>
 							</table>
@@ -141,24 +147,24 @@ table {
 			</div>
 
 			<!-- 내 그룹 -->
-			<div class="col-12">
-				<div class="card">
+			<div class="col-12 col-lg-6">
+				<div class="card myinfo-card-fixed">
 					<div
 						class="card-header d-flex align-items-center justify-content-between">
 						<div>
 							<i class="fas fa-users me-1"></i> 내 그룹
 						</div>
-						<div class="text-muted small">그룹 기반 프로젝트 권한</div>
+						<div class="text-muted small">내가 속한 그룹 정보</div>
 					</div>
 
 					<div class="card-body p-0">
 						<div class="table-responsive">
-							<table class="table table-sm mb-0 align-middle">
+							<table class="table table-sm mb-0 align-middle myinfo-table">
 								<thead class="table-light">
 									<tr>
 										<th style="width: 25%;">그룹</th>
-										<th style="width: 45%;">프로젝트</th>
-										<th>역할</th>
+										<th style="width: 35%;">인원수</th>
+										<th>그룹 설명</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -168,10 +174,12 @@ table {
 									</tr>
 
 									<tr th:each="g : ${myGroups}">
-										<td th:text="${g.groupName}">그룹명</td>
-										<td th:text="${g.projectName}">프로젝트명</td>
-										<td><span th:text="${g.roles != null ? g.roles : '-'}">역할</span>
-										</td>
+										<td><a
+											th:href="@{/groupmgr/{groupCode}(groupCode=${g.groupCode})}"
+											th:text="${g.groupName}" class="project-link">그룹명</a></td>
+										<td th:text="${g.memberCount != null ? g.memberCount : 0}">0</td>
+										<td class="td-left"
+											th:text="${g.description != null ? g.description : '-'}">설명</td>
 									</tr>
 								</tbody>
 							</table>
@@ -183,9 +191,10 @@ table {
 
 		</div>
 
+
 	</div>
 	<th:block layout:fragment="pageScript">
-		<script th:src="@{/js/usermgr/userinfo.js}"></script>
+		<script th:inline="javascript"  th:src="@{/js/usermgr/userinfo.js}"></script>
 	</th:block>
 </body>
 </html>

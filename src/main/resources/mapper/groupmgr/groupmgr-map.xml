@@ -39,7 +39,7 @@
             u.email
         FROM group_member gm
         JOIN users u ON gm.user_code = u.user_code
-        WHERE gm.gr_code = #{groupCode}
+        WHERE gm.gr_code = #{groupCode} AND u.is_lock = 'Y'
         ORDER BY gm.gr_mem_code
     </select>
 
@@ -50,13 +50,14 @@
             gpr.gr_code,
             gpr.project_code,
             p.project_name,
+            p.status,
             gpr.role_code,
             r.role_name
         FROM gr_pro_role gpr
         JOIN projects p ON gpr.project_code = p.project_code
         JOIN role r ON gpr.role_code = r.role_code
         WHERE gpr.gr_code = #{groupCode}
-          AND gpr.project_code > 0
+          AND gpr.project_code > 0 
         ORDER BY gpr.gr_pro_code
     </select>
 

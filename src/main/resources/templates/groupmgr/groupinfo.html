@@ -113,6 +113,7 @@
 								<tr>
 									<th>프로젝트명</th>
 									<th>권한</th>
+									<th>상태</th>
 									<th>수정</th>
 									<th>삭제</th>
 								</tr>
@@ -121,12 +122,17 @@
 								<tr th:each="proj : ${projects}" class="projectRow"
 									th:data-gr-pro-code="${proj.grProCode}"
 									th:data-project-code="${proj.projectCode}"
-									th:data-role-code="${proj.roleCode}">
+									th:data-role-code="${proj.roleCode}"
+									th:data-status="${proj.status}"
+									th:classappend="${proj.status == 'OD3'} ? 'table-secondary text-muted' : ''">
 									<td><a
 										th:href="@{/project/{projectCode}(projectCode=${proj.projectCode})}"
 										th:text="${proj.projectName}" class="text-decoration-none"></a>
 									</td>
 									<td th:text="${proj.roleName}"></td>
+									<td th:text="${proj.status == 'OD1' ? '진행' : '종료'}"></td>
+									<td th:if="${proj.status == 'OD3'}" colspan="2"
+										class=" fw-bold text-center"><i class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.</td>
 									<td>
 										<button type="button"
 											class="btn btn-success btn-sm btn-edit-project"
@@ -135,6 +141,7 @@
 											<i class="fas fa-edit me-1"></i> 수정
 										</button>
 									</td>
+									
 									<td>
 										<button type="button"
 											class="btn btn-danger btn-sm btn-remove-project"

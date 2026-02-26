@@ -17,6 +17,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 	document.querySelectorAll('#projectTbody tr.projectRow').forEach(row => {
+		const status = row.dataset.status; // HTML에서 th:data-status="${proj.status}" 형태로 전달받음
+
+		if (status === 'OD3') {
+			// 1. 종료된 프로젝트는 회색 배경 처리 (Bootstrap 클래스 또는 inline style)
+			row.classList.add('table-secondary', 'text-muted');
+
+			// 2. 수정/삭제 버튼 영역을 비우거나 숨김
+			const actionCells = row.querySelectorAll('td button');
+			actionCells.forEach(btn => btn.remove());
+		}
 		projectChanges.push({
 			grProCode: parseInt(row.dataset.grProCode),
 			projectCode: parseInt(row.dataset.projectCode),
@@ -261,15 +271,21 @@ function addSelectedProjects() {
 
 		const tr = document.createElement('tr');
 		tr.className = 'projectRow';
-		tr.dataset.projectCode = projectCode;
-		tr.dataset.roleCode = roleCode;
-		tr.innerHTML = `
-            <td><a href="/project/${projectCode}" class="text-decoration-none">${cb.dataset.projectName}</a></td>
-            <td class="role-name-cell">${roleName}</td>
-            <td><button type="button" class="btn btn-success btn-sm" onclick="openEditNewProject(this, ${projectCode})">
-                <i class="fas fa-edit me-1"></i> 수정</button></td>
-            <td><button type="button" class="btn btn-danger btn-sm" onclick="removeNewProject(this, ${projectCode})">
-                <i class="fa-solid fa-minus me-1"></i>삭제</button></td>`;
+		if (status === 'OD3') {
+			tr.classList.add('table-secondary', 'text-muted');
+			
+			tr.innerHTML = `
+		                <td><a href="/project/${projectCode}" class="text-decoration-none text-muted">${cb.dataset.projectName}</a></td>
+		                <td class="role-name-cell">${roleName}</td>
+		                <td>-</td>
+		                <td>-</td>`;
+		} else {
+			tr.innerHTML = `
+		                <td><a href="/project/${projectCode}" class="text-decoration-none">${cb.dataset.projectName}</a></td>
+		                <td class="role-name-cell">${roleName}</td>
+		                <td><button type="button" class="btn btn-success btn-sm" onclick="openEditNewProject(this, ${projectCode})">수정</button></td>
+		                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeNewProject(this, ${projectCode})">삭제</button></td>`;
+		}
 		tbody.appendChild(tr);
 	});
 
@@ -423,7 +439,7 @@ function handleFormSubmit() {
 			return res.json();
 		})
 		.then(data => {
-			if (!data) return;  
+			if (!data) return;
 			if (data.success) { alert(data.message); window.location.reload(); }
 			else { alert(data.message); }
 		})

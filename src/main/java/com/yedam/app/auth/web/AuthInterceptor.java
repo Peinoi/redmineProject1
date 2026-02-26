@@ -65,12 +65,23 @@ public class AuthInterceptor implements HandlerInterceptor {
 			return false;
 		}
 
-		if ("Y".equals(user.getSysCk()))
-			return true;
+		// user 최신 갱신
+		UserVO freshUser = usermgrService.userFindInfo(user.getUserCode());
+		if (freshUser != null) {
+			session.setAttribute("user", freshUser);
+			user = freshUser;
+		}
 
-		// DB에서 최신 권한 조회 (프로젝트코드 포함)
+		// 권한 조회 (관리자/일반 공통 - 사이드바용)
 		List<UserProjectAuthVO> userAuths = projectService.getUserProjectAuthAll(user.getUserCode());
+		session.setAttribute("userAuth", userAuths);
 
+		// sysCk 체크 → 관리자는 권한 체크 없이 통과
+		if ("Y".equals(user.getSysCk())) {
+			return true;
+		}
+
+		// 일반 사용자 권한 체크
 		if (userAuths == null || userAuths.isEmpty()) {
 			response.sendRedirect("/accessDenied");
 			return false;
@@ -79,13 +90,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 		// 현재 프로젝트 컨텍스트
 		@SuppressWarnings("unchecked")
 		Map<String, Object> currentProject = (Map<String, Object>) session.getAttribute("currentProject");
-
 		Integer currentProjectCode = currentProject != null ? (Integer) currentProject.get("projectCode") : null;
 
 		// 유효 권한 계산
 		UserProjectAuthVO effectiveAuth = resolveEffectiveAuth(userAuths, uriInfo.getCategory(), currentProjectCode);
 
 		if (effectiveAuth == null) {
+			if ("main".equals(uriInfo.getType()))
+				return true;
 			response.sendRedirect("/accessDenied");
 			return false;
 		}
@@ -197,6 +209,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 			return "Y".equals(userAuth.getDelRol());
 		case "admin":
 			return "Y".equals(userVO.getSysCk());
+		case "main":
+			return true;
 		default:
 			return false;
 		}

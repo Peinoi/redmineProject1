@@ -2,7 +2,7 @@ const sys = document.querySelector("#sysBtn").addEventListener('change', (event)
 
 	const isChecked = event.target.checked;
 	const userCode = event.target.dataset.usercode;
-	const sys = event.target.dataset.sysck;
+	const sys = document.body.dataset.sysck;
 	const sysCk = isChecked ? 'Y' : 'N';
 
 	if (userCode == 1) {
