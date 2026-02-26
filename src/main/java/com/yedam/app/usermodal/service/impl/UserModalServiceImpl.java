@@ -78,4 +78,10 @@ public class UserModalServiceImpl implements UserModalService {
 	  List<UserModalVO> flatList = userModalMapper.selectWorklogWorkersByMyProjects(loginUserCode);
 	  return buildProjectUserTree(flatList);
 	}
+	
+	// 문서용
+    public List<UserModalVO> findDocsCreatorByMyProjects(Long loginUserCode) {
+    	List<UserModalVO> flatList = userModalMapper.selectDocsCreatorByMyProjects(loginUserCode);
+    	return buildProjectUserTree(flatList);
+    }
 }

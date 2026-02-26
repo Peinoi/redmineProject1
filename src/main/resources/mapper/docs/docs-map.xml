@@ -24,7 +24,7 @@
 				#{folderName},
 				#{createdOn},
 				 <choose>
-			        <when test="headerFolderCode != null and headerFolderCode != ''">
+			        <when test="headerFolderCode != null">
 			          #{headerFolderCode}
 			        </when>
 			        <otherwise>
@@ -75,19 +75,27 @@
 	WITH AUTH_PROJECT AS (
 	    SELECT p.project_code, p.project_name
 	    FROM projects p
-	    WHERE EXISTS (
-	        SELECT 1
-	        FROM VW_USER_PROJECT_AUTH v
-	        WHERE v.user_code = #{userCode}
-	          AND v.project_code = p.project_code
+	    WHERE 1=1
+	    <if test="projectCode != null">
+	        AND p.project_code = #{projectCode}
+	    </if>
+	    <if test="projectStatusName != null and projectStatusName != ''">
+	        AND p.status = #{projectStatusName}
+	    </if>
+	    AND EXISTS (
+	        SELECT 1 FROM VW_USER_AUTH vua
+	        WHERE vua.user_code = #{userCode}
+	          AND vua.project_code = p.project_code
+	          AND (
+	                (vua.admin_ck = 'Y' AND vua.status IN ('OD1','OD3'))
+	             OR (NVL(vua.admin_ck,'N') = 'N' AND vua.status = 'OD1')
+	          )
 	    )
 	),
 	
 	FOLDER_TREE AS (
 	    SELECT
-	        f.folder_code,
-	        f.project_code,
-	        f.folder_name,
+	        f.folder_code, f.project_code, f.folder_name,
 	        LEVEL AS folder_depth,
 	        SYS_CONNECT_BY_PATH(f.folder_name, '/') AS folder_path,
 	        SYS_CONNECT_BY_PATH(LPAD(f.folder_code, 10, '0'), '/') AS sort_path
@@ -96,82 +104,128 @@
 	    CONNECT BY PRIOR f.folder_code = f.header_folder_code
 	)
 	
-	SELECT *
-	FROM (
+	SELECT * FROM (
 	
-	    /* 1️⃣ 프로젝트 */
+	    /* 1️⃣ 프로젝트 : 파일 검색 조건에 맞는 파일이 있는 프로젝트만 */
 	    SELECT
-	        NULL AS file_code,
-	        NULL AS original_name,
-	        NULL AS size_bytes,
-	        NULL AS uploaded_at,
-	        NULL AS mime_type,
-	        NULL AS folder_code,
-	        ap.project_code,
-	        ap.project_name,
-	        NULL AS uploaderName,
-	        NULL AS folder_path,
-	        0 AS folder_depth,
-	        NULL AS folder_name,
+	        NULL AS file_code, NULL AS original_name, NULL AS size_bytes,
+	        NULL AS uploaded_at, NULL AS mime_type, NULL AS folder_code,
+	        ap.project_code, ap.project_name, NULL AS uploaderName,
+	        NULL AS folder_path, 0 AS folder_depth, NULL AS folder_name,
 	        TO_CHAR(ap.project_code, 'FM0000000000') AS sort_path,
-	        'PROJECT' AS row_type
+	        'PROJECT' AS row_type,
+	        NULL AS createdCode
 	    FROM AUTH_PROJECT ap
+	    WHERE 1=1
+	    <if test="(fileName != null and fileName != '') or (uploaderName != null and uploaderName != '') or (createdFrom != null and createdFrom != '') or (fileType != null and fileType != '') or (createdCode != null and createdCode != '')">
+	        AND ap.project_code IN (
+	            SELECT project_code FROM documents_attachments da
+	            WHERE 1=1
+	            <if test="fileName != null and fileName != ''">AND da.original_name LIKE '%' || #{fileName} || '%'</if>
+	            <if test="fileType != null and fileType != ''">AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))</if>
+	            <if test="createdCode != null and createdCode != ''">AND da.user_code = #{createdCode}</if>
+	        )
+	    </if>
 	
 	    UNION ALL
 	
-	    /* 2️⃣ 폴더 */
+	    /* 2️⃣ 폴더 : 파일 검색 조건에 맞는 파일을 가진 폴더 + 그 폴더의 모든 상위 부모 */
 	    SELECT
-	        NULL,
-	        NULL,
-	        NULL,
-	        NULL,
-	        NULL,
-	        ft.folder_code,
-	        ft.project_code,
-	        ap.project_name,
-	        NULL,
-	        ft.folder_path,
-	        ft.folder_depth,
-	        ft.folder_name,
+	        NULL, NULL, NULL, NULL, NULL,
+	        ft.folder_code, ft.project_code, ap.project_name, NULL,
+	        ft.folder_path, ft.folder_depth, ft.folder_name,
 	        TO_CHAR(ft.project_code, 'FM0000000000') || ft.sort_path,
-	        'FOLDER'
+	        'FOLDER',
+	        NULL AS createdCode
 	    FROM FOLDER_TREE ft
-	    JOIN AUTH_PROJECT ap
-	        ON ft.project_code = ap.project_code
+	    JOIN AUTH_PROJECT ap ON ft.project_code = ap.project_code
+	    WHERE 1=1
+	    <if test="folderCode != null">
+	        AND ft.folder_code IN (
+	            SELECT folder_code FROM documents_folders START WITH folder_code = #{folderCode} CONNECT BY PRIOR folder_code = header_folder_code
+	            UNION
+	            SELECT folder_code FROM documents_folders START WITH folder_code = #{folderCode} CONNECT BY folder_code = PRIOR header_folder_code
+	        )
+	    </if>
+	    <if test="(fileName != null and fileName != '') or (uploaderName != null and uploaderName != '') or (createdFrom != null and createdFrom != '') or (fileType != null and fileType != '') or (createdCode != null and createdCode != '')">
+		    AND ft.folder_code IN (
+		        SELECT folder_code FROM documents_folders
+		        START WITH folder_code IN (
+		            SELECT da.folder_code FROM documents_attachments da
+		            LEFT JOIN users u ON da.user_code = u.user_code
+		            WHERE 1=1
+		            <if test="fileName != null and fileName != ''">AND da.original_name LIKE '%' || #{fileName} || '%'</if>
+		            
+		            <if test="fileType != null and fileType != ''">
+		                <choose>
+		                    <when test="fileType == 'excel'">AND (LOWER(da.mime_type) LIKE '%spreadsheet%' OR LOWER(da.original_name) LIKE '%.xls%')</when>
+		                    <when test="fileType == 'image'">AND LOWER(da.mime_type) LIKE 'image/%'</when>
+		                    <otherwise>AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))</otherwise>
+		                </choose>
+		            </if>
+		            
+		            <if test="createdCode != null and createdCode != ''">AND da.user_code = #{createdCode}</if>
+		            
+		            <if test="createdFrom != null and createdFrom != ''">AND da.uploaded_at &gt;= TO_DATE(#{createdFrom}, 'YYYY-MM-DD')</if>
+		            <if test="createdTo != null and createdTo != ''">AND da.uploaded_at &lt;= TO_DATE(#{createdTo}, 'YYYY-MM-DD') + 0.99999</if>
+		        )
+		        CONNECT BY folder_code = PRIOR header_folder_code
+		    )
+		</if>
 	
 	    UNION ALL
 	
-	    /* 3️⃣ 파일 */
+	    /* 3️⃣ 파일 : 실제 조건에 맞는 파일만 */
 	    SELECT
-	        da.file_code,
-	        da.original_name,
-	        da.size_bytes,
-	        da.uploaded_at,
-	        da.mime_type,
-	        da.folder_code,
-	        da.project_code,
-	        ap.project_name,
+	        da.file_code, da.original_name, da.size_bytes, da.uploaded_at,
+	        da.mime_type, da.folder_code, da.project_code, ap.project_name,
 	        u.name AS uploaderName,
-	        ft.folder_path,
-	        ft.folder_depth,
-	        ft.folder_name,
-	        TO_CHAR(da.project_code, 'FM0000000000')
-	            || ft.sort_path
-	            || '/' || LPAD(da.file_code, 10, '0'),
-	        'FILE'
+	        ft.folder_path, ft.folder_depth, ft.folder_name,
+	        TO_CHAR(da.project_code, 'FM0000000000') || ft.sort_path || '/' || LPAD(da.file_code, 10, '0'),
+	        'FILE',
+	        da.user_code AS createdCode
 	    FROM documents_attachments da
-	    JOIN AUTH_PROJECT ap
-	        ON da.project_code = ap.project_code
-	    LEFT JOIN users u
-	        ON da.user_code = u.user_code
-	    LEFT JOIN FOLDER_TREE ft
-	        ON da.folder_code = ft.folder_code
-	
+	    JOIN AUTH_PROJECT ap ON da.project_code = ap.project_code
+	    LEFT JOIN users u ON da.user_code = u.user_code
+	    LEFT JOIN FOLDER_TREE ft ON da.folder_code = ft.folder_code
+	    WHERE 1=1
+	    <if test="fileName != null and fileName != ''">AND da.original_name LIKE '%' || #{fileName} || '%'</if>
+	    <if test="uploaderName != null and uploaderName != ''">AND u.name LIKE '%' || #{uploaderName} || '%'</if>
+	    <if test="createdFrom != null and createdFrom != ''">AND da.uploaded_at &gt;= TO_DATE(#{createdFrom}, 'YYYY-MM-DD')</if>
+	    <if test="createdTo != null and createdTo != ''">AND da.uploaded_at &lt;= TO_DATE(#{createdTo}, 'YYYY-MM-DD') + 0.99999</if>
+	    <if test="fileType != null and fileType != ''">
+		    <choose>
+		        <when test="fileType == 'excel'">
+		            AND (LOWER(da.mime_type) LIKE '%spreadsheet%' 
+		                 OR LOWER(da.original_name) LIKE '%.xls%')
+		        </when>
+		        <when test="fileType == 'word'">
+		            AND (LOWER(da.mime_type) LIKE '%word%' 
+		                 OR LOWER(da.original_name) LIKE '%.doc%')
+		        </when>
+		        <when test="fileType == 'image'">
+		            AND LOWER(da.mime_type) LIKE 'image/%'
+		        </when>
+		        <when test="fileType == 'ppt'">
+		            AND (LOWER(da.mime_type) LIKE '%presentation%' 
+		                 OR LOWER(da.original_name) LIKE '%.ppt%')
+		        </when>
+		        <otherwise>
+		            AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' 
+		                 OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))
+		        </otherwise>
+		    </choose>
+		</if>
+	    <if test="folderCode != null">
+	        AND da.folder_code IN (
+	            SELECT folder_code FROM documents_folders START WITH folder_code = #{folderCode} CONNECT BY PRIOR folder_code = header_folder_code
+	        )
+	    </if>
+	    <if test="createdCode != null and createdCode != ''">
+	        AND da.user_code = #{createdCode}
+	    </if>
 	) t
-	ORDER BY
-	    t.sort_path,
-	    DECODE(t.row_type, 'PROJECT', 1, 'FOLDER', 2, 'FILE', 3)
-	
+	ORDER BY t.sort_path, DECODE(t.row_type, 'PROJECT', 1, 'FOLDER', 2, 'FILE', 3)
 	</select>
 	
 	<!-- 문서 단건 조회/다운로드용 -->
@@ -197,14 +251,39 @@
 	        da.size_bytes,
 	        fh.folder_path
 	    FROM documents_attachments da
-	    JOIN (
-	        SELECT 
-	            folder_code,
-	            SYS_CONNECT_BY_PATH(folder_name, '/') AS folder_path
-	        FROM documents_folders
-	        START WITH folder_code = #{folderCode}
-	        CONNECT BY PRIOR folder_code = header_folder_code
-	    ) fh ON da.folder_code = fh.folder_code
+		JOIN AUTH_PROJECT ap
+		    ON da.project_code = ap.project_code
+		LEFT JOIN users u
+		    ON da.user_code = u.user_code
+		LEFT JOIN FOLDER_TREE ft
+		    ON da.folder_code = ft.folder_code
+		
+		WHERE 1=1
+		
+		<!-- 파일명 -->
+		<if test="originalName != null and originalName != ''">
+		    AND LOWER(da.original_name)
+		        LIKE '%' || LOWER(#{originalName}) || '%'
+		</if>
+		
+		<!-- 등록자 -->
+		<if test="createdCode != null and createdCode != ''">
+		    AND da.user_code = #{createdCode}
+		</if>
+		
+		<!-- 폴더 -->
+		<if test="folderCode != null">
+		    AND da.folder_code = #{folderCode}
+		</if>
+		
+		<!-- 날짜 -->
+		<if test="createdFrom != null and createdFrom != ''">
+		    AND da.uploaded_at >= TO_DATE(#{createdFrom}, 'YYYY-MM-DD')
+		</if>
+		
+		<if test="createdTo != null and createdTo != ''">
+		    AND da.uploaded_at &lt;= TO_DATE(#{createdTo}, 'YYYY-MM-DD') + 0.99999
+		</if>
 	</select>
 	
 	<!-- 파일 삭제 -->

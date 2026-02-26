@@ -42,22 +42,31 @@ public class DocsController {
 	private final DocsService docsService;
 
 	private static final long MAX_SIZE = 50L * 1024 * 1024;
-	private static final Set<String> ALLOWED_EXTS = Set.of("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "jpg",
-			"jpeg", "png", "gif", "zip", "txt");
+	// 실무에서 보통 허용하는 업무용 파일 확장자 리스트 (확장 버전)
+	private static final Set<String> ALLOWED_EXTS = Set.of(
+			// 문서
+			"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "hwp", "csv",
+			// 이미지
+			"jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",
+			// 압축 및 기타
+			"zip", "7z", "rar", "tar", "gz");
 
 	// 파일 저장 경로
 	@Value("${app.upload.dir}")
 	private String uploadDir;
 
 	// ===== 문서 목록 화면 =====
-	@GetMapping({ "docs", "searchList" })
+	@GetMapping("docs")
 	public String docs(DocsVO docsVO, HttpSession session, Model model) {
 		UserVO user = (UserVO) session.getAttribute("user");
 		if (user == null)
 			return "redirect:/login";
 
+		Integer userCode = user.getUserCode();
+
 		boolean isAdmin = "Y".equals(user.getSysCk());
-		docsVO.setUserCode(user.getUserCode());
+
+		docsVO.setUserCode(userCode);
 
 		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
 			docsVO.setProjectStatusName("OD1");
@@ -181,51 +190,73 @@ public class DocsController {
 			return ResponseEntity.internalServerError().build();
 		}
 	}
-	
+
 	// 폴더 다운로드
 	@GetMapping("/api/folders/{folderCode}/download")
-	public void downloadFolder(@PathVariable Integer folderCode, HttpSession session,
-	                           HttpServletResponse response) throws IOException {
-	    UserVO user = (UserVO) session.getAttribute("user");
-	    if (user == null) {
-	        response.sendError(401);
-	        return;
-	    }
-	    docsService.downloadFolderAsZip(folderCode, response);
+	public void downloadFolder(@PathVariable Integer folderCode, HttpSession session, HttpServletResponse response)
+			throws IOException {
+		UserVO user = (UserVO) session.getAttribute("user");
+		if (user == null) {
+			response.sendError(401);
+			return;
+		}
+		docsService.downloadFolderAsZip(folderCode, response);
 	}
-	
+
 	// 파일 삭제
 	@DeleteMapping("/api/docs/{fileCode}")
 	@ResponseBody
 	public ResponseEntity<?> deleteFile(@PathVariable Integer fileCode, HttpSession session) {
-	    try {
-	        UserVO user = (UserVO) session.getAttribute("user");
-	        if (user == null) return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
+		try {
+			UserVO user = (UserVO) session.getAttribute("user");
+			if (user == null)
+				return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
 
-	        int result = docsService.removeFile(fileCode);
-	        if (result > 0) return ResponseEntity.ok().body("{\"message\":\"success\"}");
-	        else return ResponseEntity.badRequest().body("{\"message\":\"삭제 실패\"}");
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.internalServerError().body("{\"message\":\"서버 오류\"}");
-	    }
+			int result = docsService.removeFile(fileCode);
+			if (result > 0)
+				return ResponseEntity.ok().body("{\"message\":\"success\"}");
+			else
+				return ResponseEntity.badRequest().body("{\"message\":\"삭제 실패\"}");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.internalServerError().body("{\"message\":\"서버 오류\"}");
+		}
 	}
-	
+
 	// 폴더 삭제
 	@DeleteMapping("/api/folders/{folderCode}")
 	@ResponseBody
 	public ResponseEntity<?> deleteFolder(@PathVariable Integer folderCode, HttpSession session) {
-	    try {
-	        UserVO user = (UserVO) session.getAttribute("user");
-	        if (user == null) return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
+		try {
+			UserVO user = (UserVO) session.getAttribute("user");
+			if (user == null)
+				return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
 
-	        docsService.removeFolder(folderCode);
-	        return ResponseEntity.ok().body("{\"message\":\"success\"}");
-	    } catch (RuntimeException e) {
-	        return ResponseEntity.badRequest().body("{\"message\":\"" + e.getMessage() + "\"}");
-	    } catch (Exception e) {
-	        e.printStackTrace();
-	        return ResponseEntity.internalServerError().body("{\"message\":\"서버 오류\"}");
-	    }
+			docsService.removeFolder(folderCode);
+			return ResponseEntity.ok().body("{\"message\":\"success\"}");
+		} catch (RuntimeException e) {
+			return ResponseEntity.badRequest().body("{\"message\":\"" + e.getMessage() + "\"}");
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.internalServerError().body("{\"message\":\"서버 오류\"}");
+		}
+	}
+
+	// ===== 문서 목록 AJAX API =====
+	@GetMapping("/api/docs/list")
+	@ResponseBody
+	public ResponseEntity<?> docsListApi(DocsVO docsVO, HttpSession session) {
+		UserVO user = (UserVO) session.getAttribute("user");
+		if (user == null)
+			return ResponseEntity.status(401).build();
+
+		docsVO.setUserCode(user.getUserCode());
+		boolean isAdmin = "Y".equals(user.getSysCk());
+		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
+			docsVO.setProjectStatusName("OD1");
+		}
+
+		List<DocsVO> docsList = docsService.getDocsList(docsVO);
+		return ResponseEntity.ok(docsList);
 	}
 }

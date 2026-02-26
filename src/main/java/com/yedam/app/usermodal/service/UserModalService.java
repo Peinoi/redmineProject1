@@ -13,4 +13,7 @@ public interface UserModalService {
 	  List<UserModalVO> findUsersInMyProjects(Long loginUserCode);
 	  //소요시간
 	  List<UserModalVO> findWorklogWorkersByMyProjects(Long loginUserCode);
+	  
+	  // 문서용
+	  List<UserModalVO> findDocsCreatorByMyProjects(Long loginUserCode);
 }
