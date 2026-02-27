@@ -1,3 +1,4 @@
+// search.js
 document.addEventListener("DOMContentLoaded", () => {
 	const ui = {
 		// 검색용
@@ -24,10 +25,119 @@ document.addEventListener("DOMContentLoaded", () => {
 		projectModalSearch: document.getElementById("projectModalSearch"),
 
 		folderModalEl: document.getElementById("folderSelectModal"),
-		folderModalSearch: document.getElementById("folderModalSearch")
+		folderModalSearch: document.getElementById("folderModalSearch"),
+
+		// 등록자(사원) 검색 관련 추가
+		filterCreatorText: document.getElementById("filterCreatorText"),
+		filterCreatorValue: document.getElementById("filterCreatorValue"),
+		btnCreatorModal: document.getElementById("btnOpenCreatorModal"),
+		creatorModalEl: document.getElementById("creatorSelectModal"),
+		creatorModalTree: document.getElementById("creatorModalTree"), // html의 ID와 일치
+		creatorModalSearch: document.getElementById("creatorModalSearch")
 	};
 
+	if (ui.uploadFiles) {
+		ui.uploadFiles.style.opacity = "0.6";
+		ui.uploadFiles.style.cursor = "not-allowed";
+	}
+
+	// form submit 방지
+	document.getElementById("filterForm")?.addEventListener("submit", e => e.preventDefault());
+
 	let currentFolderContext = "filter";
+
+	let creatorCache = []; // 검색용 데이터 캐시
+
+	// ================= 등록자(사원) 선택 모달 로직 =================
+	let allUsers = []; // 검색을 위한 전체 사용자 저장용
+
+	// ================= 등록자(사원) 선택 모달 로직 =================
+
+	// 1. 모달 열기 및 데이터 패치
+	ui.btnCreatorModal?.addEventListener("click", async () => {
+		try {
+			// 알려주신 경로로 데이터 호출
+			const res = await fetch("/api/users/modal/docs/creators");
+			const data = await res.json();
+			creatorCache = data;
+
+			renderCreatorTree(data);
+
+			const modal = new bootstrap.Modal(ui.creatorModalEl);
+			modal.show();
+		} catch (e) {
+			console.error("등록자 목록 로드 실패:", e);
+			alert("등록자 목록을 불러올 수 없습니다.");
+		}
+	});
+
+	// 2. 트리 구조 렌더링 함수
+	function renderCreatorTree(data) {
+		if (!ui.creatorModalTree) return;
+
+		let html = '';
+		data.forEach(project => {
+			// 프로젝트 헤더 (간트 차트 스타일)
+			html += `
+	                <div class="list-group-item bg-light fw-bold py-2">
+	                    <i class="fas fa-project-diagram me-2 text-primary"></i>${project.projectName}
+	                </div>`;
+
+			// 사원 목록 (children)
+			if (project.children && project.children.length > 0) {
+				project.children.forEach(user => {
+					html += `
+	                        <button type="button" 
+	                                class="list-group-item list-group-item-action d-flex align-items-center ps-4 btn-select-creator"
+	                                data-user-code="${user.userCode}" 
+	                                data-user-name="${user.userName}">
+	                            <i class="fas fa-user me-2 text-secondary small"></i>
+	                            <span>${user.userName}</span>
+	                            <span class="ms-auto badge rounded-pill bg-white text-muted border fw-normal">${user.userCode}</span>
+	                        </button>`;
+				});
+			} else {
+				html += `<div class="list-group-item ps-4 text-muted small italic">참여 사원 없음</div>`;
+			}
+		});
+
+		ui.creatorModalTree.innerHTML = html || '<div class="p-3 text-center">데이터가 없습니다.</div>';
+
+		// 선택 이벤트
+		ui.creatorModalTree.querySelectorAll(".btn-select-creator").forEach(btn => {
+			btn.addEventListener("click", () => {
+				ui.filterCreatorText.value = btn.dataset.userName;
+				ui.filterCreatorValue.value = btn.dataset.userCode;
+
+				const modal = bootstrap.Modal.getInstance(ui.creatorModalEl);
+				modal.hide();
+			});
+		});
+	}
+
+	// 3. 모달 내 실시간 검색
+	ui.creatorModalSearch?.addEventListener("input", (e) => {
+		const q = e.target.value.toLowerCase().trim();
+		if (!q) {
+			renderCreatorTree(creatorCache);
+			return;
+		}
+
+		const filtered = creatorCache.map(proj => {
+			// 사원명 검색
+			const matchedUsers = proj.children?.filter(u =>
+				u.userName.toLowerCase().includes(q) || String(u.userCode).includes(q)
+			) || [];
+
+			// 프로젝트명이 맞거나 사원이 있다면 표시
+			if (proj.projectName.toLowerCase().includes(q) || matchedUsers.length > 0) {
+				return { ...proj, children: matchedUsers };
+			}
+			return null;
+		}).filter(Boolean);
+
+		renderCreatorTree(filtered);
+	});
 
 	// ===== context별 selectedFolderPath =====
 	let selectedFolderPath = {
@@ -35,11 +145,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		upload: []   // 문서등록용
 	};
 
-	// 업로드/필터 폴더 텍스트 초기화
-	if (ui.filterFolderText) ui.filterFolderText.value = "";
-	if (ui.filterFolderValue) ui.filterFolderValue.value = "";
-	if (ui.uploadFolderText) ui.uploadFolderText.value = "";
-	if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+	// 서버에서 내려온 folderCode가 있으면 경로 복원
+	const initFolderCode = ui.filterFolderValue?.value;
+	if (initFolderCode) {
+		ensureFolderCache().then(() => {
+			const treeData = buildFolderTreeForJS(folderCache);
+			selectedFolderPath.filter = findFolderPath(treeData, initFolderCode);
+		});
+	}
 
 	// 필요하면 트리 전체 초기화
 	const folderTreeEl = document.getElementById("folderModalTree");
@@ -77,8 +190,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		try {
 			const res = await fetch("/api/projects/modal", { headers: { Accept: "application/json" } });
 			if (res.status === 403) {
-			    alert('권한이 없습니다.');
-			    return;
+				alert('권한이 없습니다.');
+				return;
 			}
 			if (!res.ok) throw new Error("프로젝트 목록을 불러오지 못했습니다.");
 			projectCache = (await res.json()).map(p => ({ code: String(p.projectCode), name: p.projectName }));
@@ -190,11 +303,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		if (context === "filter") {
 			ui.filterFolderText.value = folder.name;
 			ui.filterFolderValue.value = folder.code;
+
+			// 폴더 선택 시 해당 프로젝트도 자동 세팅
+			if (folder.projectCode) {
+				ui.filterProjectValue.value = folder.projectCode;
+				// 프로젝트명 표시 (캐시에서 찾기)
+				const project = projectCache.find(p => String(p.code) === String(folder.projectCode));
+				if (project) ui.filterProjectText.value = project.name;
+				else ui.filterProjectText.value = folder.projectName || "";
+			}
 		} else if (context === "upload") {
 			// 업로드 모달에서는 검색 선택 무시
 			ui.uploadFolderText.value = folder.name;
 			ui.uploadFolderValue.value = folder.code;
 			ui.uploadProjectValue.value = folder.projectCode || "";
+
+			ui.uploadFiles.style.opacity = "1";
+			ui.uploadFiles.style.cursor = "pointer";
 
 			const hint = document.getElementById("uploadProjectHint");
 			const hintText = document.getElementById("uploadProjectText");
@@ -350,12 +475,26 @@ document.addEventListener("DOMContentLoaded", () => {
 	const uploadModalEl = document.getElementById("docUploadModal");
 	uploadModalEl?.addEventListener("hidden.bs.modal", () => {
 		managedFiles = new DataTransfer();
-		if (ui.uploadFiles) ui.uploadFiles.value = "";
+		if (ui.uploadFiles) {
+			ui.uploadFiles.value = "";
+			ui.uploadFiles.style.opacity = "0.6"; // 다시 흐리게
+			ui.uploadFiles.style.cursor = "not-allowed";
+		}
 		if (ui.filePreviewList) ui.filePreviewList.innerHTML = "";
 		if (ui.uploadProjectText) ui.uploadProjectText.value = "";
 		if (ui.uploadProjectValue) ui.uploadProjectValue.value = "";
 		if (ui.uploadFolderText) ui.uploadFolderText.value = "";
 		if (ui.uploadFolderValue) ui.uploadFolderValue.value = "";
+	});
+
+	ui.uploadFiles?.addEventListener("click", (e) => {
+		// 폴더 값이 비어있다면 (사용자가 폴더를 선택하지 않았다면)
+		if (!ui.uploadFolderValue.value) {
+			e.preventDefault(); // 중요: 파일 선택창(윈도우 탐색기)이 뜨는 걸 막음
+			showToast("저장 폴더를 먼저 선택해야 파일을 올릴 수 있습니다.");
+			return; // 여기서 종료
+		}
+		// 폴더가 있으면 아무것도 막지 않으므로 파일 창이 정상적으로 뜹니다.
 	});
 
 	// ================= Modal 인스턴스 =================
@@ -621,7 +760,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				e.stopPropagation();
 				if (!confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`)) return;
 				try {
-					const res = await fetch(`/api/folders/${folder.code}`, { method: "DELETE" });
+					const res = await fetch(`/api/folders/delete/${folder.code}`, { method: "DELETE" });
 					const data = await res.json();
 					if (res.status === 403) {
 						alert('권한이 없습니다.');
@@ -848,10 +987,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			});
 
 			if (res.status === 403) {
-			    alert('권한이 없습니다.');
-			    return;
+				alert('권한이 없습니다.');
+				return;
 			}
-			
+
 			if (!res.ok) throw new Error("폴더 생성에 실패했습니다.");
 
 			showToast(`'${name}' 폴더가 생성되었습니다.`);
@@ -904,5 +1043,43 @@ document.addEventListener("DOMContentLoaded", () => {
 		ui.uploadFiles.files = managedFiles.files;
 
 		document.getElementById("uploadForm").submit();
+	});
+
+	// ================= 초기화 버튼 =================
+	document.getElementById("btnResetFilters")?.addEventListener("click", () => {
+		if (ui.filterProjectText) ui.filterProjectText.value = "";
+		if (ui.filterProjectValue) ui.filterProjectValue.value = "";
+		if (ui.filterFolderText) ui.filterFolderText.value = "";
+		if (ui.filterFolderValue) ui.filterFolderValue.value = "";
+		if (ui.filterCreatorText) ui.filterCreatorText.value = "";
+		if (ui.filterCreatorValue) ui.filterCreatorValue.value = "";
+
+		document.getElementById("filterCreatorText").value = "";
+		document.getElementById("filterCreatorValue").value = "";
+		document.getElementById("filterFile").value = "";
+		document.getElementById("filterFileType").value = "";
+		document.getElementById("filterProjectStatus").value = "OD1";
+		document.getElementById("filterCreatedFrom").value = "";
+		document.getElementById("filterCreatedTo").value = "";
+		document.getElementById("filterFileType").value = "";
+
+		selectedFolderPath.filter = [];
+		renderBreadcrumb("filter");
+		if (window.docsReload) window.docsReload({});
+	});
+
+	// 조회 버튼
+	document.getElementById("btnApplyFilters")?.addEventListener("click", () => {
+		const filters = {
+			projectCode: ui.filterProjectValue?.value || "",
+			projectStatusName: document.getElementById("filterProjectStatus")?.value || "",
+			folderCode: ui.filterFolderValue?.value || "",
+			fileName: document.getElementById("filterFile")?.value || "",
+			createdCode: document.getElementById("filterCreatorValue")?.value || "",
+			fileType: document.getElementById("filterFileType")?.value || "",
+			createdFrom: document.getElementById("filterCreatedFrom")?.value || "",
+			createdTo: document.getElementById("filterCreatedTo")?.value || "",
+		};
+		if (window.docsReload) window.docsReload(filters);
 	});
 });

@@ -3,7 +3,7 @@
 <html xmlns:th="https://www.thymeleaf.org/">
 <div th:fragment="searchCondition(view)">
 	<!-- 검색조건 전체 wrapper (기본 닫힘) -->
-	<form id="filterForm" th:action="@{/searchList}" method="get">
+	<form id="filterForm">
 		<input type="hidden" name="view" th:value="${view}" />
 		<div id="searchConditionWrapper">
 			<div class="search-filters mb-3 mt-3">
@@ -27,15 +27,24 @@
 							id="filterProjectStatus" name="projectStatusName"
 							class="form-select">
 
+							<!-- 관리자 -->
 							<th:block th:if="${isAdmin}">
-								<option value="">전체</option>
-								<option value="OD1">진행</option>
-								<option value="OD3">종료</option>
+								<option value="" th:selected="${param.projectStatusName == ''}">
+									전체</option>
+
+								<option value="OD1"
+									th:selected="${param.projectStatusName == null or param.projectStatusName == 'OD1'}">
+									진행</option>
+
+								<option value="OD3"
+									th:selected="${param.projectStatusName == 'OD3'}">종료</option>
 							</th:block>
 
+							<!-- 일반 사용자 -->
 							<th:block th:unless="${isAdmin}">
 								<option value="OD1" selected>진행</option>
 							</th:block>
+
 						</select>
 					</div>
 
@@ -78,10 +87,20 @@
 					<div class="col-12 col-md-6 col-lg-3">
 						<label class="form-label">파일 유형</label> <select
 							id="filterFileType" name="fileType" class="form-select">
-							<option value="">전체</option>
-							<option value="pdf">PDF</option>
-							<option value="doc">DOC</option>
-							<option value="xls">XLS</option>
+							<option value="">전체 유형</option>
+							<optgroup label="문서">
+								<option value="pdf">PDF (.pdf)</option>
+								<option value="word">Word (.docx, .doc)</option>
+								<option value="hwp">한글 (.hwp)</option>
+							</optgroup>
+							<optgroup label="데이터/수식">
+								<option value="excel">Excel (.xlsx, .xls, .csv)</option>
+								<option value="ppt">PowerPoint (.pptx, .ppt)</option>
+							</optgroup>
+							<optgroup label="이미지/기타">
+								<option value="image">이미지 (jpg, png, gif)</option>
+								<option value="zip">압축파일 (zip, 7z)</option>
+							</optgroup>
 						</select>
 					</div>
 
@@ -113,7 +132,7 @@
 							<i class="fas fa-redo me-1"></i>초기화
 						</button>
 
-						<button type="submit" class="btn btn-primary" id="btnApplyFilters">
+						<button type="button" class="btn btn-primary" id="btnApplyFilters">
 							<i class="fa-solid fa-magnifying-glass me-1"></i>조회
 						</button>
 					</div>

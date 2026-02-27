@@ -85,4 +85,17 @@ public class UserModalController {
 
 	  return userModalService.findWorklogWorkersByMyProjects(user.getUserCode().longValue());
 	}
+	
+	//일감용
+	@GetMapping("/api/users/modal/docs/creators")
+	public List<UserModalVO> getDocsCreators(HttpSession session) {
+		UserVO user = (UserVO) session.getAttribute("user");
+
+		if (user == null || user.getUserCode() == null) {
+		    throw new IllegalStateException("로그인 정보가 없습니다.");
+		}
+
+		return userModalService.findDocsCreatorByMyProjects(user.getUserCode().longValue());
+	}
+
 }

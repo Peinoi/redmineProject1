@@ -1,7 +1,5 @@
-document.addEventListener("DOMContentLoaded", () => {
-	const rows = document.querySelectorAll(".doc-row");
-	const tbody = document.getElementById("docsTableBody");
-
+// list.js
+function rebuildDocsTable(rows, tbody) {
 	if (!rows.length) return;
 
 	const fragment = document.createDocumentFragment();
@@ -19,6 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		const sizeBytes = parseInt(row.dataset.size) || 0;
 		const uploadedAt = row.dataset.uploadedAt || "";
 		const uploader = row.dataset.uploader || "";
+		const uploaderCode = row.dataset.uploaderCode || "";
 
 		if (rowType === "PROJECT") {
 			const tr = document.createElement("tr");
@@ -26,10 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			tr.dataset.projectCode = projectCode;
 			tr.style.cursor = "pointer";
 			tr.innerHTML = `
-				<td colspan="6" class="fw-bold py-2">
-					<span class="project-toggle me-2">▶</span>
-					<i class="fa-solid fa-folder-closed project-icon me-1"></i> ${projectName}
-				</td>`;
+					<td colspan="6" class="fw-bold py-2">
+						<span class="project-toggle me-2">▶</span>
+						<i class="fa-solid fa-folder-closed project-icon me-1"></i> ${projectName}
+					</td>`;
 			tr.addEventListener("click", () => toggleRows(projectCode));
 			fragment.appendChild(tr);
 
@@ -55,7 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
 			    </td>
 			    <td></td>
 			    <td>
-			        <a href="/api/folders/${folderCode}/download" class="btn btn-sm btn-primary">
+			        <a href="/api/folders/${folderCode}/download?projectCode=${projectCode}" 
+			           class="btn btn-sm btn-primary"
+			           onclick="event.stopPropagation()">
 			            <i class="fas fa-download"></i>
 			        </a>
 			    </td>
@@ -64,7 +65,8 @@ document.addEventListener("DOMContentLoaded", () => {
 			    <td>
 			        <button type="button" class="btn btn-sm btn-danger btn-delete-folder"
 			            data-folder-code="${folderCode}"
-			            data-folder-name="${folderName}">
+			            data-folder-name="${folderName}"
+			            onclick="event.stopPropagation()">
 			            <i class="fas fa-trash"></i>
 			        </button>
 			    </td>`;
@@ -102,24 +104,31 @@ document.addEventListener("DOMContentLoaded", () => {
 			const indentPx = (folderDepth + 1) * 24;
 
 			tr.innerHTML = `
-				<td style="padding-left:${indentPx + 16}px;">
-					${icon} ${fileName}
-				</td>
-				<td>${sizeKb}</td>
-				<td>
-					<a href="/docsDownload?fileCode=${fileCode}" class="btn btn-sm btn-primary">
-						<i class="fas fa-download"></i>
-					</a>
-				</td>
-				<td>${uploadedAt}</td>
-				<td>${uploader}</td>
-				<td>
-					<button type="button" class="btn btn-sm btn-danger btn-delete"
-						data-file-code="${fileCode}"
-						data-file-name="${fileName}">
-						<i class="fas fa-trash"></i>
-					</button>
-				</td>`;
+			    <td style="padding-left:${indentPx + 16}px;">
+			        ${icon} ${fileName}
+			    </td>
+			    <td>${sizeKb}</td>
+			    <td>
+			        <a href="/docsDownload?fileCode=${fileCode}&projectCode=${projectCode}" 
+			           class="btn btn-sm btn-primary"
+			           onclick="event.stopPropagation()">
+			            <i class="fas fa-download"></i>
+			        </a>
+			    </td>
+			    <td>${uploadedAt}</td>
+			    <td>
+			        <a href="/users/${uploaderCode}" 
+			           class="text-decoration-none"
+			           onclick="event.stopPropagation()">${uploader}</a>
+			    </td>
+			    <td>
+			        <button type="button" class="btn btn-sm btn-danger btn-delete"
+			            data-file-code="${fileCode}"
+			            data-file-name="${fileName}"
+			            onclick="event.stopPropagation()">
+			            <i class="fas fa-trash"></i>
+			        </button>
+			    </td>`;
 			tr.style.display = "none"; // 초기 닫힘
 			fragment.appendChild(tr);
 		}
@@ -128,14 +137,31 @@ document.addEventListener("DOMContentLoaded", () => {
 	rows.forEach(r => r.remove());
 	tbody.appendChild(fragment);
 
+	// 검색 조건이 있을 때만 자동 펼침
+	const isSearch = document.getElementById("filterFile").value ||
+		document.getElementById("filterFolderValue").value ||
+		document.getElementById("filterCreatedFrom").value;
+
+	if (isSearch) {
+		// ▶ 모양을 가진 모든 행을 찾아서 클릭 이벤트를 강제로 발생시킴
+		tbody.querySelectorAll(".row-project, .row-folder").forEach(row => {
+			const toggle = row.querySelector(".project-toggle, .folder-toggle");
+			// 현재 닫혀있는 상태(▶)라면 클릭해서 펼침
+			if (toggle && toggle.textContent.trim() === "▶") {
+				row.click();
+			}
+		});
+	}
+
 	// 파일 삭제 버튼
 	tbody.querySelectorAll(".btn-delete").forEach(btn => {
 		btn.addEventListener("click", async () => {
 			const fileCode = btn.dataset.fileCode;
 			const fileName = btn.dataset.fileName;
+			const projectCode = btn.closest("tr").dataset.projectCode;
 			if (!confirm(`'${fileName}' 파일을 삭제하시겠습니까?`)) return;
 			try {
-				const res = await fetch(`/api/docs/${fileCode}`, { method: "DELETE" });
+				const res = await fetch(`/api/docs/${fileCode}?projectCode=${projectCode}`, { method: "DELETE" });
 				if (!res.ok) throw new Error("삭제 실패");
 				btn.closest("tr").remove();
 			} catch (e) {
@@ -150,9 +176,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			e.stopPropagation();
 			const folderCode = btn.dataset.folderCode;
 			const folderName = btn.dataset.folderName;
+			const projectCode = btn.closest("tr").dataset.projectCode;
 			if (!confirm(`'${folderName}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`)) return;
 			try {
-				const res = await fetch(`/api/folders/${folderCode}`, { method: "DELETE" });
+				const res = await fetch(`/api/folders/delete/${folderCode}?projectCode=${projectCode}`, { method: "DELETE" });
 				const data = await res.json();
 				if (!res.ok) {
 					alert(data.message);
@@ -164,7 +191,15 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		});
 	});
+
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+	const rows = Array.from(document.querySelectorAll(".doc-row"));
+	const tbody = document.getElementById("docsTableBody");
+	rebuildDocsTable(rows, tbody);
 });
+
 
 function setFolderIcon(folderRow, open) {
 	const icon = folderRow.querySelector(".folder-icon");
@@ -277,3 +312,88 @@ function hasChildren(projectCode, folderPath, allRows) {
 			|| (rowType === "FILE" && path === normalized);
 	});
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+	const tbody = document.getElementById("docsTableBody");
+	tbody.innerHTML = ""; // 서버 렌더링 데이터 즉시 제거
+
+	const projectStatusEl = document.getElementById("filterProjectStatus");
+	const initialStatus = projectStatusEl?.value || "OD1";
+
+	window.docsReload({ projectStatusName: initialStatus });
+});
+
+// ================= AJAX 조회 =================
+window.docsReload = async (filters = {}) => {
+	const params = new URLSearchParams();
+	if (filters.projectCode) params.append("projectCode", filters.projectCode);
+	if (filters.projectStatusName) params.append("projectStatusName", filters.projectStatusName);
+	if (filters.folderCode) params.append("folderCode", filters.folderCode);
+	if (filters.fileName) params.append("fileName", filters.fileName);
+	if (filters.createdCode) params.append("createdCode", filters.createdCode);
+	if (filters.fileType) params.append("fileType", filters.fileType);
+	if (filters.createdFrom) params.append("createdFrom", filters.createdFrom);
+	if (filters.createdTo) params.append("createdTo", filters.createdTo);
+
+	const res = await fetch(`/api/docs/list?${params}`, { headers: { Accept: "application/json" } });
+	if (!res.ok) return;
+	const data = await res.json();
+
+	const tbody = document.getElementById("docsTableBody");
+	tbody.innerHTML = "";
+
+	if (!data.length) {
+		tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">등록된 문서가 없습니다.</td></tr>`;
+		return;
+	}
+
+	// 기존 렌더링 재사용: 데이터를 tr로 변환 후 rebuildDocsTable 호출
+	const fakeRows = data.map(doc => {
+		const tr = document.createElement("tr");
+		tr.className = "doc-row";
+		tr.dataset.projectCode = doc.projectCode || "";
+		tr.dataset.projectName = doc.projectName || "";
+		tr.dataset.fileCode = doc.fileCode || "";
+		tr.dataset.fileName = doc.originalName || "";
+		tr.dataset.folderCode = doc.folderCode || "";
+		tr.dataset.folderName = doc.folderName || "";
+		tr.dataset.folderPath = doc.folderPath || "";
+		tr.dataset.folderDepth = doc.folderDepth || 0;
+		tr.dataset.size = doc.sizeBytes || 0;
+		tr.dataset.uploadedAt = doc.uploadedAtStr || "";
+		tr.dataset.uploaderCode = doc.createdCode || "";
+		tr.dataset.uploader = doc.uploaderName || "";
+		tr.dataset.rowType = doc.rowType || "";
+		tr.style.display = "none";
+		return tr;
+	});
+
+	rebuildDocsTable(fakeRows, tbody);
+
+	// 자동 펼침 로직
+	// 검색 조건이 하나라도 있는 경우에만 실행
+	const hasFilter = filters.fileName || filters.folderCode || filters.createdCode ||
+		filters.fileType || filters.createdFrom || filters.uploaderName;
+
+	if (hasFilter) {
+		// 데이터가 그려지는 시간을 고려해 아주 잠깐의 지연 후 실행
+		setTimeout(() => {
+			// 모든 프로젝트와 폴더 행을 찾아서
+			const toggles = tbody.querySelectorAll(".row-project, .row-folder");
+			toggles.forEach(row => {
+				const icon = row.querySelector(".project-toggle, .folder-toggle");
+				// 아이콘이 '▶' (닫힘) 상태라면 클릭해서 펼침
+				if (icon && icon.textContent.trim() === "▶") {
+					row.click();
+				}
+			});
+		}, 50);
+	}
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+	const projectStatusEl = document.getElementById("filterProjectStatus");
+	const initialStatus = projectStatusEl?.value || "OD1";
+
+	window.docsReload({ projectStatusName: initialStatus });
+});

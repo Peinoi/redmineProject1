@@ -163,4 +163,33 @@
      )
    ORDER BY projectCode, userName
 </select>
+
+<!-- 문서용 -->
+<select id="selectDocsCreatorByMyProjects"
+        parameterType="long"
+        resultType="UserModalVO">
+  SELECT DISTINCT
+         da.user_code    AS userCode,
+         u.name          AS userName,
+         da.project_code  AS projectCode,
+         p.project_name  AS projectName
+    FROM documents_attachments da
+    JOIN users u
+      ON u.user_code = da.user_code
+    JOIN projects p
+      ON p.project_code = da.project_code
+   WHERE u.is_lock != 1
+     AND da.user_code IS NOT NULL
+     AND EXISTS (
+          SELECT 1
+            FROM vw_user_auth v
+           WHERE v.user_code = #{loginUserCode}
+             AND v.project_code = da.project_code
+             AND (
+                   (v.admin_ck = 'Y' AND p.status IN ('OD1','OD3'))
+                OR (v.admin_ck = 'N' AND p.status = 'OD1')
+             )
+     )
+   ORDER BY projectCode, userName
+</select>
 </mapper>
