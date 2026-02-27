@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.yedam.app.authority.AuthorityVO;
@@ -170,6 +171,27 @@ public class AuthorityApiController {
       "canDelete", canDelete,
       "isAdmin", isAdmin,
       "isAssignee", isAssignee
+    );
+  }
+  
+  @ResponseBody
+  @GetMapping("/api/authority/worklog/canCreate")
+  public Map<String, Object> canCreateWorklog(
+      @RequestParam("projectCode") Long projectCode,
+      HttpSession session
+  ) {
+    UserVO user = (UserVO) session.getAttribute("user");
+    if (user == null || user.getUserCode() == null) {
+      return Map.of("success", false, "canCreate", false, "message", "로그인 정보가 없습니다.");
+    }
+
+    Integer userCode = user.getUserCode().intValue();
+
+    boolean canCreate = authorityService.canModify(projectCode, userCode, "소요시간");
+
+    return Map.of(
+        "success", true,
+        "canCreate", canCreate
     );
   }
 }

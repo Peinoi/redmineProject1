@@ -70,6 +70,9 @@
 
     progressDesc: $("#progressDesc"),
     resolveDesc: $("#resolveDesc"),
+
+    resolveWorklogSection: $("#resolveWorklogSection"),
+    progressWorklogSection: $("#progressWorklogSection"),
   };
 
   if (!ui.form) return;
@@ -972,6 +975,40 @@
 
   const isAdminCache = new Map();
 
+  const canWorklogCache = new Map();
+
+  const fetchCanWorklog = async (projectCode) => {
+    if (!projectCode) return false;
+    if (canWorklogCache.has(projectCode))
+      return canWorklogCache.get(projectCode);
+
+    const res = await fetch(
+      `/api/authority/worklog/canCreate?projectCode=${encodeURIComponent(projectCode)}`,
+      { headers: { Accept: "application/json" } },
+    );
+
+    const data = await res.json().catch(() => ({}));
+    const ok = !!(res.ok && data?.success && data?.canCreate);
+
+    canWorklogCache.set(projectCode, ok);
+    return ok;
+  };
+
+  const toggleWorklogSection = (mode, visible) => {
+    const box =
+      mode === "progress"
+        ? ui.progressWorklogSection
+        : ui.resolveWorklogSection;
+
+    if (!box) return;
+
+    box.classList.toggle("d-none", !visible);
+
+    if (!visible) {
+      clearWorklogInputs(mode);
+    }
+  };
+
   const fetchIsAdmin = async (projectCode) => {
     if (!projectCode) return false;
     if (isAdminCache.has(projectCode)) return isAdminCache.get(projectCode);
@@ -1155,7 +1192,14 @@
       return;
     }
 
-    pendingProgress = { issueCode, projectCode, card };
+    let canWorklog = false;
+    try {
+      canWorklog = await fetchCanWorklog(projectCode);
+    } catch (e) {
+      canWorklog = false;
+    }
+
+    pendingProgress = { issueCode, projectCode, card, canWorklog };
 
     if (ui.progressModalTitle) {
       ui.progressModalTitle.textContent = card.dataset.title || "";
@@ -1166,9 +1210,11 @@
       ui.progressInput.value = String(Number.isNaN(cur) ? 0 : cur);
     }
 
-    // 소요시간 입력 초기화
     if (ui.progressHour) ui.progressHour.value = "";
     if (ui.progressMinute) ui.progressMinute.value = "";
+    if (ui.progressDesc) ui.progressDesc.value = "";
+
+    toggleWorklogSection("progress", canWorklog);
 
     progressModal.show();
   };
@@ -1179,7 +1225,7 @@
       return;
     }
 
-    const { projectCode, card, issueCode } = pendingProgress;
+    const { projectCode, card, canWorklog } = pendingProgress;
 
     let v = Number(ui.progressInput?.value);
     if (Number.isNaN(v)) v = 0;
@@ -1187,6 +1233,15 @@
     if (v < 0 || v > 90) {
       showToast("진척도는 0~90 사이로 입력해 주세요.");
       return;
+    }
+
+    let wl = null;
+    if (canWorklog) {
+      wl = readWorklogInputs("progress");
+      if (wl.error) {
+        showToast(wl.error);
+        return;
+      }
     }
 
     try {
@@ -1219,28 +1274,21 @@
 
       setProgressUI(card, v);
 
-      // worklog 저장 (조건 충족 시에만)
-      const wl = readWorklogInputs("progress");
-      if (wl.error) {
-        showToast(wl.error);
-        return;
-      }
-
-      if (wl.shouldSave) {
-        // 여기까지 오면 (시간>=1) OR (내용입력+시간>=1) 상태
+      if (canWorklog && wl?.shouldSave) {
         try {
           await postWorklog({
             issueCode: Number(card.dataset.issueCode || 0),
             spentMinutes: wl.spentMinutes,
-            description: wl.description, // 시간만 입력이면 null로 들어감
+            description: wl.description,
           });
         } catch (e) {
           showToast(e?.message || "소요시간 저장 실패");
-          // 진척도는 이미 성공했으니 중단하지 않음
         }
       }
 
-      clearWorklogInputs("progress");
+      if (canWorklog) {
+        clearWorklogInputs("progress");
+      }
 
       progressModal.hide();
       cleanupModalBackdrops();
@@ -1252,7 +1300,6 @@
       isSaving.value = false;
     }
   });
-
   // ------------------------------
   // Reject / Resolve modals
   // ------------------------------
@@ -1337,7 +1384,7 @@
 
   let pendingResolve = null;
 
-  const openResolveModal = ({
+  const openResolveModal = async ({
     item,
     fromCol,
     oldIndex,
@@ -1350,13 +1397,28 @@
       return;
     }
 
-    pendingResolve = { item, fromCol, oldIndex, issueCode, projectCode };
+    let canWorklog = false;
+    try {
+      canWorklog = await fetchCanWorklog(projectCode);
+    } catch (e) {
+      canWorklog = false;
+    }
+
+    pendingResolve = {
+      item,
+      fromCol,
+      oldIndex,
+      issueCode,
+      projectCode,
+      canWorklog,
+    };
 
     if (ui.resolveFile) ui.resolveFile.value = "";
-
-    // 소요시간 입력 초기화
     if (ui.resolveHour) ui.resolveHour.value = "";
     if (ui.resolveMinute) ui.resolveMinute.value = "";
+    if (ui.resolveDesc) ui.resolveDesc.value = "";
+
+    toggleWorklogSection("resolve", canWorklog);
 
     resolveModal.show();
   };
@@ -1377,12 +1439,21 @@
       return;
     }
 
-    const { issueCode } = pendingResolve;
+    const { issueCode, canWorklog } = pendingResolve;
 
     const file = ui.resolveFile?.files?.[0] || null;
     if (!file) {
       showToast("첨부파일을 선택해 주세요.");
       return;
+    }
+
+    let wl = null;
+    if (canWorklog) {
+      wl = readWorklogInputs("resolve");
+      if (wl.error) {
+        showToast(wl.error);
+        return;
+      }
     }
 
     try {
@@ -1411,14 +1482,7 @@
         return;
       }
 
-      // worklog 저장 (조건 충족 시에만)
-      const wl = readWorklogInputs("resolve");
-      if (wl.error) {
-        showToast(wl.error);
-        return;
-      }
-
-      if (wl.shouldSave) {
+      if (canWorklog && wl?.shouldSave) {
         try {
           await postWorklog({
             issueCode: Number(issueCode || 0),
@@ -1427,11 +1491,12 @@
           });
         } catch (e) {
           showToast(e?.message || "소요시간 저장 실패");
-          // 해결은 이미 성공했으니 중단하지 않음
         }
       }
 
-      clearWorklogInputs("resolve");
+      if (canWorklog) {
+        clearWorklogInputs("resolve");
+      }
 
       pendingResolve = null;
       resolveModal.hide();

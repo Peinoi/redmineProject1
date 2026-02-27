@@ -64,15 +64,19 @@
   box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
 }
 
-/* card / table container */
-.card.mb-4 {
+/* =========================================================
+   card / table container
+   ========================================================= */
+
+/* 이 화면 전용 카드 */
+.worklog-list-card {
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible !important;
   border: 1px solid #e5e7eb;
   background: #ffffff;
 }
 
-.card-header {
+.worklog-list-card .card-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -83,19 +87,20 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* worklog에는 dropdown 없지만 테이블/모달 겹침 대비 */
-.card {
-  overflow: visible;
-}
-
-.card-body {
+.worklog-list-card .card-body {
   padding: 0;
-  overflow: visible;
+  overflow: visible !important;
 }
 
-.table-responsive {
+.worklog-list-card .table-responsive {
   overflow-x: auto;
   overflow-y: visible !important;
+}
+
+/* dropdown 기준 요소도 열어두기 */
+.worklog-list-card .worklog-actions,
+.worklog-list-card .worklog-dropdown {
+  position: static;
 }
 
 /* table */
@@ -427,4 +432,80 @@
 /* 아이콘도 탭 톤에 맞게 */
 .card-header .nav-tabs .nav-link i {
   opacity: 0.9;
+}
+
+/* =========================================================
+   Worklog dropdown menu
+   ========================================================= */
+
+.worklog-actions {
+  white-space: nowrap;
+}
+
+.worklog-menu-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.worklog-menu-btn:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+  box-shadow: 0 6px 18px rgba(17, 24, 39, 0.08);
+}
+
+.worklog-menu-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08);
+}
+
+.worklog-dropdown-menu {
+  min-width: 140px;
+  border-radius: 14px;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  padding: 8px;
+  box-shadow: 0 20px 50px rgba(17, 24, 39, 0.18);
+}
+
+.worklog-dropdown-menu .dropdown-item {
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  transition: background-color 0.12s ease;
+}
+
+.worklog-dropdown-menu .dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.worklog-dropdown-menu .dropdown-item:active {
+  background: #e5e7eb;
+}
+
+.worklog-dropdown-menu .dropdown-item.text-danger {
+  color: #dc3545 !important;
+}
+
+.worklog-dropdown-menu .dropdown-item.text-danger:hover {
+  background: #fff5f5;
+}
+
+.worklog-dropdown-menu .dropdown-divider {
+  margin: 8px 6px;
+  opacity: 0.4;
 }

@@ -49,15 +49,19 @@
   min-width: 210px;
 }
 
-/* card / table container */
-.card.mb-4 {
+/* =========================================================
+   card / table container
+   ========================================================= */
+
+/* 이 화면 전용 카드 */
+.issue-list-card {
   border-radius: 12px;
-  overflow: hidden;
+  overflow: visible !important;
   border: 1px solid #e5e7eb;
   background: #ffffff;
 }
 
-.card-header {
+.issue-list-card .card-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -68,19 +72,20 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* dropdown을 body로 떼서 fixed로 띄우기 때문에 overflow visible */
-.card {
-  overflow: visible;
-}
-
-.card-body {
+.issue-list-card .card-body {
   padding: 0;
-  overflow: visible;
+  overflow: visible !important;
 }
 
-.table-responsive {
+.issue-list-card .table-responsive {
   overflow-x: auto;
   overflow-y: visible !important;
+}
+
+/* dropdown 기준 요소들도 잘리지 않게 */
+.issue-list-card .issue-actions,
+.issue-list-card .issue-dropdown {
+  position: static;
 }
 
 /* table */
@@ -211,11 +216,9 @@
   font-size: 14px;
   border-bottom: 1px solid #e5e7eb;
   cursor: pointer;
-
   display: flex;
   align-items: center;
   gap: 8px;
-
   transition: background-color 0.15s ease;
 }
 
@@ -302,24 +305,18 @@
 #projectSelectModal #projectModalList > button.list-group-item-action {
   width: 100%;
   text-align: left;
-
   border: 1px solid #e5e7eb !important;
   border-radius: 10px !important;
-
   background: rgb(224, 229, 243) !important;
   color: #111827 !important;
-
   font-weight: 800;
   font-size: 14px;
-
   padding: 10px 14px !important;
   margin-bottom: 10px !important;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-
   box-shadow: none !important;
 }
 
@@ -351,7 +348,6 @@
 
 .issue-actions {
   white-space: nowrap;
-  position: relative;
 }
 
 .issue-menu-btn {
@@ -429,7 +425,7 @@
   margin-left: auto;
 }
 
-/* submenu show/hide (JS가 class show 제어) */
+/* submenu show/hide */
 .issue-submenu-menu {
   display: none;
   visibility: hidden;
@@ -440,7 +436,7 @@
   visibility: visible !important;
 }
 
-/* 행 높이/패딩 슬림하게 */
+/* 행 높이/패딩 */
 #issueTable thead th {
   padding: 10px 10px;
 }
@@ -449,7 +445,6 @@
   padding: 8px 10px;
 }
 
-/* 드롭다운 메뉴 아이템도 너무 두꺼우면 */
 .issue-dropdown-menu .dropdown-item,
 .issue-submenu-menu .dropdown-item {
   padding: 7px 10px;
