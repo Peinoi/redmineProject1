@@ -39,7 +39,7 @@
             u.email
         FROM group_member gm
         JOIN users u ON gm.user_code = u.user_code
-        WHERE gm.gr_code = #{groupCode} AND u.is_lock = 'Y'
+        WHERE gm.gr_code = #{groupCode} AND u.is_lock = 0
         ORDER BY gm.gr_mem_code
     </select>
 
