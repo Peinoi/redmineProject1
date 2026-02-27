@@ -1,42 +1,100 @@
+/* =========================
+   Fixed Project - FINAL (방법 B)
+   - Desktop: 한 줄 유지
+   - ≤992px: 라벨 숨김 + 뱃지 축소
+   - ≤768px: 전체 숨김
+   ========================= */
+
+/* 랩 */
+.fixed-project-wrap{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;          /* 말줄임 안전 */
+  flex: 0 1 auto;       /* 줄어들 수 있게 */
+  max-width: 480px;     /* 너무 커지지 않게 제한 */
+}
+
+/* 라벨 */
+.fixed-project-label{
+  color: rgba(255,255,255,0.85);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-left: 0;
+}
+
+/* 배지 */
 .fixed-project-badge{
   display:flex;
   align-items:center;
   gap:8px;
 
-  max-width: 240px;
-  padding: 6px 10px;
+  min-width:0;
+  max-width:240px;
+  padding:6px 10px;
 
-  border: 1px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.10);
-  border-radius: 10px;
+  border:1px solid rgba(255,255,255,0.25);
+  background:rgba(255,255,255,0.10);
+  border-radius:10px;
 }
 
+/* 프로젝트명 */
 .fixed-project-name{
   color:#fff;
-  font-size: 12px;
-  font-weight: 800;
+  font-size:12px;
+  font-weight:800;
 
   overflow:hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0;
 }
 
+/* 닫기 버튼 */
 .fixed-project-close{
-  width: 18px;
-  height: 18px;
-  line-height: 16px;
-  padding: 0;
+  width:18px;
+  height:18px;
+  line-height:16px;
+  padding:0;
 
-  border: 0;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.18);
-  color: #fff;
+  border:0;
+  border-radius:6px;
+  background:rgba(255,255,255,0.18);
+  color:#fff;
 
-  font-weight: 900;
-  cursor: pointer;
+  font-weight:900;
+  cursor:pointer;
+}
+.fixed-project-close:hover{
+  background:rgba(255,255,255,0.28);
 }
 
-.fixed-project-close:hover{
-  background: rgba(255,255,255,0.28);
+/* =========================
+   Tablet (≤ 992px)
+   - 라벨 숨김
+   - 뱃지 폭 축소
+   ========================= */
+@media (max-width: 800px){
+  .fixed-project-label{
+    display:none;
+  }
+
+  .fixed-project-badge{
+    max-width:160px;
+  }
+
+  .fixed-project-wrap{
+    max-width:200px;
+  }
+}
+
+/* =========================
+   Mobile (≤ 768px)
+   - 전체 숨김 (겹침 방지)
+   ========================= */
+@media (max-width: 580px){
+  .fixed-project-wrap{
+    display:none;
+  }
 }

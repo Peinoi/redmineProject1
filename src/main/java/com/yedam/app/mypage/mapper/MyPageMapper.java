@@ -1,3 +1,6 @@
+// ================================
+// 1) MyPageMapper.java (완성본)
+// ================================
 package com.yedam.app.mypage.mapper;
 
 import java.util.Date;
@@ -19,71 +22,67 @@ public interface MyPageMapper {
 
 	// 블록 CRUD
 	List<BlockVO> selectBlocks(Integer userCode);
-	
+
 	int insertBlock(BlockVO vo);
-	
+
 	int deleteBlock(@Param("blockCode") Integer blockCode, @Param("userCode") Integer userCode);
-	
-	int updateBlockPosition(@Param("blockCode") Integer blockCode,
-            @Param("userCode") Integer userCode,
-            @Param("position") Integer position);
-	
-	// 블록 데이터
-	List<MyIssueRowDTO> selectAssignedIssues(@Param("userCode") Integer userCode, @Param("limit") int limit);
-	
-	List<MyIssueRowDTO> selectRegisteredIssues(@Param("userCode") Integer userCode, @Param("limit") int limit);
 
-	List<MyNoticeDTO> selectRecentNotices(@Param("userCode") Integer userCode, @Param("limit") int limit);
+	int updateBlockPosition(@Param("blockCode") Integer blockCode, @Param("userCode") Integer userCode,
+			@Param("position") Integer position);
 
-	List<WeekIssueDTO> selectWeekCalendarIssues(@Param("userCode") Integer userCode,
-	                                              @Param("from") Date from,
-	                                              @Param("to") Date to);
+	// =========================
+	// ME 모드 (권한필터 적용)
+	// - isSys=true면 readableProjectCodes 무시(필터 안 함)
+	// - isSys=false면 readableProjectCodes 필수(없으면 1=0)
+	// =========================
+	List<MyIssueRowDTO> selectAssignedIssues(@Param("userCode") Integer userCode, @Param("limit") int limit,
+			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes,
+			@Param("editableProjectCodes") List<Integer> editableProjectCodes);
 
-	List<UserWorkLogVO> selectWorkLogs(@Param("userCode") Integer userCode,
-	                                     @Param("from") Date from,
-	                                     @Param("to") Date to);
-	
-	List<WeekGanttIssueDTO> selectWeekGanttIssues(@Param("userCode") Integer userCode,
-            @Param("from") Date from,
-            @Param("to") Date to);
+	List<MyIssueRowDTO> selectRegisteredIssues(@Param("userCode") Integer userCode, @Param("limit") int limit,
+			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes,
+			@Param("editableProjectCodes") List<Integer> editableProjectCodes);
 
+	List<MyNoticeDTO> selectRecentNotices(@Param("userCode") Integer userCode, @Param("limit") int limit,
+			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes);
+
+	List<WeekIssueDTO> selectWeekCalendarIssues(@Param("userCode") Integer userCode, @Param("from") Date from,
+			@Param("to") Date to, @Param("isSys") boolean isSys,
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+
+	List<UserWorkLogVO> selectWorkLogs(@Param("userCode") Integer userCode, @Param("from") Date from,
+			@Param("to") Date to, @Param("isSys") boolean isSys,
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+
+	List<WeekGanttIssueDTO> selectWeekGanttIssues(@Param("userCode") Integer userCode, @Param("from") Date from,
+			@Param("to") Date to, @Param("isSys") boolean isSys,
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+
+	// =========================
+	// ADMIN 모드 (프로젝트 1개 대상으로)
+	// =========================
 	List<AssigneeIssStaVO> selectAdminAssigneeIssSta(@Param("projectCode") Integer projectCode);
-	
+
 	List<CreatorIssStaVO> selectAdminCreatorIssSta(@Param("projectCode") Integer projectCode);
-	
-	List<Integer> selectAdminProjectCodes(@Param("userCode") Integer userCode);
-	
+
 	String selectProjectName(@Param("projectCode") Integer projectCode);
-	
-	// ✅ ADMIN 모드: 특정 프로젝트 공지
+
 	List<MyNoticeDTO> selectRecentNoticesByProject(@Param("projectCode") Integer projectCode,
-	                                               @Param("limit") int limit);
+			@Param("limit") int limit);
 
-	// ✅ ADMIN 모드: 특정 프로젝트 주간 간트(할당/등록 플래그는 userCode 기준)
 	List<WeekGanttIssueDTO> selectWeekGanttIssuesByProject(@Param("userCode") Integer userCode,
-	                                                       @Param("projectCode") Integer projectCode,
-	                                                       @Param("from") Date from,
-	                                                       @Param("to") Date to);
+			@Param("projectCode") Integer projectCode, @Param("from") Date from, @Param("to") Date to);
 
-	// ✅ ADMIN 모드: 특정 프로젝트 작업내역(로그)
-	List<UserWorkLogVO> selectProjectWorkLogs(@Param("projectCode") Integer projectCode,
-	                                          @Param("from") Date from,
-	                                          @Param("to") Date to);
-	
-	// 관리자 프로젝트 목록(코드+이름)
-	List<AdminProjectOptionDTO> selectAdminProjects(@Param("userCode") Integer userCode);
-	
-	// ✅ ADMIN 드릴다운: 프로젝트 + 담당자(할당)
-	List<MyIssueRowDTO> selectAssignedIssuesByProjectAndAssignee(
-	    @Param("projectCode") Integer projectCode,
-	    @Param("assigneeCode") Integer assigneeCode,
-	    @Param("limit") int limit
-	);
+	List<UserWorkLogVO> selectProjectWorkLogs(@Param("projectCode") Integer projectCode, @Param("from") Date from,
+			@Param("to") Date to);
 
-	// ✅ ADMIN 드릴다운: 프로젝트 + 등록자(등록)
-	List<MyIssueRowDTO> selectRegisteredIssuesByProjectAndCreator(
-	    @Param("projectCode") Integer projectCode,
-	    @Param("creatorCode") Integer creatorCode,
-	    @Param("limit") int limit
-	);
+	// ✅ ADMIN 드릴다운
+	List<MyIssueRowDTO> selectAssignedIssuesByProjectAndAssignee(@Param("projectCode") Integer projectCode,
+			@Param("assigneeCode") Integer assigneeCode, @Param("limit") int limit);
+
+	List<MyIssueRowDTO> selectRegisteredIssuesByProjectAndCreator(@Param("projectCode") Integer projectCode,
+			@Param("creatorCode") Integer creatorCode, @Param("limit") int limit);
+
+	// ✅ Authz.adminProjects(Set) 기반으로 코드+이름만 조회
+	List<AdminProjectOptionDTO> selectProjectOptionsByCodes(@Param("codes") List<Integer> codes);
 }

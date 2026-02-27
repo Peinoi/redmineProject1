@@ -15,4 +15,6 @@ public class MyIssueRowDTO {
 	  private Date dueAt;
 	  private Date updatedAt;
 	  private Integer progress; // 0~100
+	  
+	  private String canEdit; // 'Y' or 'N'
 }

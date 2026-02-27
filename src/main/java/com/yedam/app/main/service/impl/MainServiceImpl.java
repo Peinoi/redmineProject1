@@ -3,7 +3,9 @@ package com.yedam.app.main.service.impl;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 
@@ -116,6 +118,20 @@ public class MainServiceImpl implements MainService{
 	public boolean removeMemo(Integer userCode, String date) {
 	  if (date == null || date.isBlank()) return false;
 	  return mainMapper.deleteMemo(userCode, date) > 0;
+	}
+
+	@Override
+	public int findTodayProgressRate(Integer userCode, Set<Integer> readableProjects) {
+	    if (readableProjects == null || readableProjects.isEmpty()) return 0;
+	    return mainMapper.selectTodayProgressRateByProjects(userCode, new ArrayList<>(readableProjects));
+	}
+	
+	@Override
+	public List<MainProjectStatusVO> findCodeNameCntByProjects(Set<Integer> readableProjects, Set<Integer> adminProjects) {
+	    if (readableProjects == null || readableProjects.isEmpty()) return List.of();
+	    List<Integer> readable = new ArrayList<>(readableProjects);
+	    List<Integer> admin    = (adminProjects == null ? List.of() : new ArrayList<>(adminProjects));
+	    return mainMapper.selectCodeNameCntByProjects2(readable, admin);
 	}
 	
 }

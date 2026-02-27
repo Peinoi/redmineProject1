@@ -38,42 +38,36 @@ public interface MainMapper {
 	public List<MyTopIssueVO> selectMyTopIssues(Integer projectCode, Integer userCode);
 
 	public List<MyNoticeDTO> selectRecentNoticesForMain(@Param("userCode") Integer userCode, @Param("limit") int limit);
-	
-	public List<PickedIssueDTO> selectPickedIssues(
-			  @Param("projectCode") Integer projectCode,
-			  @Param("assigneeCode") Integer assigneeCode,
-			  @Param("statusId") String statusId,
-			  @Param("userCode") Integer userCode,
-			  @Param("limit") int limit,
-			  @Param("isAdmin") String isAdmin
-			);
-	
+
+	public List<PickedIssueDTO> selectPickedIssues(@Param("projectCode") Integer projectCode,
+			@Param("assigneeCode") Integer assigneeCode, @Param("statusId") String statusId,
+			@Param("userCode") Integer userCode, @Param("limit") int limit, @Param("isAdmin") String isAdmin);
+
 	// 프로젝트명 조회
 	public String selectProjectName(Integer projectCode);
-	
+
 	// ✅ 월 메모 조회(캘린더 점/툴팁용)
-	  List<MainMemoDTO> selectMemosByMonth(
-	      @Param("userCode") Integer userCode,
-	      @Param("fromDate") String fromDate, // "YYYY-MM-DD"
-	      @Param("toDate") String toDate      // "YYYY-MM-DD" (exclusive)
-	  );
+	List<MainMemoDTO> selectMemosByMonth(@Param("userCode") Integer userCode, @Param("fromDate") String fromDate, // "YYYY-MM-DD"
+			@Param("toDate") String toDate // "YYYY-MM-DD" (exclusive)
+	);
 
-	  // ✅ 하루 메모 조회(모달 열 때)
-	  MainMemoDTO selectMemoByDate(
-	      @Param("userCode") Integer userCode,
-	      @Param("memoDate") String memoDate  // "YYYY-MM-DD"
-	  );
+	// ✅ 하루 메모 조회(모달 열 때)
+	MainMemoDTO selectMemoByDate(@Param("userCode") Integer userCode, @Param("memoDate") String memoDate // "YYYY-MM-DD"
+	);
 
-	  // ✅ 저장(업서트: 있으면 update, 없으면 insert)
-	  int upsertMemo(
-	      @Param("userCode") Integer userCode,
-	      @Param("memoDate") String memoDate, // "YYYY-MM-DD"
-	      @Param("content") String content
-	  );
+	// ✅ 저장(업서트: 있으면 update, 없으면 insert)
+	int upsertMemo(@Param("userCode") Integer userCode, @Param("memoDate") String memoDate, // "YYYY-MM-DD"
+			@Param("content") String content);
 
-	  // ✅ 삭제
-	  int deleteMemo(
-	      @Param("userCode") Integer userCode,
-	      @Param("memoDate") String memoDate  // "YYYY-MM-DD"
-	  );
+	// ✅ 삭제
+	int deleteMemo(@Param("userCode") Integer userCode, @Param("memoDate") String memoDate // "YYYY-MM-DD"
+	);
+
+	int selectTodayProgressRateByProjects(@Param("userCode") Integer userCode,
+			@Param("projectCodes") List<Integer> projectCodes);
+	
+	List<MainProjectStatusVO> selectCodeNameCntByProjects2(
+		    @Param("readableProjectCodes") List<Integer> readableProjectCodes,
+		    @Param("adminProjectCodes") List<Integer> adminProjectCodes
+		);
 }

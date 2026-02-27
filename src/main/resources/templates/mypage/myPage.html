@@ -134,7 +134,8 @@
 										<td class="text-truncate td-proj" th:text="${iss.projectName}">프로젝트</td>
 										<td class="text-truncate td-title" th:text="${iss.title}">이슈</td>
 										<td th:text="${iss.statusName}">진행</td>
-										<td class="text-end"><a class="icon-link"
+										<td class="text-end"><a th:if="${iss.canEdit == 'Y'}"
+											class="icon-link"
 											th:href="@{/issueEdit(issueCode=${iss.issueCode})}"
 											title="편집"> <i class="fas fa-pen"></i>
 										</a></td>
@@ -231,7 +232,8 @@
 										<td class="text-truncate td-proj" th:text="${iss.projectName}">프로젝트</td>
 										<td class="text-truncate td-title" th:text="${iss.title}">이슈</td>
 										<td th:text="${iss.statusName}">신규</td>
-										<td class="text-end"><a class="icon-link"
+										<td class="text-end"><a th:if="${iss.canEdit == 'Y'}"
+											class="icon-link"
 											th:href="@{/issueEdit(issueCode=${iss.issueCode})}"
 											title="편집"> <i class="fas fa-pen"></i>
 										</a></td>
@@ -508,8 +510,7 @@
 								class="list-group-item d-flex align-items-center gap-2">
 								<input class="form-check-input add-block-chk" type="checkbox"
 								th:attr="data-type=${ab.type}"> <span
-								class="add-block-label"
-								th:text="${ab.label}">블록</span>
+								class="add-block-label" th:text="${ab.label}">블록</span>
 							</label>
 
 						</div>

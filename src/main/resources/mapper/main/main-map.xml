@@ -393,4 +393,55 @@
     	AND memo_date = TRUNC(TO_DATE(#{memoDate}, 'YYYY-MM-DD'))
   	]]>
 	</delete>
+	
+	<!-- 전체 진행률: 권한 프로젝트만 대상으로 가중 평균 -->
+	<select id="selectTodayProgressRateByProjects" resultType="Integer">
+<![CDATA[
+  SELECT NVL(
+           ROUND(SUM(v.plan * v.actual_prog) / NULLIF(SUM(v.plan), 0), 0),
+           0
+         ) AS total_actual_prog
+  FROM VW_PROJECT_PROGRESS v
+  JOIN projects p
+    ON p.project_code = v.project_code
+   AND p.status = 'OD1'
+  WHERE v.project_code IN
+]]>
+    <foreach collection="projectCodes" item="pc" open="(" separator="," close=")">
+      #{pc}
+    </foreach>
+	</select>
+	
+	<!-- 도넛차트: readable 프로젝트만 대상으로,
+     admin 아닌 프로젝트는 OD1만, admin 프로젝트는 OD1/OD2 표시 -->
+<select id="selectCodeNameCntByProjects2" resultType="MainProjectStatusVO">
+  SELECT
+      cc.code_name AS codeName,
+      COUNT(*)     AS codeNameCnt
+  FROM projects p
+  JOIN common_code cc
+    ON cc.code_id = p.status
+  WHERE p.project_code IN
+    <foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
+      #{pc}
+    </foreach>
+
+    -- ✅ 삭제 제외(네 코드 기준)
+    AND p.status != 'OD2'
+
+    -- ✅ admin 아닌 프로젝트는 진행중만(OD1)
+    -- ✅ admin 프로젝트는 종료(OD2)도 포함
+    AND (
+          p.status = 'OD1'
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+            OR p.project_code IN
+              <foreach collection="adminProjectCodes" item="apc" open="(" separator="," close=")">
+                #{apc}
+              </foreach>
+          </if>
+        )
+
+  GROUP BY cc.code_name
+  ORDER BY cc.code_name
+</select>
 </mapper>

@@ -39,8 +39,8 @@ public class UserPageServiceImpl implements UserPageService {
 
 	// 일감현황: 내가 등록한 일감, 내가 담당자인 일감
 	@Override
-	public UserDualIssueStaVO getIssueSummaryDual(Integer userCode) {
-		UserDualIssueStaVO vo = userPageMapper.selectUserIssueSummaryDual(userCode);
+	public UserDualIssueStaVO getIssueSummaryDual(Integer userCode, List<Integer> readableProjectCodes) {
+		UserDualIssueStaVO vo = userPageMapper.selectUserIssueSummaryDual(userCode, readableProjectCodes);
 		if (vo == null)
 			vo = new UserDualIssueStaVO();
 
@@ -72,7 +72,8 @@ public class UserPageServiceImpl implements UserPageService {
 
 	// 작업현황(활동 로그)
 	@Override
-	public Map<String, List<WorkLogViewDTO>> getWorkLogsForView(Integer userCode, String actorName, int days) {
+	public Map<String, List<WorkLogViewDTO>> getWorkLogsForView(Integer userCode, String actorName, int days,
+			List<Integer> readableProjectCodes) {
 
 		// 한국 시간 기준
 		ZoneId zone = ZoneId.of("Asia/Seoul");
@@ -88,7 +89,7 @@ public class UserPageServiceImpl implements UserPageService {
 		Date from = Date.from(fromZdt.toInstant());
 		Date to = Date.from(now.toInstant());
 
-		List<UserWorkLogVO> logs = userPageMapper.selectWorkLogs(userCode, from, to);
+		List<UserWorkLogVO> logs = userPageMapper.selectWorkLogs(userCode, from, to, readableProjectCodes);
 
 		SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
 		SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");

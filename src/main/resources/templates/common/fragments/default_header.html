@@ -2,24 +2,29 @@
 	class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
 	<!-- Navbar Brand-->
 	<a class="navbar-brand ps-3" href="/G2main"
-		style="display: inline-block; width: 200px; height: 50px; overflow: hidden;">
+		style="display: inline-block; width: 200px; height: 50px; overflow: hidden; margin-right: 20px">
 		<img th:src="@{/images/LOGO.png}"
 		style="width: 100%; height: 100%; object-fit: contain; display: block;"
 		alt="로고 이미지">
 	</a>
-	<!-- 오른쪽 영역 -->
-	<div class="ms-auto d-flex align-items-center me-3 me-lg-4 ">
 
-		<!-- 고정 프로젝트 박스 (세션에 있을 때만 표시) 나중에 fixedProjectName 변경-->
-		<div th:if="${session.currentProject?.projectName != null}" 
-			class="fixed-project-badge me-2" title="현재 고정 프로젝트">
+	<!-- ✅ 로고 오른쪽(좌측 영역)에 고정 프로젝트 -->
+	<div th:if="${session.currentProject?.projectName != null}"
+		class="fixed-project-wrap ms-2" title="현재 고정 프로젝트">
 
+		<span class="fixed-project-label">현재 고정 프로젝트:</span>
+
+		<div class="fixed-project-badge">
 			<span class="fixed-project-name"
 				th:text="${session.currentProject?.projectName}">프로젝트명</span>
 
 			<button type="button" class="fixed-project-close"
 				id="btnClearFixedProject" aria-label="프로젝트 고정 해제" title="고정 해제">×</button>
 		</div>
+	</div>
+
+	<!-- 오른쪽 영역 -->
+	<div class="ms-auto d-flex align-items-center me-3 me-lg-4 ">
 
 		<!-- 로그인 사용자 표시 -->
 		<span class="text-white me-2"

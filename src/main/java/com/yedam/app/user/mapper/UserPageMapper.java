@@ -12,9 +12,8 @@ public interface UserPageMapper {
 	UserVO selectUserProfile(Integer userCode);
 
 	// 일감현황: 내가 등록한 일감, 내가 담당자인 일감
-	UserDualIssueStaVO selectUserIssueSummaryDual(Integer userCode);
+	UserDualIssueStaVO selectUserIssueSummaryDual(Integer userCode, List<Integer> readableProjectCodes);
 
 	// 작업현황(활동 로그)
-	List<UserWorkLogVO> selectWorkLogs(Integer userCode, Date from, Date to
-	);
+	List<UserWorkLogVO> selectWorkLogs(Integer userCode, Date from, Date to, List<Integer> readableProjectCodes);
 }

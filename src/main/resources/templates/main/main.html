@@ -377,6 +377,12 @@
 
 	<th:block layout:fragment="pageScript">
 		<script src="https://www.gstatic.com/charts/loader.js"></script>
+		<script th:inline="javascript">
+			const userAuth = /*[[${session.userAuth}]]*/null;
+			const user = /*[[${session.user}]]*/null;
+			console.log("session.userAuth =", userAuth);
+			console.log("session.user =", user);
+		</script>
 		<script th:src="@{/js/main/main.js}"></script>
 	</th:block>
 

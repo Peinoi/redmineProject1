@@ -1,556 +1,553 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.yedam.app.mypage.mapper.MyPageMapper">
-	<!-- =============== 블록 =============== -->
-	<!-- 블록 조회 -->
-	<select id="selectBlocks" resultType="BlockVO">
-		SELECT
-		block_code AS blockCode,
-		user_code AS userCode,
-		block_type AS blockType,
-		position AS position
-		FROM blocks
-		WHERE user_code = #{userCode}
-		ORDER BY position ASC, block_code ASC
-	</select>
 
-	<!-- 블록 추가 -->
-	<insert id="insertBlock" parameterType="BlockVO">
-		INSERT INTO blocks(block_code, user_code, block_type, position)
-		VALUES (
-		(SELECT NVL(MAX(block_code), 0) + 1 FROM blocks),
-		#{userCode},
-		#{blockType},
-		#{position}
-		)
-	</insert>
+  <!-- =============== 블록 =============== -->
+  <select id="selectBlocks" resultType="BlockVO">
+    SELECT
+      block_code AS blockCode,
+      user_code  AS userCode,
+      block_type AS blockType,
+      position   AS position
+    FROM blocks
+    WHERE user_code = #{userCode}
+    ORDER BY position ASC, block_code ASC
+  </select>
 
-	<!-- 블록 삭제 -->
-	<delete id="deleteBlock">
-		DELETE FROM blocks
-		WHERE block_code = #{blockCode}
-		AND user_code = #{userCode}
-	</delete>
+  <insert id="insertBlock" parameterType="BlockVO">
+    INSERT INTO blocks(block_code, user_code, block_type, position)
+    VALUES (
+      (SELECT NVL(MAX(block_code), 0) + 1 FROM blocks),
+      #{userCode},
+      #{blockType},
+      #{position}
+    )
+  </insert>
 
-	<!-- 블록 위치 수정 -->
-	<update id="updateBlockPosition">
-		UPDATE blocks
-		SET position = #{position}
-		WHERE block_code = #{blockCode}
-		AND user_code = #{userCode}
-	</update>
+  <delete id="deleteBlock">
+    DELETE FROM blocks
+    WHERE block_code = #{blockCode}
+      AND user_code  = #{userCode}
+  </delete>
 
-	<!-- =============== 할당된 일감 =============== -->
-	<select id="selectAssignedIssues" resultType="MyIssueRowDTO">
-		SELECT *
-		FROM (
-		SELECT
-		i.issue_code AS issueCode,
-		i.project_code AS projectCode,
-		p.project_name AS projectName,
-		i.title AS title,
-		cc.code_name AS statusName,
-		i.due_at AS dueAt,
-		i.updated_at AS updatedAt
-		FROM projects p
-		JOIN (
-		SELECT pru.project_code
-		FROM project_role_user pru
-		WHERE pru.user_code = #{userCode}
+  <update id="updateBlockPosition">
+    UPDATE blocks
+    SET position = #{position}
+    WHERE block_code = #{blockCode}
+      AND user_code  = #{userCode}
+  </update>
 
-		UNION
+  <!-- =========================================================
+       공통: ME 권한필터
+       - isSys=true  : 필터 없음
+       - isSys=false : readableProjectCodes IN (...) 필수, 없으면 1=0
+       ========================================================= -->
+  <sql id="ME_READABLE_FILTER">
+    <if test="isSys == false">
+      <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+        AND p.project_code IN
+        <foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
+          #{pc}
+        </foreach>
+      </if>
+      <if test="readableProjectCodes == null or readableProjectCodes.size() == 0">
+        AND 1=0
+      </if>
+    </if>
+  </sql>
 
-		SELECT gpr.project_code
-		FROM "GROUP_MEMBER" gm
-		JOIN "GR_PRO_ROLE" gpr
-		ON gpr.gr_code = gm.gr_code
-		WHERE gm.user_code = #{userCode}
-		) up ON up.project_code = p.project_code
+  <!-- =============== 할당된 일감 (ME) =============== -->
+  <select id="selectAssignedIssues" resultType="MyIssueRowDTO">
+    SELECT *
+    FROM (
+      SELECT
+        i.issue_code   AS issueCode,
+        i.project_code AS projectCode,
+        p.project_name AS projectName,
+        i.title        AS title,
+        cc.code_name   AS statusName,
+        i.due_at       AS dueAt,
+        i.updated_at   AS updatedAt,
+        <include refid="ME_EDITABLE_FLAG"/> AS canEdit
+      FROM projects p
+      JOIN (
+        SELECT pru.project_code
+        FROM project_role_user pru
+        WHERE pru.user_code = #{userCode}
+        UNION
+        SELECT gpr.project_code
+        FROM "GROUP_MEMBER" gm
+        JOIN "GR_PRO_ROLE" gpr
+          ON gpr.gr_code = gm.gr_code
+        WHERE gm.user_code = #{userCode}
+      ) up
+        ON up.project_code = p.project_code
+      JOIN issues i
+        ON i.project_code = p.project_code
+      LEFT JOIN status st
+        ON st.status_code = i.status_code
+      LEFT JOIN common_code cc
+        ON cc.code_id = st.code_id
+       AND cc.group_code = 'OB'
+      WHERE p.status = 'OD1'
+        AND i.assignee_code = #{userCode}
 
-		JOIN issues i
-		ON i.project_code = p.project_code
+        <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_ISSUE rdRol) -->
+        <include refid="ME_READABLE_FILTER"/>
 
-		LEFT JOIN status st
-		ON st.status_code = i.status_code
+      ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-		LEFT JOIN common_code cc
-		ON cc.code_id = st.code_id /* OB1~OB5 */
-		AND cc.group_code = 'OB'
+  <!-- =============== 등록한 일감 (ME) =============== -->
+  <select id="selectRegisteredIssues" resultType="MyIssueRowDTO">
+    SELECT *
+    FROM (
+      SELECT
+        i.issue_code   AS issueCode,
+        i.project_code AS projectCode,
+        p.project_name AS projectName,
+        i.title        AS title,
+        cc.code_name   AS statusName,
+        i.due_at       AS dueAt,
+        i.updated_at   AS updatedAt,
+        <include refid="ME_EDITABLE_FLAG"/> AS canEdit
+      FROM projects p
+      JOIN (
+        SELECT pru.project_code
+        FROM project_role_user pru
+        WHERE pru.user_code = #{userCode}
+        UNION
+        SELECT gpr.project_code
+        FROM "GROUP_MEMBER" gm
+        JOIN "GR_PRO_ROLE" gpr
+          ON gpr.gr_code = gm.gr_code
+        WHERE gm.user_code = #{userCode}
+      ) up
+        ON up.project_code = p.project_code
+      JOIN issues i
+        ON i.project_code = p.project_code
+      LEFT JOIN status st
+        ON st.status_code = i.status_code
+      LEFT JOIN common_code cc
+        ON cc.code_id = st.code_id
+       AND cc.group_code = 'OB'
+      WHERE p.status = 'OD1'
+        AND i.created_by_code = #{userCode}
 
-		WHERE p.status = 'OD1'
-		AND i.assignee_code = #{userCode}
+        <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_ISSUE rdRol) -->
+        <include refid="ME_READABLE_FILTER"/>
 
-		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
-		)
-		WHERE ROWNUM <![CDATA[ <= ]]>
-		#{limit}
-	</select>
+      ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-	<!-- =============== 등록한 일감 =============== -->
-	<select id="selectRegisteredIssues" resultType="MyIssueRowDTO">
-		SELECT *
-		FROM (
-		SELECT
-		i.issue_code AS issueCode,
-		i.project_code AS projectCode,
-		p.project_name AS projectName,
-		i.title AS title,
-		cc.code_name AS statusName,
-		i.due_at AS dueAt,
-		i.updated_at AS updatedAt
-		FROM projects p
-		JOIN (
-		SELECT pru.project_code
-		FROM project_role_user pru
-		WHERE pru.user_code = #{userCode}
+  <!-- ======================= 최근공지 (ME) ======================= -->
+  <select id="selectRecentNotices" resultType="MyNoticeDTO">
+    SELECT *
+    FROM (
+      SELECT
+        n.notice_code  AS noticeCode,
+        n.project_code AS projectCode,
+        p.project_name AS projectName,
+        n.title        AS title,
+        n.created_at   AS createdAt
+      FROM projects p
+      JOIN (
+        SELECT pru.project_code
+        FROM project_role_user pru
+        WHERE pru.user_code = #{userCode}
+        UNION
+        SELECT gpr.project_code
+        FROM "GROUP_MEMBER" gm
+        JOIN "GR_PRO_ROLE" gpr
+          ON gpr.gr_code = gm.gr_code
+        WHERE gm.user_code = #{userCode}
+      ) up
+        ON up.project_code = p.project_code
+      JOIN notices n
+        ON n.project_code = p.project_code
+      WHERE p.status = 'OD1'
 
-		UNION
+        <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_NOTICE rdRol) -->
+        <include refid="ME_READABLE_FILTER"/>
 
-		SELECT gpr.project_code
-		FROM "GROUP_MEMBER" gm
-		JOIN "GR_PRO_ROLE" gpr
-		ON gpr.gr_code = gm.gr_code
-		WHERE gm.user_code = #{userCode}
-		) up ON up.project_code = p.project_code
+      ORDER BY n.created_at DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-		JOIN issues i
-		ON i.project_code = p.project_code
+  <!-- ======================= 주간 달력 (ME, due_at 기준) ======================= -->
+  <select id="selectWeekCalendarIssues" resultType="com.yedam.app.mypage.service.WeekIssueDTO">
+    SELECT
+      TO_CHAR(i.due_at, 'yyyy-mm-dd') AS day,
+      i.issue_code   AS issueCode,
+      i.project_code AS projectCode,
+      p.project_name AS projectName,
+      i.title        AS title,
+      i.due_at       AS dueAt
+    FROM projects p
+    JOIN (
+      SELECT pru.project_code
+      FROM project_role_user pru
+      WHERE pru.user_code = #{userCode}
+      UNION
+      SELECT gpr.project_code
+      FROM "GROUP_MEMBER" gm
+      JOIN "GR_PRO_ROLE" gpr
+        ON gpr.gr_code = gm.gr_code
+      WHERE gm.user_code = #{userCode}
+    ) up
+      ON up.project_code = p.project_code
+    JOIN issues i
+      ON i.project_code = p.project_code
+    WHERE p.status = 'OD1'
+      AND i.due_at IS NOT NULL
+      AND i.due_at <![CDATA[ >= ]]> #{from}
+      AND i.due_at <![CDATA[ <  ]]> #{to}
 
-		LEFT JOIN status st
-		ON st.status_code = i.status_code
+      <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_ISSUE rdRol) -->
+      <include refid="ME_READABLE_FILTER"/>
 
-		LEFT JOIN common_code cc
-		ON cc.code_id = st.code_id
-		AND cc.group_code = 'OB'
+    ORDER BY i.due_at ASC, i.issue_code ASC
+  </select>
 
-		WHERE p.status = 'OD1'
-		AND i.created_by_code = #{userCode}
+  <!-- ======================= 작업내역(logs) (ME) ======================= -->
+  <select id="selectWorkLogs" resultType="UserWorkLogVO">
+    SELECT
+      l.log_code     AS logCode,
+      l.project_code AS projectCode,
+      p.project_name AS projectName,
 
-		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
-		)
-		WHERE ROWNUM <![CDATA[ <= ]]>
-		#{limit}
-	</select>
+      l.action_type  AS actionType,
+      l.target_type  AS targetType,
+      l.target_code  AS targetCode,
 
-	<!-- ======================= 최근공지 ======================= -->
-	<select id="selectRecentNotices" resultType="MyNoticeDTO">
-		SELECT *
-		FROM (
-		SELECT
-		n.notice_code AS noticeCode,
-		n.project_code AS projectCode,
-		p.project_name AS projectName,
-		n.title AS title,
-		n.created_at AS createdAt
-		FROM projects p
-		JOIN (
-		SELECT pru.project_code
-		FROM project_role_user pru
-		WHERE pru.user_code = #{userCode}
+      CASE
+        WHEN l.target_type = 'ISSUE'  THEN i.title
+        WHEN l.target_type = 'NOTICE' THEN n.title
+        WHEN l.target_type = 'DOC'    THEN da.original_name
+        ELSE NULL
+      END AS targetTitle,
 
-		UNION
+      l.created_at AS createdAt,
+      l.meta       AS meta
+    FROM logs l
+    JOIN projects p
+      ON p.project_code = l.project_code
+    LEFT JOIN issues i
+      ON l.target_type = 'ISSUE'
+     AND i.issue_code  = l.target_code
+    LEFT JOIN notices n
+      ON l.target_type = 'NOTICE'
+     AND n.notice_code = l.target_code
+    LEFT JOIN documents_attachments da
+      ON l.target_type = 'DOC'
+     AND da.file_code  = l.target_code
+    WHERE l.user_code = #{userCode}
+      AND l.created_at <![CDATA[ >= ]]> #{from}
+      AND l.created_at <![CDATA[ <= ]]> #{to}
 
-		SELECT gpr.project_code
-		FROM "GROUP_MEMBER" gm
-		JOIN "GR_PRO_ROLE" gpr
-		ON gpr.gr_code = gm.gr_code
-		WHERE gm.user_code = #{userCode}
-		) up ON up.project_code = p.project_code
+      <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_ISSUE rdRol) -->
+      <!-- (WORKLOG를 '일감' 권한과 묶어서 처리하는 네 서비스 기준) -->
+      <if test="isSys == false">
+        <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+          AND l.project_code IN
+          <foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
+            #{pc}
+          </foreach>
+        </if>
+        <if test="readableProjectCodes == null or readableProjectCodes.size() == 0">
+          AND 1=0
+        </if>
+      </if>
 
-		JOIN notices n
-		ON n.project_code = p.project_code
+      AND (
+             (l.target_type = 'ISSUE'  AND i.issue_code IS NOT NULL)
+          OR (l.target_type = 'NOTICE' AND n.notice_code IS NOT NULL)
+          OR (l.target_type = 'DOC'    AND da.file_code IS NOT NULL)
+          OR (l.target_type NOT IN ('ISSUE','NOTICE','DOC'))
+      )
+    ORDER BY l.created_at DESC
+  </select>
 
-		WHERE p.status = 'OD1'
-		ORDER BY n.created_at DESC
-		)
-		WHERE ROWNUM <![CDATA[ <= ]]>
-		#{limit}
-	</select>
+  <!-- ======================= 주간간트 (ME) ======================= -->
+  <select id="selectWeekGanttIssues" resultType="WeekGanttIssueDTO">
+    SELECT
+      i.issue_code   AS issueCode,
+      i.project_code AS projectCode,
+      p.project_name AS projectName,
+      i.title        AS title,
 
-	<!-- ======================= 주간 달력: due_at 기준 (from~to) ======================= -->
-	<select id="selectWeekCalendarIssues"
-		resultType="com.yedam.app.mypage.service.WeekIssueDTO">
-		SELECT
-		TO_CHAR(i.due_at, 'yyyy-mm-dd') AS day,
-		i.issue_code AS issueCode,
-		i.project_code AS projectCode,
-		p.project_name AS projectName,
-		i.title AS title,
-		i.due_at AS dueAt
-		FROM projects p
-		JOIN (
-		SELECT pru.project_code
-		FROM project_role_user pru
-		WHERE pru.user_code = #{userCode}
+      NVL(i.started_at, i.created_at) AS startAt,
+      NVL(i.resolved_at, i.due_at)    AS endAt,
 
-		UNION
+      CASE WHEN i.assignee_code   = #{userCode} THEN 'Y' END AS assignedYn,
+      CASE WHEN i.created_by_code = #{userCode} THEN 'Y' END AS registeredYn
+    FROM projects p
+    JOIN (
+      SELECT pru.project_code
+      FROM project_role_user pru
+      WHERE pru.user_code = #{userCode}
+      UNION
+      SELECT gpr.project_code
+      FROM "GROUP_MEMBER" gm
+      JOIN "GR_PRO_ROLE" gpr
+        ON gpr.gr_code = gm.gr_code
+      WHERE gm.user_code = #{userCode}
+    ) up
+      ON up.project_code = p.project_code
+    JOIN issues i
+      ON i.project_code = p.project_code
+    WHERE p.status = 'OD1'
+      AND (i.assignee_code = #{userCode} OR i.created_by_code = #{userCode})
 
-		SELECT gpr.project_code
-		FROM "GROUP_MEMBER" gm
-		JOIN "GR_PRO_ROLE" gpr
-		ON gpr.gr_code = gm.gr_code
-		WHERE gm.user_code = #{userCode}
-		) up ON up.project_code = p.project_code
+      <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_ISSUE rdRol) -->
+      <include refid="ME_READABLE_FILTER"/>
 
-		JOIN issues i
-		ON i.project_code = p.project_code
+      AND NVL(i.started_at, i.created_at) <![CDATA[ <  ]]> #{to}
+      AND NVL(NVL(i.resolved_at, i.due_at), NVL(i.started_at, i.created_at)) <![CDATA[ >= ]]> #{from}
 
-		WHERE p.status = 'OD1'
-		AND i.due_at IS NOT NULL
-		AND i.due_at <![CDATA[ >= ]]>
-		#{from}
-		AND i.due_at <![CDATA[ < ]]>
-		#{to}
+    ORDER BY p.project_name ASC, NVL(i.started_at, i.created_at) ASC, i.issue_code ASC
+  </select>
 
-		ORDER BY i.due_at ASC, i.issue_code ASC
-	</select>
+  <!-- =========================================================
+       ADMIN 모드 쿼리 (프로젝트 1개 대상) - 기존 유지
+       ========================================================= -->
 
-	<!-- ======================= 작업내역(logs) ======================= -->
-	<select id="selectWorkLogs" resultType="UserWorkLogVO">
-		SELECT
-			l.log_code AS logCode,
-			l.project_code AS projectCode,
-			p.project_name AS projectName,
+  <select id="selectAdminAssigneeIssSta" resultType="AssigneeIssStaVO">
+    SELECT
+      u.user_code AS userCode,
+      u.name      AS userName,
+      SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END) AS newIss,
+      SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END) AS progress,
+      SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END) AS solution,
+      SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END) AS returnIss,
+      SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END) AS completion,
+      NVL(ROUND(AVG(NVL(i.progress, 0))), 0) AS progressRate
+    FROM issues i
+    JOIN status s ON s.status_code = i.status_code
+    JOIN users  u ON u.user_code = i.assignee_code
+    WHERE i.project_code = #{projectCode}
+    GROUP BY u.user_code, u.name
+    ORDER BY u.name
+  </select>
 
-			l.action_type AS actionType,
-			l.target_type AS targetType,
-			l.target_code AS targetCode,
+  <select id="selectAdminCreatorIssSta" resultType="CreatorIssStaVO">
+    SELECT
+      u.user_code AS userCode,
+      u.name      AS userName,
+      SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END) AS newIss,
+      SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END) AS progress,
+      SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END) AS solution,
+      SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END) AS returnIss,
+      SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END) AS completion,
+      NVL(ROUND(AVG(NVL(i.progress, 0))), 0) AS progressRate
+    FROM issues i
+    JOIN status s ON s.status_code = i.status_code
+    JOIN users  u ON u.user_code = i.created_by_code
+    WHERE i.project_code = #{projectCode}
+    GROUP BY u.user_code, u.name
+    ORDER BY u.name
+  </select>
 
-			CASE 
-				WHEN l.target_type = 'ISSUE' THEN i.title
-				WHEN l.target_type = 'NOTICE' THEN n.title
-				WHEN l.target_type = 'DOC' THEN da.original_name
-				ELSE NULL
-			END AS targetTitle,
+  <select id="selectProjectName" resultType="String">
+    SELECT project_name
+    FROM projects
+    WHERE project_code = #{projectCode}
+  </select>
 
-			l.created_at AS createdAt,
-			l.meta AS meta
-		FROM logs l
-		JOIN projects p
-			ON p.project_code = l.project_code
+  <select id="selectRecentNoticesByProject" resultType="MyNoticeDTO">
+    SELECT *
+    FROM (
+      SELECT
+        n.notice_code  AS noticeCode,
+        n.project_code AS projectCode,
+        p.project_name AS projectName,
+        n.title        AS title,
+        n.created_at   AS createdAt
+      FROM notices n
+      JOIN projects p
+        ON p.project_code = n.project_code
+      WHERE p.status = 'OD1'
+        AND n.project_code = #{projectCode}
+      ORDER BY n.created_at DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-		LEFT JOIN issues i
-			ON l.target_type = 'ISSUE'
-			AND i.issue_code = l.target_code
+  <select id="selectWeekGanttIssuesByProject" resultType="WeekGanttIssueDTO">
+    SELECT
+      i.issue_code   AS issueCode,
+      i.project_code AS projectCode,
+      p.project_name AS projectName,
+      i.title        AS title,
 
-		LEFT JOIN notices n
-			ON l.target_type = 'NOTICE'
-			AND n.notice_code = l.target_code
+      NVL(i.started_at, i.created_at) AS startAt,
+      NVL(i.resolved_at, i.due_at)    AS endAt,
 
-		LEFT JOIN documents_attachments da
-			ON l.target_type = 'DOC'
-			AND da.file_code = l.target_code
+      CASE WHEN i.assignee_code   = #{userCode} THEN 'Y' END AS assignedYn,
+      CASE WHEN i.created_by_code = #{userCode} THEN 'Y' END AS registeredYn
+    FROM projects p
+    JOIN issues i
+      ON i.project_code = p.project_code
+    WHERE p.status = 'OD1'
+      AND p.project_code = #{projectCode}
+      AND NVL(i.started_at, i.created_at) <![CDATA[ <  ]]> #{to}
+      AND NVL(NVL(i.resolved_at, i.due_at), NVL(i.started_at, i.created_at)) <![CDATA[ >= ]]> #{from}
+    ORDER BY NVL(i.started_at, i.created_at) ASC, i.issue_code ASC
+  </select>
 
-		WHERE l.user_code = #{userCode}
-		AND l.created_at <![CDATA[ >= ]]> #{from}
-		AND l.created_at <![CDATA[ <= ]]> #{to}
-		AND (
-      		   (l.target_type = 'ISSUE'  AND i.issue_code IS NOT NULL)
-   			OR (l.target_type = 'NOTICE' AND n.notice_code IS NOT NULL)
-   			OR (l.target_type = 'DOC'    AND da.file_code IS NOT NULL)
-   			OR (l.target_type NOT IN ('ISSUE','NOTICE','DOC'))
-)
-		ORDER BY l.created_at DESC
-	</select>
+  <select id="selectProjectWorkLogs" resultType="UserWorkLogVO">
+    SELECT
+      l.log_code     AS logCode,
+      l.project_code AS projectCode,
+      p.project_name AS projectName,
 
-	<!-- ======================= 주간간트 : 할당/등록만 (프론트 체크 필터용 플래그 포함) ======================= -->
-	<select id="selectWeekGanttIssues" resultType="WeekGanttIssueDTO">
-		SELECT
-			i.issue_code AS issueCode,
-			i.project_code AS projectCode,
-			p.project_name AS projectName,
-			i.title AS title,
+      l.user_code AS userCode,
+      u.name      AS userName,
 
-			NVL(i.started_at, i.created_at) AS startAt,
-			NVL(i.resolved_at, i.due_at) AS endAt,
+      l.action_type AS actionType,
+      l.target_type AS targetType,
+      l.target_code AS targetCode,
 
-			CASE WHEN i.assignee_code = #{userCode} THEN 'Y' END AS assignedYn,
-			CASE WHEN i.created_by_code = #{userCode} THEN 'Y' END AS registeredYn
-		FROM projects p
-		JOIN (
-			SELECT pru.project_code FROM project_role_user pru WHERE pru.user_code = #{userCode}
-			UNION
-			SELECT gpr.project_code
-			FROM "GROUP_MEMBER" gm
-			JOIN "GR_PRO_ROLE" gpr
-				ON gpr.gr_code = gm.gr_code
-			WHERE gm.user_code = #{userCode}
-		) up ON up.project_code = p.project_code
-		JOIN issues i
-			ON i.project_code = p.project_code
+      CASE
+        WHEN l.target_type = 'ISSUE'  THEN i.title
+        WHEN l.target_type = 'NOTICE' THEN n.title
+        WHEN l.target_type = 'DOC'    THEN da.original_name
+        ELSE NULL
+      END AS targetTitle,
 
-		WHERE p.status = 'OD1'
+      l.created_at AS createdAt,
+      l.meta       AS meta
+    FROM logs l
+    JOIN projects p
+      ON p.project_code = l.project_code
+    JOIN users u
+      ON u.user_code = l.user_code
+    LEFT JOIN issues i
+      ON l.target_type = 'ISSUE'
+     AND i.issue_code  = l.target_code
+    LEFT JOIN notices n
+      ON l.target_type = 'NOTICE'
+     AND n.notice_code = l.target_code
+    LEFT JOIN documents_attachments da
+      ON l.target_type = 'DOC'
+     AND da.file_code  = l.target_code
+    WHERE l.project_code = #{projectCode}
+      AND l.created_at <![CDATA[ >= ]]> #{from}
+      AND l.created_at <![CDATA[ <= ]]> #{to}
+      AND (
+             (l.target_type = 'ISSUE'  AND i.issue_code IS NOT NULL)
+          OR (l.target_type = 'NOTICE' AND n.notice_code IS NOT NULL)
+          OR (l.target_type = 'DOC'    AND da.file_code IS NOT NULL)
+          OR (l.target_type NOT IN ('ISSUE','NOTICE','DOC'))
+      )
+    ORDER BY l.created_at DESC
+  </select>
 
-		<!-- 내 달력엔 "할당 or 등록"만 보이게 -->
-		AND (i.assignee_code = #{userCode} OR i.created_by_code = #{userCode})
+  <select id="selectAssignedIssuesByProjectAndAssignee" resultType="MyIssueRowDTO">
+    SELECT *
+    FROM (
+      SELECT
+        i.issue_code   AS issueCode,
+        i.project_code AS projectCode,
+        p.project_name AS projectName,
+        i.title        AS title,
+        cc.code_name   AS statusName,
+        i.progress     AS progress,
+        i.due_at       AS dueAt,
+        i.updated_at   AS updatedAt
+      FROM issues i
+      JOIN projects p
+        ON p.project_code = i.project_code
+      LEFT JOIN status st
+        ON st.status_code = i.status_code
+      LEFT JOIN common_code cc
+        ON cc.code_id = st.code_id
+       AND cc.group_code = 'OB'
+      WHERE p.status = 'OD1'
+        AND i.project_code = #{projectCode}
+        AND i.assignee_code = #{assigneeCode}
+      ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-		AND NVL(i.started_at, i.created_at) <![CDATA[ < ]]> #{to}
-		AND NVL(NVL(i.resolved_at, i.due_at), NVL(i.started_at, i.created_at)) <![CDATA[ >= ]]> #{from}
+  <select id="selectRegisteredIssuesByProjectAndCreator" resultType="MyIssueRowDTO">
+    SELECT *
+    FROM (
+      SELECT
+        i.issue_code   AS issueCode,
+        i.project_code AS projectCode,
+        p.project_name AS projectName,
+        i.title        AS title,
+        cc.code_name   AS statusName,
+        i.progress     AS progress,
+        i.due_at       AS dueAt,
+        i.updated_at   AS updatedAt
+      FROM issues i
+      JOIN projects p
+        ON p.project_code = i.project_code
+      LEFT JOIN status st
+        ON st.status_code = i.status_code
+      LEFT JOIN common_code cc
+        ON cc.code_id = st.code_id
+       AND cc.group_code = 'OB'
+      WHERE p.status = 'OD1'
+        AND i.project_code = #{projectCode}
+        AND i.created_by_code = #{creatorCode}
+      ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
+    )
+    WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
+  </select>
 
-		ORDER BY p.project_name ASC, NVL(i.started_at, i.created_at) ASC, i.issue_code ASC
-	</select>
-	
-	<!-- 관리자 모드 담당자별 할당 일감현황 -->
-	<select id="selectAdminAssigneeIssSta" resultType="AssigneeIssStaVO">
-  		SELECT
-    		u.user_code AS userCode,
-    		u.name AS userName,
-    		SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END) AS newIss,
-    		SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END) AS progress,
-    		SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END) AS solution,
-    		SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END) AS returnIss,
-    		SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END) AS completion,
-    		NVL(ROUND(AVG(NVL(i.progress, 0))), 0) AS progressRate
-  		FROM issues i
-  		
-  		JOIN status s ON s.status_code = i.status_code
-  		
-  		JOIN users u  ON u.user_code = i.assignee_code
-  		
-  		WHERE i.project_code = #{projectCode}
-  		
-  		GROUP BY u.user_code, u.name
-  		
-  		ORDER BY u.name
-	</select>
-	
-	<!-- 관리자 모드 등록자별 등록 일감 현황 -->
-	<select id="selectAdminCreatorIssSta" resultType="CreatorIssStaVO">
-  		SELECT
-    		u.user_code AS userCode,
-    		u.name AS userName,
-    		SUM(CASE WHEN s.code_id = 'OB1' THEN 1 ELSE 0 END) AS newIss,
-    		SUM(CASE WHEN s.code_id = 'OB2' THEN 1 ELSE 0 END) AS progress,
-    		SUM(CASE WHEN s.code_id = 'OB3' THEN 1 ELSE 0 END) AS solution,
-    		SUM(CASE WHEN s.code_id = 'OB4' THEN 1 ELSE 0 END) AS returnIss,
-    		SUM(CASE WHEN s.code_id = 'OB5' THEN 1 ELSE 0 END) AS completion,
-    		NVL(ROUND(AVG(NVL(i.progress, 0))), 0) AS progressRate
-  		FROM issues i
-  		
-  		JOIN status s ON s.status_code = i.status_code
-  		
-  		JOIN users u  ON u.user_code = i.created_by_code
-  		
-  		WHERE i.project_code = #{projectCode}
-  		
-  		GROUP BY u.user_code, u.name
-  		
-  		ORDER BY u.name
-	</select>
-	
-	<select id="selectAdminProjectCodes" resultType="Integer">
-  		SELECT DISTINCT project_code
-  		FROM (
-    		SELECT pru.project_code
-    		FROM project_role_user pru
-    		JOIN role r ON r.role_code = pru.role_code
-    		WHERE pru.user_code = #{userCode}
-      		AND r.admin_ck = 'Y'
-      		
-    		UNION
-    		
-    		SELECT gpr.project_code
-    		FROM "GROUP_MEMBER" gm
-    		JOIN "GR_PRO_ROLE" gpr ON gpr.gr_code = gm.gr_code
-    		JOIN role r ON r.role_code = gpr.role_code
-    		WHERE gm.user_code = #{userCode}
-      		AND r.admin_ck = 'Y'
-  		)
-	</select>
+  <!-- ✅ codes 목록으로 프로젝트 옵션(코드+이름) 조회 -->
+  <select id="selectProjectOptionsByCodes" resultType="com.yedam.app.mypage.service.AdminProjectOptionDTO">
+    SELECT
+      p.project_code AS projectCode,
+      p.project_name AS projectName
+    FROM projects p
+    WHERE 1=1
+      <if test="codes != null and codes.size() > 0">
+        AND p.project_code IN
+        <foreach collection="codes" item="pc" open="(" separator="," close=")">
+          #{pc}
+        </foreach>
+      </if>
+      <if test="codes == null or codes.size() == 0">
+        AND 1=0
+      </if>
+    ORDER BY p.project_name
+  </select>
+  
+  <!-- =========================================================
+     공통: ME 수정 가능 플래그
+     - isSys=true  : 무조건 Y
+     - isSys=false : editableProjectCodes에 포함되면 Y
+     ========================================================= -->
+<sql id="ME_EDITABLE_FLAG">
+  <choose>
+    <when test="isSys == true">
+      'Y'
+    </when>
 
-	<select id="selectProjectName" resultType="String">
-  		SELECT project_name FROM projects WHERE project_code = #{projectCode}
-	</select>
-	
-	<!-- 프로젝트 1개 최근공지 -->
-	<select id="selectRecentNoticesByProject" resultType="MyNoticeDTO">
-  		SELECT *
-  		FROM (
-    		SELECT
-      		n.notice_code AS noticeCode,
-      		n.project_code AS projectCode,
-      		p.project_name AS projectName,
-      		n.title AS title,
-      		n.created_at AS createdAt
-    		FROM notices n
-    		JOIN projects p
-      		ON p.project_code = n.project_code
-    		WHERE p.status = 'OD1'
-      		AND n.project_code = #{projectCode}
-    		ORDER BY n.created_at DESC
-  		)
-  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
-	</select>
-	
-	<!-- 프로젝트 1개 주간 간트 -->
-	<select id="selectWeekGanttIssuesByProject" resultType="WeekGanttIssueDTO">
-  		SELECT
-    		i.issue_code AS issueCode,
-    		i.project_code AS projectCode,
-    		p.project_name AS projectName,
-    		i.title AS title,
+    <when test="editableProjectCodes != null and editableProjectCodes.size() > 0">
+      CASE
+        WHEN i.project_code IN
+        <foreach collection="editableProjectCodes" item="pc" open="(" separator="," close=")">
+          #{pc}
+        </foreach>
+        THEN 'Y' ELSE 'N'
+      END
+    </when>
 
-    		NVL(i.started_at, i.created_at) AS startAt,
-    		NVL(i.resolved_at, i.due_at) AS endAt,
+    <otherwise>
+      'N'
+    </otherwise>
+  </choose>
+</sql>
 
-    		CASE WHEN i.assignee_code = #{userCode} THEN 'Y' END AS assignedYn,
-    		CASE WHEN i.created_by_code = #{userCode} THEN 'Y' END AS registeredYn
-  		FROM projects p
-  		JOIN issues i
-    		ON i.project_code = p.project_code
-  		WHERE p.status = 'OD1'
-    		AND p.project_code = #{projectCode}
-
-    		AND NVL(i.started_at, i.created_at) <![CDATA[ < ]]> #{to}
-    		AND NVL(NVL(i.resolved_at, i.due_at), NVL(i.started_at, i.created_at)) <![CDATA[ >= ]]> #{from}
-  		ORDER BY NVL(i.started_at, i.created_at) ASC, i.issue_code ASC
-	</select>
-	
-	<!-- 프로젝트 1개 작업내역(로그) -->
-	<select id="selectProjectWorkLogs" resultType="UserWorkLogVO">
-  		SELECT
-    		l.log_code AS logCode,
-    		l.project_code AS projectCode,
-    		p.project_name AS projectName,
-
-    		l.user_code AS userCode,
-    		u.name AS userName,   <!-- ✅ 추가: 작성자 이름 -->
-
-    		l.action_type AS actionType,
-    		l.target_type AS targetType,
-    		l.target_code AS targetCode,
-
-    		CASE 
-      					WHEN l.target_type = 'ISSUE' THEN i.title
-      		WHEN l.target_type = 'NOTICE' THEN n.title
-      		WHEN l.target_type = 'DOC' THEN da.original_name
-      		ELSE NULL
-    		END AS targetTitle,
-
-    		l.created_at AS createdAt,
-    		l.meta AS meta
-  		FROM logs l
-  		JOIN projects p
-    		ON p.project_code = l.project_code
-  		JOIN users u
-    		ON u.user_code = l.user_code
-
-  		LEFT JOIN issues i
-    		ON l.target_type = 'ISSUE'
-    		AND i.issue_code = l.target_code
-
-  		LEFT JOIN notices n
-    		ON l.target_type = 'NOTICE'
-    		AND n.notice_code = l.target_code
-
-  		LEFT JOIN documents_attachments da
-    		ON l.target_type = 'DOC'
-    		AND da.file_code = l.target_code
-
-  		WHERE l.project_code = #{projectCode}
-    		AND l.created_at <![CDATA[ >= ]]> #{from}
-    		AND l.created_at <![CDATA[ <= ]]> #{to}
-    		AND (
-         		(l.target_type = 'ISSUE'  AND i.issue_code IS NOT NULL)
-      		OR (l.target_type = 'NOTICE' AND n.notice_code IS NOT NULL)
-      		OR (l.target_type = 'DOC'    AND da.file_code IS NOT NULL)
-      		OR (l.target_type NOT IN ('ISSUE','NOTICE','DOC'))
-    		)
-  		ORDER BY l.created_at DESC
-	</select>
-
-	<!-- 관리자 프로젝트 목록(코드+이름) -->
-	<select id="selectAdminProjects" resultType="com.yedam.app.mypage.service.AdminProjectOptionDTO">
-  		SELECT DISTINCT
-    		p.project_code AS projectCode,
-    		p.project_name AS projectName
-  		FROM (
-    		SELECT pru.project_code
-    		FROM project_role_user pru
-    		JOIN role r ON r.role_code = pru.role_code
-    		WHERE pru.user_code = #{userCode}
-      		AND r.admin_ck = 'Y'
-
-    		UNION
-
-    		SELECT gpr.project_code
-    		FROM "GROUP_MEMBER" gm
-    		JOIN "GR_PRO_ROLE" gpr ON gpr.gr_code = gm.gr_code
-    		JOIN role r ON r.role_code = gpr.role_code
-    		WHERE gm.user_code = #{userCode}
-      		AND r.admin_ck = 'Y'
-  		) ap
-  		JOIN projects p
-    		ON p.project_code = ap.project_code
-  		WHERE p.status = 'OD1'
-  		ORDER BY p.project_name
-	</select>
-	
-	<!-- ✅ ADMIN 드릴다운: 담당자(assignee)별 이슈 목록 -->
-	<select id="selectAssignedIssuesByProjectAndAssignee" resultType="MyIssueRowDTO">
-  		SELECT *
-  		FROM (
-    		SELECT
-      			i.issue_code   AS issueCode,
-      			i.project_code AS projectCode,
-      			p.project_name AS projectName,
-      			i.title        AS title,
-      			cc.code_name   AS statusName,
-      			i.progress     AS progress,
-      			i.due_at       AS dueAt,
-      			i.updated_at   AS updatedAt
-    		FROM issues i
-    		
-    		JOIN projects p
-      		ON p.project_code = i.project_code
-      		
-    		LEFT JOIN status st
-      		ON st.status_code = i.status_code
-      		
-    		LEFT JOIN common_code cc
-      		ON cc.code_id = st.code_id
-     		AND cc.group_code = 'OB'
-     		
-    		WHERE p.status = 'OD1'
-      		AND i.project_code = #{projectCode}
-      		AND i.assignee_code = #{assigneeCode}
-      		
-    		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
-  		)
-  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
-	</select>
-
-	<!-- ✅ ADMIN 드릴다운: 등록자(created_by)별 이슈 목록 -->
-	<select id="selectRegisteredIssuesByProjectAndCreator" resultType="MyIssueRowDTO">
-  		SELECT *
-  		FROM (
-    		SELECT
-      			i.issue_code   AS issueCode,
-      			i.project_code AS projectCode,
-      			p.project_name AS projectName,
-      			i.title        AS title,
-      			cc.code_name   AS statusName,
-      			i.progress     AS progress,
-      			i.due_at       AS dueAt,
-      			i.updated_at   AS updatedAt
-    		FROM issues i
-    		
-    		JOIN projects p
-      		ON p.project_code = i.project_code
-      		
-    		LEFT JOIN status st
-      		ON st.status_code = i.status_code
-      		
-    		LEFT JOIN common_code cc
-      		ON cc.code_id = st.code_id
-     		AND cc.group_code = 'OB'
-     		
-    		WHERE p.status = 'OD1'
-      		AND i.project_code = #{projectCode}
-      		AND i.created_by_code = #{creatorCode}
-      		
-    		ORDER BY i.updated_at DESC NULLS LAST, i.issue_code DESC
-  		)
-  		WHERE ROWNUM <![CDATA[ <= ]]> #{limit}
-	</select>
 </mapper>

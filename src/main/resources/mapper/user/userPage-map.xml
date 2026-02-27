@@ -47,6 +47,13 @@
     		WHERE gm.user_code = #{userCode}
   		) up
     	ON up.project_code = p.project_code
+    	
+  		<if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+    		AND p.project_code IN
+    		<foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
+      			#{pc}
+    		</foreach>
+  		</if>
 
   		LEFT JOIN issues i
     	ON i.project_code = p.project_code
@@ -85,6 +92,13 @@
   		WHERE l.user_code = #{userCode}
     	AND l.target_type = 'ISSUE'
     	AND i.issue_code IS NOT NULL
+    	
+    	<if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+    		AND l.project_code IN
+    		<foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
+      			#{pc}
+    		</foreach>
+  		</if>
 
     	<if test="from != null">
       		AND l.created_at &gt;= #{from}

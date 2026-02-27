@@ -1,6 +1,7 @@
 package com.yedam.app.main.service;
 
 import java.util.List;
+import java.util.Set;
 
 import com.yedam.app.mypage.service.MyNoticeDTO;
 
@@ -12,10 +13,10 @@ public interface MainService {
 	public List<ProIssStaVO> findProIssSta(Integer userCode);
 
 	// 프로젝트 관리자 여부 확인
-	public boolean findIsAdminInProject(Integer userCode, Integer projectCode);
+	 public boolean findIsAdminInProject(Integer userCode, Integer projectCode);
 
 	// 본인이 관리자인 프로젝트
-	public List<Integer> findAdminProByUserCode(Integer userCode);
+	 public List<Integer> findAdminProByUserCode(Integer userCode);
 
 	// 프로젝트 내부 담당자별 일감 현황
 	public List<AssigneeIssStaVO> findAssIssSta(Integer projectCode);
@@ -41,4 +42,8 @@ public interface MainService {
 	public MainMemoDTO findMemoByDate(Integer userCode, String date);         // "YYYY-MM-DD"
 	public boolean saveMemo(Integer userCode, String date, String content);
 	public boolean removeMemo(Integer userCode, String date);
+	
+	int findTodayProgressRate(Integer userCode, Set<Integer> readableProjects);
+	
+	List<MainProjectStatusVO> findCodeNameCntByProjects(Set<Integer> readableProjects, Set<Integer> adminProjects);
 }
