@@ -28,78 +28,89 @@ public class DocsServiceImpl implements DocsService {
 
 	private final DocsMapper docsMapper;
 
-	// 폴더 등록
+	// ================= 폴더 등록 =================
 	@Override
 	public int addFolder(DocsVO docsVO) {
+		docsVO.setCategory("문서");
 		return docsMapper.insertFolder(docsVO);
 	}
 
-	// 파일 등록
+	// ================= 파일 등록 =================
 	@Override
 	public int addFiles(DocsVO docsVO) {
+		docsVO.setCategory("문서");
 		return docsMapper.insertFiles(docsVO);
 	}
 
-	// 문서 조회
+	// ================= 문서 조회 =================
 	@Override
 	public List<DocsVO> getDocsList(DocsVO docsVO) {
+		docsVO.setCategory("문서");
+
 		List<DocsVO> list = docsMapper.selectDocsList(docsVO);
+
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 		list.forEach(doc -> {
 			if (doc.getUploadedAt() != null) {
 				doc.setUploadedAtStr(sdf.format(doc.getUploadedAt()));
 			}
 		});
+
 		return list;
 	}
 
-	// 문서 단건 조회(다운로드용)
+	// ================= 파일 단건 조회 =================
 	@Override
-	public DocsVO getFileInfo(Integer fileCode) {
-		return docsMapper.selectFileByCode(fileCode);
+	public DocsVO getFileInfo(Integer fileCode, DocsVO param) {
+		param.setFileCode(fileCode);
+		param.setCategory("문서");
+		return docsMapper.selectFileByCode(param);
 	}
 
-	// 폴더 내 모든 파일 조회 하위 폴더 포함(폴더 다운로드용)
+	// ================= 폴더 ZIP 다운로드 =================
 	@Override
-	public void downloadFolderAsZip(Integer folderCode, HttpServletResponse response) throws IOException {
-		// 폴더명 조회
-		List<DocsVO> files = docsMapper.selectFilesByFolder(folderCode);
+	public void downloadFolderAsZip(Integer folderCode, DocsVO param, HttpServletResponse response) throws IOException {
+		param.setFolderCode(folderCode);
+		param.setCategory("문서");
+		List<DocsVO> files = docsMapper.selectFilesByFolder(param);
 
-		// 루트 폴더명 가져오기 (첫 번째 파일의 folderPath 첫 세그먼트)
 		String rootFolderName = "folder_" + folderCode;
 		if (!files.isEmpty() && files.get(0).getFolderPath() != null) {
 			String[] parts = files.get(0).getFolderPath().split("/");
-			if (parts.length > 0)
-				rootFolderName = parts[1]; // SYS_CONNECT_BY_PATH는 앞에 /가 붙음
+			if (parts.length > 1) {
+				rootFolderName = parts[1];
+			}
 		}
 
 		String zipName = rootFolderName + ".zip";
+
 		response.setContentType("application/zip");
 		response.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''"
 				+ URLEncoder.encode(zipName, StandardCharsets.UTF_8).replace("+", "%20"));
 
 		try (ZipOutputStream zos = new ZipOutputStream(response.getOutputStream())) {
-			// 중복 방지용
+
 			Set<String> addedEntries = new HashSet<>();
 
 			for (DocsVO file : files) {
+
 				File f = new File(file.getPath());
 				if (!f.exists())
 					continue;
 
-				// folderPath: /루트폴더/하위폴더 형태
-				// 앞의 / 제거 후 파일명 붙이기
 				String folderPath = file.getFolderPath() != null ? file.getFolderPath().replaceFirst("^/", "")
 						: rootFolderName;
 
 				String entryName = folderPath + "/" + file.getOriginalName();
 
-				// 중복 파일명 처리
+				// 중복 처리
 				String finalEntry = entryName;
 				int count = 1;
+
 				while (addedEntries.contains(finalEntry)) {
 					String nameOnly = file.getOriginalName();
 					int dotIdx = nameOnly.lastIndexOf(".");
+
 					if (dotIdx > 0) {
 						finalEntry = folderPath + "/" + nameOnly.substring(0, dotIdx) + "(" + count + ")"
 								+ nameOnly.substring(dotIdx);
@@ -108,10 +119,10 @@ public class DocsServiceImpl implements DocsService {
 					}
 					count++;
 				}
+
 				addedEntries.add(finalEntry);
 
-				ZipEntry entry = new ZipEntry(finalEntry);
-				zos.putNextEntry(entry);
+				zos.putNextEntry(new ZipEntry(finalEntry));
 
 				try (FileInputStream fis = new FileInputStream(f)) {
 					byte[] buffer = new byte[4096];
@@ -120,26 +131,30 @@ public class DocsServiceImpl implements DocsService {
 						zos.write(buffer, 0, len);
 					}
 				}
+
 				zos.closeEntry();
 			}
 		}
 	}
 
-	// 파일 삭제
+	// ================= 파일 삭제 =================
 	@Override
-	public int removeFile(Integer fileCode) {
-		DocsVO file = docsMapper.selectFileByCode(fileCode);
+	public int removeFile(Integer fileCode, DocsVO param) {
+		param.setFileCode(fileCode);
+		param.setCategory("문서");
+
+		DocsVO file = docsMapper.selectFileByCode(param);
 		if (file != null) {
 			File f = new File(file.getPath());
 			if (f.exists())
 				f.delete();
 		}
-		return docsMapper.deleteFile(fileCode);
+		return docsMapper.deleteFile(param);
 	}
 
-	// 폴더 삭제
+	// ================= 폴더 삭제 =================
 	@Override
-	public int removeFolder(Integer folderCode) {
+	public int removeFolder(Integer folderCode, DocsVO param) {
 		int fileCount = docsMapper.countFilesByFolder(folderCode);
 		if (fileCount > 0)
 			throw new RuntimeException("파일이 있는 폴더는 삭제할 수 없습니다.");
@@ -148,6 +163,8 @@ public class DocsServiceImpl implements DocsService {
 		if (childCount > 0)
 			throw new RuntimeException("하위 폴더가 있는 폴더는 삭제할 수 없습니다.");
 
-		return docsMapper.deleteFolder(folderCode);
+		param.setFolderCode(folderCode);
+		param.setCategory("문서");
+		return docsMapper.deleteFolder(param);
 	}
 }

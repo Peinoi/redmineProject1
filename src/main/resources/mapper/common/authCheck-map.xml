@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="mapper.common.authCheck">
+	<!-- 조회/삭제용 -->
+	<sql id="authCheck">
+	    AND EXISTS (
+	        SELECT 1
+	        FROM VW_USER_PROJECT_AUTH vupa
+	        WHERE vupa.user_code = #{userCode}
+	          AND vupa.project_code = ${alias}.project_code
+	          AND vupa.category = #{category}
+	          AND (
+	                #{admin} = 1
+	             OR vupa.rd_rol = 'Y'
+	                <if test="'${roleColumn}' == 'del_rol'">
+	                AND vupa.del_rol = 'Y'
+	                </if>
+	          )
+	    )
+	</sql>
+    
+    <!-- 등록/수정용  -->
+	<sql id="authCheckInsert">
+	    EXISTS (
+	        SELECT 1
+	        FROM VW_USER_AUTH vua
+	        LEFT JOIN VW_USER_PROJECT_AUTH vupa
+	               ON vupa.user_code = vua.user_code
+	              AND vupa.project_code = #{projectCode}
+	              AND vupa.category = #{category}
+	        WHERE vua.user_code = #{userCode}
+	          AND (
+	                vua.admin_ck = 'Y'
+	             OR (
+	                  vupa.rd_rol = 'Y'
+	                  <if test="'${roleColumn}' != 'rd_rol'">
+	                  AND NVL(vupa.${roleColumn}, 'N') = 'Y'
+	                  </if>
+	                )
+	          )
+	    )
+	</sql>
+</mapper>

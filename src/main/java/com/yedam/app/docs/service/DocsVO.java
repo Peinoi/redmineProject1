@@ -40,4 +40,12 @@ public class DocsVO {
 	private String createdFrom;
 	private String createdTo;
 	private Integer createdCode;
+	
+	// 권한 체크용 (UserProjectAuthVO에서 복사해올 필드)
+    private Integer admin;      // 관리자 여부 (1: 관리자, 0: 일반)
+    private String rdRol;       // 읽기
+    private String wrRol;       // 쓰기
+    private String moRol;       // 수정
+    private String delRol;      // 삭제
+    private String category;    // '문서'
 }

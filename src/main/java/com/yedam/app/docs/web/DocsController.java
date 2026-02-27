@@ -30,6 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.yedam.app.docs.service.DocsService;
 import com.yedam.app.docs.service.DocsVO;
 import com.yedam.app.login.service.UserVO;
+import com.yedam.app.project.service.UserProjectAuthVO;
 
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -42,18 +43,36 @@ public class DocsController {
 	private final DocsService docsService;
 
 	private static final long MAX_SIZE = 50L * 1024 * 1024;
-	// 실무에서 보통 허용하는 업무용 파일 확장자 리스트 (확장 버전)
-	private static final Set<String> ALLOWED_EXTS = Set.of(
-			// 문서
-			"pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "hwp", "csv",
-			// 이미지
-			"jpg", "jpeg", "png", "gif", "bmp", "svg", "webp",
-			// 압축 및 기타
-			"zip", "7z", "rar", "tar", "gz");
+	private static final Set<String> ALLOWED_EXTS = Set.of("pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt",
+			"hwp", "csv", "jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "zip", "7z", "rar", "tar", "gz");
 
-	// 파일 저장 경로
 	@Value("${app.upload.dir}")
 	private String uploadDir;
+
+	// ===== 공통: 세션에서 권한 세팅 =====
+	private void setAuthFromSession(DocsVO docsVO, HttpSession session) {
+		List<UserProjectAuthVO> userAuthList = (List<UserProjectAuthVO>) session.getAttribute("userAuth");
+		if (userAuthList != null && docsVO.getProjectCode() != null) {
+			userAuthList.stream()
+					.filter(a -> "문서".equals(a.getCategory()) && a.getProjectCode().equals(docsVO.getProjectCode()))
+					.findFirst().ifPresent(auth -> {
+						docsVO.setAdmin(auth.getAdmin());
+						docsVO.setRdRol(auth.getRdRol());
+						docsVO.setWrRol(auth.getWrRol());
+						docsVO.setDelRol(auth.getDelRol());
+					});
+		}
+	}
+
+	// ===== 공통: 유저 기본 정보 세팅 =====
+	private boolean setUserInfo(DocsVO docsVO, UserVO user) {
+		if (user == null)
+			return false;
+		boolean isAdmin = "Y".equals(user.getSysCk());
+		docsVO.setUserCode(user.getUserCode());
+		docsVO.setAdmin(isAdmin ? 1 : 0);
+		return isAdmin;
+	}
 
 	// ===== 문서 목록 화면 =====
 	@GetMapping("docs")
@@ -62,11 +81,27 @@ public class DocsController {
 		if (user == null)
 			return "redirect:/login";
 
-		Integer userCode = user.getUserCode();
-
+		/*
+		 * // ===== 세션 확인 ===== System.out.println("===== 세션 확인 =====");
+		 * System.out.println("user = " + user); List<UserProjectAuthVO> userAuthList =
+		 * (List<UserProjectAuthVO>) session.getAttribute("userAuth");
+		 * System.out.println("userAuth = " + userAuthList);
+		 * System.out.println("docsVO.projectCode = " + docsVO.getProjectCode());
+		 * System.out.println("docsVO.admin = " + docsVO.getAdmin());
+		 * System.out.println("docsVO.rdRol = " + docsVO.getRdRol());
+		 * System.out.println("docsVO.wrRol = " + docsVO.getWrRol());
+		 * System.out.println("docsVO.delRol = " + docsVO.getDelRol());
+		 * System.out.println("===================="); // ====================
+		 */
+		
 		boolean isAdmin = "Y".equals(user.getSysCk());
+		docsVO.setUserCode(user.getUserCode());
+		docsVO.setAdmin(isAdmin ? 1 : 0);
 
-		docsVO.setUserCode(userCode);
+		// projectCode가 있을 때만 권한 세팅 (특정 프로젝트 필터링 시)
+		if (docsVO.getProjectCode() != null) {
+			setAuthFromSession(docsVO, session);
+		}
 
 		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
 			docsVO.setProjectStatusName("OD1");
@@ -79,41 +114,37 @@ public class DocsController {
 		return "docs/list";
 	}
 
-	// ===== 폴더 생성 API (POST /api/folders) =====
-	// JS: fetch("/api/folders", { method: "POST", body: JSON.stringify({folderName,
-	// headerFolderCode, projectCode}) })
+	// ===== 폴더 생성 =====
 	@PostMapping("/api/folders")
 	@ResponseBody
 	public ResponseEntity<?> createFolder(@RequestBody DocsVO docsVO, HttpSession session) {
 		try {
-			UserVO user = (UserVO) session.getAttribute("user"); // ← "loginUserCode" → "user"
-			if (user == null) {
+			UserVO user = (UserVO) session.getAttribute("user");
+			if (user == null)
 				return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
-			}
-			docsVO.setUserCode(user.getUserCode()); // ← UserVO에서 꺼내기
-			docsVO.setCreatedOn(new java.util.Date()); // ← createdOn 세팅
+
+			setAuthFromSession(docsVO, session);
+			setUserInfo(docsVO, user);
+			docsVO.setCreatedOn(new java.util.Date());
 
 			int result = docsService.addFolder(docsVO);
-			if (result > 0) {
+			if (result > 0)
 				return ResponseEntity.ok().body("{\"message\":\"success\"}");
-			} else {
+			else
 				return ResponseEntity.badRequest().body("{\"message\":\"폴더 생성 실패\"}");
-			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.internalServerError().body("{\"message\":\"서버 오류\"}");
 		}
 	}
 
-	// ===== 파일 업로드 (POST /docsUpload) =====
-	// JS uploadForm의 action="/docsUpload"
+	// ===== 파일 업로드 =====
 	@PostMapping("/docsUpload")
 	public String uploadFiles(@RequestParam("projectCode") Integer projectCode,
 			@RequestParam("folderCode") Integer folderCode, @RequestParam("files") List<MultipartFile> files,
 			HttpSession session, Model model) {
-
 		try {
-			UserVO user = (UserVO) session.getAttribute("user"); // ← 세션 수정
+			UserVO user = (UserVO) session.getAttribute("user");
 			if (user == null)
 				return "redirect:/login";
 
@@ -126,9 +157,8 @@ public class DocsController {
 					continue;
 
 				String originalName = file.getOriginalFilename();
-				if (originalName == null || !originalName.contains(".")) {
+				if (originalName == null || !originalName.contains("."))
 					continue;
-				}
 
 				String ext = originalName.substring(originalName.lastIndexOf("."));
 				String extLower = ext.replace(".", "").toLowerCase();
@@ -139,7 +169,6 @@ public class DocsController {
 
 				String storedName = UUID.randomUUID().toString() + ext;
 				String filePath = uploadDirFile.getAbsolutePath() + File.separator + storedName;
-
 				file.transferTo(new File(filePath).getAbsoluteFile());
 
 				DocsVO docsVO = new DocsVO();
@@ -150,10 +179,10 @@ public class DocsController {
 				docsVO.setPath(filePath);
 				docsVO.setMimeType(file.getContentType());
 				docsVO.setSizeBytes((int) file.getSize());
-				docsVO.setUserCode(user.getUserCode()); // ← 수정
-				docsVO.setUploadedAt(new java.util.Date()); // ← uploadedAt 세팅
+				docsVO.setUploadedAt(new java.util.Date());
+				setAuthFromSession(docsVO, session);
+				setUserInfo(docsVO, user);
 
-				docsVO.setPath(filePath);
 				docsService.addFiles(docsVO);
 			}
 			return "redirect:/docs";
@@ -163,15 +192,21 @@ public class DocsController {
 		}
 	}
 
-	// 파일 다운로드
+	// ===== 파일 다운로드 =====
 	@GetMapping("/docsDownload")
-	public ResponseEntity<Resource> downloadFile(@RequestParam Integer fileCode, HttpSession session) {
+	public ResponseEntity<Resource> downloadFile(@RequestParam Integer fileCode, @RequestParam Integer projectCode,
+			HttpSession session) {
 		try {
 			UserVO user = (UserVO) session.getAttribute("user");
 			if (user == null)
 				return ResponseEntity.status(401).build();
 
-			DocsVO file = docsService.getFileInfo(fileCode);
+			DocsVO param = new DocsVO();
+			param.setProjectCode(projectCode);
+			setAuthFromSession(param, session);
+			setUserInfo(param, user);
+
+			DocsVO file = docsService.getFileInfo(fileCode, param);
 			if (file == null)
 				return ResponseEntity.notFound().build();
 
@@ -191,28 +226,40 @@ public class DocsController {
 		}
 	}
 
-	// 폴더 다운로드
+	// ===== 폴더 다운로드 =====
 	@GetMapping("/api/folders/{folderCode}/download")
-	public void downloadFolder(@PathVariable Integer folderCode, HttpSession session, HttpServletResponse response)
-			throws IOException {
+	public void downloadFolder(@PathVariable Integer folderCode, @RequestParam Integer projectCode, HttpSession session,
+			HttpServletResponse response) throws IOException {
 		UserVO user = (UserVO) session.getAttribute("user");
 		if (user == null) {
 			response.sendError(401);
 			return;
 		}
-		docsService.downloadFolderAsZip(folderCode, response);
+
+		DocsVO param = new DocsVO();
+		param.setProjectCode(projectCode);
+		setAuthFromSession(param, session);
+		setUserInfo(param, user);
+
+		docsService.downloadFolderAsZip(folderCode, param, response);
 	}
 
-	// 파일 삭제
+	// ===== 파일 삭제 =====
 	@DeleteMapping("/api/docs/{fileCode}")
 	@ResponseBody
-	public ResponseEntity<?> deleteFile(@PathVariable Integer fileCode, HttpSession session) {
+	public ResponseEntity<?> deleteFile(@PathVariable Integer fileCode, @RequestParam Integer projectCode,
+			HttpSession session) {
 		try {
 			UserVO user = (UserVO) session.getAttribute("user");
 			if (user == null)
 				return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
 
-			int result = docsService.removeFile(fileCode);
+			DocsVO param = new DocsVO();
+			param.setProjectCode(projectCode);
+			setAuthFromSession(param, session);
+			setUserInfo(param, user);
+
+			int result = docsService.removeFile(fileCode, param);
 			if (result > 0)
 				return ResponseEntity.ok().body("{\"message\":\"success\"}");
 			else
@@ -223,16 +270,22 @@ public class DocsController {
 		}
 	}
 
-	// 폴더 삭제
-	@DeleteMapping("/api/folders/{folderCode}")
+	// ===== 폴더 삭제 =====
+	@DeleteMapping("/api/folders/delete/{folderCode}")
 	@ResponseBody
-	public ResponseEntity<?> deleteFolder(@PathVariable Integer folderCode, HttpSession session) {
+	public ResponseEntity<?> deleteFolder(@PathVariable Integer folderCode, @RequestParam Integer projectCode,
+			HttpSession session) {
 		try {
 			UserVO user = (UserVO) session.getAttribute("user");
 			if (user == null)
 				return ResponseEntity.status(401).body("{\"message\":\"로그인이 필요합니다.\"}");
 
-			docsService.removeFolder(folderCode);
+			DocsVO param = new DocsVO();
+			param.setProjectCode(projectCode);
+			setAuthFromSession(param, session);
+			setUserInfo(param, user);
+
+			docsService.removeFolder(folderCode, param);
 			return ResponseEntity.ok().body("{\"message\":\"success\"}");
 		} catch (RuntimeException e) {
 			return ResponseEntity.badRequest().body("{\"message\":\"" + e.getMessage() + "\"}");
@@ -250,8 +303,9 @@ public class DocsController {
 		if (user == null)
 			return ResponseEntity.status(401).build();
 
-		docsVO.setUserCode(user.getUserCode());
-		boolean isAdmin = "Y".equals(user.getSysCk());
+		setAuthFromSession(docsVO, session);
+		boolean isAdmin = setUserInfo(docsVO, user);
+
 		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
 			docsVO.setProjectStatusName("OD1");
 		}

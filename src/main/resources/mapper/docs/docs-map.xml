@@ -17,22 +17,26 @@
 				created_on,
 				header_folder_code,
 				user_code
-			   )
-	    VALUES (
-				#{projectCode},
-				#{folderCode},
-				#{folderName},
-				#{createdOn},
-				 <choose>
-			        <when test="headerFolderCode != null">
-			          #{headerFolderCode}
-			        </when>
-			        <otherwise>
-			          NULL
-			        </otherwise>
-			      </choose>,
-				#{userCode}
-			   )
+	    )
+	    SELECT
+	        #{projectCode},
+	        #{folderCode},
+	        #{folderName},
+	        #{createdOn},
+	        <choose>
+	            <when test="headerFolderCode != null">
+	                #{headerFolderCode}
+	            </when>
+	            <otherwise>
+	                NULL
+	            </otherwise>
+	        </choose>,
+	        #{userCode}
+	    FROM dual
+	    WHERE
+	    <include refid="mapper.common.authCheck.authCheckInsert">
+	        <property name="roleColumn" value="wr_rol"/>
+	    </include>
 	</insert>
 	
 	<!-- 파일 등록 -->
@@ -56,7 +60,7 @@
 	        folder_code,
 	        project_code
 	  )
-	  VALUES (
+	  SELECT
 	        #{fileCode},
 	        #{originalName},
 	        #{storedName},
@@ -67,14 +71,36 @@
 	        #{userCode},
 	        #{folderCode},
 	        #{projectCode}
-	  )
+	  FROM dual
+	  WHERE
+	  <include refid="mapper.common.authCheck.authCheckInsert">
+	      <property name="roleColumn" value="wr_rol"/>
+	  </include>
 	</insert>
 	
 	<!-- 문서 목록 조회 -->
 	<select id="selectDocsList" parameterType="DocsVO" resultType="DocsVO">
-	WITH AUTH_PROJECT AS (
+	WITH USER_AUTH AS (
+	    SELECT
+	        vua.user_code,
+	        vua.project_code,
+	        vua.admin_ck,
+	        NVL(vupa.rd_rol,'N') AS rd_rol,
+	        NVL(vupa.wr_rol,'N') AS wr_rol,
+	        NVL(vupa.mo_rol,'N') AS mo_rol,
+	        NVL(vupa.del_rol,'N') AS del_rol
+	    FROM VW_USER_AUTH vua
+	    LEFT JOIN VW_USER_PROJECT_AUTH vupa
+	           ON vupa.user_code = vua.user_code
+	          AND vupa.project_code = vua.project_code
+	          AND vupa.category = '문서'
+	    WHERE vua.user_code = #{userCode}
+	),
+	
+	AUTH_PROJECT AS (
 	    SELECT p.project_code, p.project_name
 	    FROM projects p
+	    JOIN USER_AUTH ua ON ua.project_code = p.project_code
 	    WHERE 1=1
 	    <if test="projectCode != null">
 	        AND p.project_code = #{projectCode}
@@ -82,14 +108,9 @@
 	    <if test="projectStatusName != null and projectStatusName != ''">
 	        AND p.status = #{projectStatusName}
 	    </if>
-	    AND EXISTS (
-	        SELECT 1 FROM VW_USER_AUTH vua
-	        WHERE vua.user_code = #{userCode}
-	          AND vua.project_code = p.project_code
-	          AND (
-	                (vua.admin_ck = 'Y' AND vua.status IN ('OD1','OD3'))
-	             OR (NVL(vua.admin_ck,'N') = 'N' AND vua.status = 'OD1')
-	          )
+	    AND (
+	        ua.admin_ck = 'Y'
+	        OR ua.rd_rol = 'Y'
 	    )
 	),
 	
@@ -229,67 +250,65 @@
 	</select>
 	
 	<!-- 문서 단건 조회/다운로드용 -->
-	<select id="selectFileByCode" parameterType="Integer" resultType="DocsVO">
-	    SELECT file_code,
-	           original_name, 
-	           stored_name, 
-	           path, 
-	           mime_type, 
-	           size_bytes
-		FROM documents_attachments
-		WHERE file_code = #{fileCode}
+	<select id="selectFileByCode" parameterType="DocsVO" resultType="DocsVO">
+	SELECT da.file_code,
+	       da.original_name,
+	       da.stored_name,
+	       da.path,
+	       da.mime_type,
+	       da.size_bytes
+	FROM documents_attachments da
+	WHERE da.file_code = #{fileCode}
+	
+	<include refid="mapper.common.authCheck.authCheck">
+	    <property name="alias" value="da"/>
+	    <property name="roleColumn" value="rd_rol"/>
+	</include>
 	</select>
 	
 	<!-- 폴더 내 모든 파일 조회 (하위 폴더 포함) -->
-	<select id="selectFilesByFolder" parameterType="int" resultType="DocsVO">
-	    SELECT 
-	        da.file_code, 
-	        da.original_name, 
-	        da.stored_name, 
-	        da.path, 
-	        da.mime_type, 
+	<select id="selectFilesByFolder" parameterType="DocsVO" resultType="DocsVO">
+	    WITH FOLDER_TREE AS (
+	        SELECT
+	            f.folder_code, f.project_code, f.folder_name,
+	            LEVEL AS folder_depth,
+	            SYS_CONNECT_BY_PATH(f.folder_name, '/') AS folder_path,
+	            SYS_CONNECT_BY_PATH(LPAD(f.folder_code, 10, '0'), '/') AS sort_path
+	        FROM documents_folders f
+	        START WITH f.header_folder_code IS NULL
+	        CONNECT BY PRIOR f.folder_code = f.header_folder_code
+	    )
+	    SELECT
+	        da.file_code,
+	        da.original_name,
+	        da.stored_name,
+	        da.path,
+	        da.mime_type,
 	        da.size_bytes,
-	        fh.folder_path
+	        ft.folder_path
 	    FROM documents_attachments da
-		JOIN AUTH_PROJECT ap
-		    ON da.project_code = ap.project_code
-		LEFT JOIN users u
-		    ON da.user_code = u.user_code
-		LEFT JOIN FOLDER_TREE ft
-		    ON da.folder_code = ft.folder_code
-		
-		WHERE 1=1
-		
-		<!-- 파일명 -->
-		<if test="originalName != null and originalName != ''">
-		    AND LOWER(da.original_name)
-		        LIKE '%' || LOWER(#{originalName}) || '%'
-		</if>
-		
-		<!-- 등록자 -->
-		<if test="createdCode != null and createdCode != ''">
-		    AND da.user_code = #{createdCode}
-		</if>
-		
-		<!-- 폴더 -->
-		<if test="folderCode != null">
-		    AND da.folder_code = #{folderCode}
-		</if>
-		
-		<!-- 날짜 -->
-		<if test="createdFrom != null and createdFrom != ''">
-		    AND da.uploaded_at >= TO_DATE(#{createdFrom}, 'YYYY-MM-DD')
-		</if>
-		
-		<if test="createdTo != null and createdTo != ''">
-		    AND da.uploaded_at &lt;= TO_DATE(#{createdTo}, 'YYYY-MM-DD') + 0.99999
-		</if>
+	    LEFT JOIN users u ON da.user_code = u.user_code
+	    LEFT JOIN FOLDER_TREE ft ON da.folder_code = ft.folder_code
+	    WHERE da.folder_code IN (
+	        SELECT folder_code FROM documents_folders
+	        START WITH folder_code = #{folderCode}
+	        CONNECT BY PRIOR folder_code = header_folder_code
+	    )
+	    <include refid="mapper.common.authCheck.authCheck">
+		    <property name="alias" value="da"/>
+		    <property name="roleColumn" value="rd_rol"/>
+		</include>
 	</select>
 	
 	<!-- 파일 삭제 -->
-	<delete id="deleteFile" parameterType="Integer">
-	    DELETE FROM documents_attachments
-	    WHERE file_code = #{fileCode}
+	<delete id="deleteFile" parameterType="DocsVO">
+	DELETE FROM documents_attachments da
+	WHERE da.file_code = #{fileCode}
+	
+	<include refid="mapper.common.authCheck.authCheck">
+	    <property name="alias" value="da"/>
+	    <property name="roleColumn" value="del_rol"/>
+	</include>
 	</delete>
 	
 	<!-- 폴더 하위 파일 수 확인 -->
@@ -311,8 +330,13 @@
 	</select>
 	
 	<!-- 폴더 삭제 -->
-	<delete id="deleteFolder" parameterType="int">
-	    DELETE FROM documents_folders
-	    WHERE folder_code = #{folderCode}
+	<delete id="deleteFolder" parameterType="DocsVO">
+	    DELETE FROM documents_folders df
+	    WHERE df.folder_code = #{folderCode}
+	    
+	    <include refid="mapper.common.authCheck.authCheck">
+		    <property name="alias" value="df"/>
+		    <property name="roleColumn" value="del_rol"/>
+		</include>
 	</delete>
 </mapper>
