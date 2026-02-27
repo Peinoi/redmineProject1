@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			// 프로젝트 헤더 (간트 차트 스타일)
 			html += `
 	                <div class="list-group-item bg-light fw-bold py-2">
-	                    <i class="fas fa-project-diagram me-2 text-primary"></i>${project.projectName}
+	                    ${project.projectName}
 	                </div>`;
 
 			// 사원 목록 (children)
@@ -91,9 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	                                class="list-group-item list-group-item-action d-flex align-items-center ps-4 btn-select-creator"
 	                                data-user-code="${user.userCode}" 
 	                                data-user-name="${user.userName}">
-	                            <i class="fas fa-user me-2 text-secondary small"></i>
 	                            <span>${user.userName}</span>
-	                            <span class="ms-auto badge rounded-pill bg-white text-muted border fw-normal">${user.userCode}</span>
 	                        </button>`;
 				});
 			} else {
