@@ -1,5 +1,11 @@
 (() => {
-
+	// 툴팁
+	const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+	const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+		return new bootstrap.Tooltip(tooltipTriggerEl)
+	})
+	
+	
 	const $ = (sel) => document.querySelector(sel);
 	const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
@@ -152,7 +158,7 @@
 		rowsAll().forEach((tr) => {
 			const d = rowData(tr);
 			let ok = true;
-			
+
 			// 프로젝트명 검색
 			if (t && !d.projectName.toLowerCase().includes(t)) ok = false;
 
@@ -364,7 +370,7 @@
 			tr.dataset.filtered = "1";
 		} else {
 			// 초기 로드 시 진행(OD1,OD3) 상태만 노출
-			tr.dataset.filtered = (d.status === STATUS_LABEL["OD1"] || d.status === STATUS_LABEL["OD3"] ) ? "0" : "1";
+			tr.dataset.filtered = (d.status === STATUS_LABEL["OD1"] || d.status === STATUS_LABEL["OD3"]) ? "0" : "1";
 		}
 		updateRowStyle(tr);
 	});

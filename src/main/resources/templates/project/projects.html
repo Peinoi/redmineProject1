@@ -19,7 +19,9 @@
 		</div>
 		<div class="issue-filters mb-3 mt-3">
 			<div class="row g-2 align-items-end">
-
+				<div>[[ ${auth} ]]</div>
+				<div th:text="${session.userAuth}"></div>
+				<div>관리자 권한 : [[ ${session.user.sysCk} ]]</div>
 				<!--입력 검색 -->
 				<div class="col-12 col-md-3">
 					<label class="form-label">프로젝트명</label> <input type="text"
@@ -27,7 +29,8 @@
 				</div>
 
 				<!-- 셀렉트 옵션 검색 상태 -->
-				<div class="col-12 col-md-2" th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
+				<div class="col-12 col-md-2"
+					th:if="${auth.wrRol == 'Y'|| session.user.sysCk == 'Y'}">
 					<label class="form-label">상태</label> <select id="filterPriority"
 						class="form-select">
 						<option value="all" selected>전체</option>
@@ -111,7 +114,7 @@
 							<th style="width: 50px;">번호</th>
 							<th style="width: 100px;">프로젝트명</th>
 							<th style="width: 80px;">등록일</th>
-							<th style="width: 50px;">관리자</th>
+							<th style="width: 50px;">담당자</th>
 							<th style="width: 100px;">관리자번호</th>
 							<th>관리자메일</th>
 							<th style="width: 80px;">진행 상태</th>
@@ -125,7 +128,9 @@
 						<tr class="projectRow" th:each="pro, status : ${list}"
 							th:data-project-code="${pro.projectCode}">
 							<td>[[ ${status.index+1} ]]</td>
-							<td class="ellipsis">[[ ${pro.projectName} ]]</td>
+							<td class="ellipsis" data-bs-toggle="tooltip"
+								data-bs-placement="top" th:title="${pro.projectName}">[[
+								${pro.projectName} ]]</td>
 							<td>[[ ${#dates.format(pro.createdOn, 'yyyy-MM-dd')} ]]</td>
 							<td>[[ ${pro.name} ]]</td>
 							<td>[[ ${pro.phone} ]]</td>

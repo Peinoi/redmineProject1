@@ -765,8 +765,8 @@ function saveRoleChange(row, type, modal) {
 // 22. 구성원 삭제
 // ============================================
 function removeMember(row, type) {
-	const name = row.querySelector('td:first-child').textContent;
-
+	const link = row.querySelector('td:first-child a');
+	const name = link ? link.textContent.trim() : '';
 	if (!confirm(`${name}을(를) 삭제하시겠습니까?`)) {
 		return;
 	}
@@ -911,7 +911,7 @@ function submitProject(formData) {
 
 			if (data.success) {
 				alert(data.message);
-				window.location.href = '/projects';
+				//window.location.href = '/projectsmgr';
 			} else {
 				alert(data.message);
 			}

@@ -53,7 +53,8 @@ public class AuthContorller {
 	// 역할 등록
 	@GetMapping("authadd")
 	public String projectAdd(Model model) {
-
+		List<RoleAuthVO> findAuth = authService.findAuthInfo(1);
+		model.addAttribute("auths", findAuth);
 		return "auth/authadd";
 	}
 

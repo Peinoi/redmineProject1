@@ -45,6 +45,11 @@ function initializeEventListeners() {
 	document.getElementById('btnAddProject').addEventListener('click', openProjectModal);
 	document.getElementById('btnSubmit').addEventListener('click', handleFormSubmit);
 
+	const backBtn = document.getElementById('back-btn');
+	if (backBtn) {
+		backBtn.addEventListener('click', handleBackNavigation);
+	}
+
 	document.getElementById('memberModalSearch').addEventListener('input', e =>
 		filterModal(e, '#memberModalList'));
 	document.getElementById('projectModalSearch').addEventListener('input', e =>
@@ -273,7 +278,7 @@ function addSelectedProjects() {
 		tr.className = 'projectRow';
 		if (status === 'OD3') {
 			tr.classList.add('table-secondary', 'text-muted');
-			
+
 			tr.innerHTML = `
 		                <td><a href="/project/${projectCode}" class="text-decoration-none text-muted">${cb.dataset.projectName}</a></td>
 		                <td class="role-name-cell">${roleName}</td>
@@ -444,4 +449,22 @@ function handleFormSubmit() {
 			else { alert(data.message); }
 		})
 		.catch(() => alert('수정 처리 중 오류가 발생했습니다.'));
+}
+// ============================================
+// 목록으로(돌아가기) 
+// ============================================
+function handleBackNavigation(e) {
+	if (e) e.preventDefault();
+
+	const ref = document.referrer || "";
+
+	// 이전 페이지가 없거나, 특정 예외 페이지에서 왔거나, 히스토리가 없는 경우
+	if (!ref || history.length <= 1) {
+		// 안전하게 프로젝트 목록 메인으로 이동
+		window.location.replace("/projects");
+		return;
+	}
+
+	// 그 외에는 정상적으로 이전 페이지 이동
+	history.back();
 }

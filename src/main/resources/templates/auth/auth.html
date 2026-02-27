@@ -30,8 +30,8 @@
 				<div class="d-flex justify-content-between align-items-center mt-3">
 					<div class="d-flex gap-2">
 						<button type="button" class="btn btn-success">
-							<a th:href="@{/authadd}"> <i class="fas fa-plus me-1"></i>
-								역할 등록
+							<a th:href="@{/authadd}"> <i class="fas fa-plus me-1"></i> 역할
+								등록
 							</a>
 						</button>
 					</div>
@@ -70,8 +70,8 @@
 
 								<th style="width: 50px;">번호</th>
 								<th style="width: 100px;">역할명</th>
-								<th style="width: 80px;">설명</th>
-								<th style="width: 80px;">마스터 권한</th>
+								<th style="width: 100px;">설명</th>
+								<th style="width: 50px;">마스터 권한</th>
 								<th style="width: 80px;">권한</th>
 								<th style="width: 80px;">저장</th>
 								<th style="width: 80px;">삭제</th>
@@ -84,8 +84,11 @@
 								style="cursor: pointer;">
 								<td>[[ ${status.index+1} ]]</td>
 								<td style="display: none;">[[ ${info.roleCode} ]]</td>
-								<td>[[ ${info.roleName} ]]</td>
-								<td>[[ ${info.explanation} ]]</td>
+								<td class="ellipsis" data-bs-toggle="tooltip"
+									data-bs-placement="top" th:title="${info.roleName}">[[ ${info.roleName} ]]</td>
+								<td class="ellipsis" data-bs-toggle="tooltip"
+									data-bs-placement="top" th:title="${info.explanation}">[[
+									${info.explanation} ]]</td>
 
 								<td><input type="checkbox" name="adminck"
 									th:checked="${info.adminCk == 'Y'}"></td>

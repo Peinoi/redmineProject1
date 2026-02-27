@@ -231,8 +231,13 @@ public class ProjectServiceImpl implements ProjectService {
 					break;
 
 				case "keep":
-					// 변경 없음
+					// roleCode가 변경된 경우 업데이트
+					if (member.getMappCode() != null) {
+						projectMapper.updateMemberRole(params);
+					}
+
 					break;
+
 				}
 			}
 		}
@@ -269,7 +274,10 @@ public class ProjectServiceImpl implements ProjectService {
 					break;
 
 				case "keep":
-					// 변경 없음
+					// roleCode가 변경된 경우 업데이트
+					if (group.getGrProCode() != null) {
+						projectMapper.updateGroupRole(params);
+					}
 					break;
 				}
 			}

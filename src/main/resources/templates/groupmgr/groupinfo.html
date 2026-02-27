@@ -132,7 +132,8 @@
 									<td th:text="${proj.roleName}"></td>
 									<td th:text="${proj.status == 'OD1' ? '진행' : '종료'}"></td>
 									<td th:if="${proj.status == 'OD3'}" colspan="2"
-										class=" fw-bold text-center"><i class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.</td>
+										class=" fw-bold text-center"><i
+										class="fas fa-info-circle me-1"></i> 종료된 프로젝트 입니다.</td>
 									<td>
 										<button type="button"
 											class="btn btn-success btn-sm btn-edit-project"
@@ -141,7 +142,7 @@
 											<i class="fas fa-edit me-1"></i> 수정
 										</button>
 									</td>
-									
+
 									<td>
 										<button type="button"
 											class="btn btn-danger btn-sm btn-remove-project"
@@ -161,8 +162,7 @@
 			</div>
 
 			<div class="d-flex justify-content-between align-items-center mt-4">
-				<button type="button" th:onclick="location.href=[[@{/groupmgrs}]]"
-					class="btn btn-secondary">
+				<button type="button" id="back-btn" class="btn btn-secondary">
 					<i class="fas fa-arrow-left me-1"></i>목록으로
 				</button>
 				<button type="button" class="btn btn-success" id="btnSubmit">

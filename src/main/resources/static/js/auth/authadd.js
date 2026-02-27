@@ -84,12 +84,29 @@ function registerRole() {
 	const roleName = document.getElementById('roleName').value.trim();
 	const explanation = document.getElementById('explanation').value.trim();
 	const adminCheck = document.getElementById('adminCheck').checked;
+	// 유효성 초기화
+	clearErrors();
 
-	// 2. 유효성 검사
+	let isValid = true;
+
+	// 역할명 체크 
 	if (!roleName) {
-		alert('역할명을 입력해주세요.');
-		return;
+		showError('roleNameError', '역할명을 입력해주세요.');
+		isValid = false;
+	} else if (roleName.length > 100) {
+		showError('roleNameError', '역할명은 100자 이하로 입력해주세요.');
+		isValid = false;
 	}
+
+	// 설명 체크 (200자 이하)
+	if (explanation.length > 200) {
+		showError('explanationError', '설명은 200자 이하로 입력해주세요.');
+		isValid = false;
+	}
+
+	if (!isValid) return;
+
+
 
 	// 3. 권한 데이터 수집
 	const permissions = [];
@@ -136,7 +153,7 @@ function registerRole() {
 			return response.json();
 		})
 		.then(data => {
-			if (!data) return;  
+			if (!data) return;
 			if (data.success) {
 				alert(data.message);
 				window.location.href = '/auth'; // 역할 목록 페이지로 이동
@@ -150,6 +167,32 @@ function registerRole() {
 		});
 }
 
+// 역할명 길이 체크 
+function showError(id, message) {
+	const el = document.getElementById(id);
+	if (el) {
+		el.textContent = message;
+		el.style.display = 'block';
+	}
+}
+// 설명 길이체크
+function clearErrors() {
+	['roleNameError', 'explanationError'].forEach(id => {
+		const el = document.getElementById(id);
+		if (el) {
+			el.textContent = '';
+			el.style.display = 'none';
+		}
+	});
+}
+// 역할 명 문자 수 체크
+document.getElementById('roleName').addEventListener('input', function() {
+    document.getElementById('roleNameCount').textContent = this.value.length;
+});
+// 설명 문자 수 체크
+document.getElementById('explanation').addEventListener('input', function() {
+    document.getElementById('explanationCount').textContent = this.value.length;
+});
 // ============================================
 // 페이지 로드 시 초기화
 // ============================================

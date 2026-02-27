@@ -96,4 +96,8 @@ public interface ProjectMapper {
 	                            @Param("newStoredName")  String  newStoredName);
 	
 	public List<ProjectManagerVO> selectManager(Integer userCode);
+	
+	// 프로젝트 수정 구성원 / 그룹 권한 변경
+	public int updateMemberRole(Map<String, Object> params);
+	public int updateGroupRole(Map<String, Object> params);
 }

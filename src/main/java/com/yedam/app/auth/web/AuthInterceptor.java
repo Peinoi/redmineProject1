@@ -82,10 +82,10 @@ public class AuthInterceptor implements HandlerInterceptor {
 		}
 
 		// 일반 사용자 권한 체크
-		if (userAuths == null || userAuths.isEmpty()) {
-			response.sendRedirect("/accessDenied");
-			return false;
-		}
+		/* 프로젝트 등록이 안된사람도 로그인 가능해야함 (일단 보류)
+		 * if (userAuths == null || userAuths.isEmpty()) {
+		 * response.sendRedirect("/accessDenied"); return false; }
+		 */
 
 		// 현재 프로젝트 컨텍스트
 		@SuppressWarnings("unchecked")
@@ -154,23 +154,49 @@ public class AuthInterceptor implements HandlerInterceptor {
 		System.out.println("🔍 매칭 시도 URI: " + requestUri);
 		System.out.println("📋 캐시된 패턴 목록:");
 
+		UriAccessInfoVO exactMatch = null;
+		UriAccessInfoVO regexMatch = null;
+		UriAccessInfoVO wildcardMatch = null;
+
 		for (Map.Entry<String, UriAccessInfoVO> entry : uriCache.entrySet()) {
 			String pattern = entry.getKey();
-			boolean matches = pathMatcher.match(pattern, requestUri);
-			System.out.println("  - 패턴: " + pattern + " → 매칭: " + matches);
+			System.out.println("  - 패턴: " + pattern);
 
-			if (matches) {
-				UriAccessInfoVO matched = entry.getValue();
-				System.out.println("✅ 매칭 성공!");
-				System.out.println("   ├─ URI 패턴  : " + matched.getUri());
-				System.out.println("   ├─ 카테고리  : " + matched.getCategory());
-				System.out.println("   └─ 필요 권한 : [" + matched.getType() + "]");
-				return entry.getValue();
+			// 1. 정확히 일치
+			if (pattern.equals(requestUri)) {
+				exactMatch = entry.getValue();
+				System.out.println("  → 정확 매칭");
+
+				// 2. 정규식 패턴 (예: /api/folders/[0-9]+)
+			} else {
+				try {
+					if (requestUri.matches(pattern)) {
+						regexMatch = entry.getValue();
+						System.out.println("  → 정규식 매칭");
+					}
+				} catch (Exception e) {
+					// 정규식이 아닌 경우 AntPath로 시도
+					if (pathMatcher.match(pattern, requestUri)) {
+						wildcardMatch = entry.getValue();
+						System.out.println("  → 와일드카드 매칭");
+					}
+				}
 			}
 		}
 
-		System.out.println("❌ 매칭되는 패턴 없음");
-		return null;
+		// 우선순위: 정확일치 > 정규식 > 와일드카드
+		UriAccessInfoVO matched = exactMatch != null ? exactMatch : regexMatch != null ? regexMatch : wildcardMatch;
+
+		if (matched != null) {
+			System.out.println("✅ 매칭 성공!");
+			System.out.println("   ├─ URI 패턴  : " + matched.getUri());
+			System.out.println("   ├─ 카테고리  : " + matched.getCategory());
+			System.out.println("   └─ 필요 권한 : [" + matched.getType() + "]");
+		} else {
+			System.out.println("❌ 매칭되는 패턴 없음");
+		}
+
+		return matched;
 	}
 
 	// 카테고리로 사용자 권한 찾기

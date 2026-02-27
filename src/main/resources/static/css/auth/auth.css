@@ -37,7 +37,6 @@ a, a:hover, a:visited, a:active {
 	min-width: 150px;
 }
 
-
 /* 테이블 행 hover 효과 */
 #memberSelectTable tbody tr:hover {
 	background-color: #f8f9fa;
@@ -101,14 +100,34 @@ tbody td:not(:nth-child(2)) {
 	text-align: center;
 }
 
-
-
 .projectRow:hover {
 	background-color: #f8f9fa;
 }
 
-
-
 input[type="checkbox"]:hover {
 	cursor: pointer;
+}
+
+.ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* 부트스트랩 툴팁 박스 스타일 커스텀 */
+.tooltip-inner {
+	background-color: rgba(0, 0, 0, 0.85) !important; /* 약간 진한 검정 */
+	color: #fff !important;
+	border-radius: 4px;
+	padding: 8px 12px !important;
+	text-align: left !important; /* 왼쪽 정렬 */
+	box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
+	max-width: 400px !important; /* 최대 너비를 400px로 확장 (기본값은 200px) */
+	width: auto !important; /* 내용에 맞게 자동으로 늘어남 */
+	white-space: nowrap; /* 한 줄로 길게 보여주고 싶을 때 사용 */
+}
+
+/* 화살표 색상 맞춤 */
+.bs-tooltip-top .tooltip-arrow::before {
+	border-top-color: rgba(0, 0, 0, 0.85) !important;
 }

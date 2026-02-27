@@ -276,6 +276,7 @@
 		    LEFT JOIN role_authority ra ON r.role_code = ra.role_code 
 		    WHERE u.user_code = #{userCode} AND ra.category IS NOT NULL
 		) combined_auth
+		WHERE project_code > 0
 		GROUP BY user_code, name, project_code, category
 		ORDER BY max(ra_code) ASC 
     </select>
@@ -457,4 +458,19 @@
 			  AND ( vua.status = 'OD1' 
 			        OR (vua.status = 'OD3' AND vua.admin_ck = 'Y') )
 	</select>
+	
+	
+	<!-- 구성원 권한(role_code) 수정 -->
+	<update id="updateMemberRole" parameterType="map">
+	    UPDATE project_role_user
+	    SET role_code = #{roleCode}
+	    WHERE mapp_code = #{mappCode}
+	</update>
+	
+	<!-- 그룹 권한(role_code) 수정 -->
+	<update id="updateGroupRole" parameterType="map">
+	    UPDATE gr_pro_role
+	    SET role_code = #{roleCode}
+	    WHERE gr_pro_code = #{grProCode}
+	</update>
 </mapper>

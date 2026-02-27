@@ -26,11 +26,19 @@
 							th:value="${role.roleName}">
 						<div id="roleCode" style="display: none;">[[
 							${role.roleCode} ]]</div>
+						<div id="roleNameError" class="text-danger small mt-1"
+							style="display: none;"></div>
+						<small class="text-muted ms-auto"><span id="roleNameCount">0</span>/100</small>
 					</div>
 					<div>
 						<label class="form-label fw-bold">설명</label>
 						<textarea id="explanation" class="form-control" rows="2"
 							placeholder="역할에 대한 설명을 입력하세요" th:text="${role.explanation}"></textarea>
+
+						<div id="explanationError" class="text-danger small mt-1"
+							style="display: none;"></div>
+						<small class="text-muted ms-auto"><span
+							id="explanationCount">0</span>/200</small>
 					</div>
 				</div>
 

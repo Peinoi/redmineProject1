@@ -1,4 +1,12 @@
 (() => {
+
+	// 툴팁
+	const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+	const tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+		return new bootstrap.Tooltip(tooltipTriggerEl)
+	})
+
+
 	const $ = (sel) => document.querySelector(sel);
 	const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
@@ -239,15 +247,15 @@
 
 	// 권한 상세페이지
 	$("#projectTbody").addEventListener("click", (e) => {
-	    const btn = e.target.closest("button");
-	    if (!btn || !btn.classList.contains("auth-btn")) return;
+		const btn = e.target.closest("button");
+		if (!btn || !btn.classList.contains("auth-btn")) return;
 
-	    const row = btn.closest("tr");
-	    const roleCode = rowData(row).code;
+		const row = btn.closest("tr");
+		const roleCode = rowData(row).code;
 
-	    location.href = `/authInfo?roleCode=${roleCode}`;
+		location.href = `/authInfo?roleCode=${roleCode}`;
 	});
-	
+
 
 	// 이벤트 바인딩
 	ui.btnApply.addEventListener("click", applyFilters);
