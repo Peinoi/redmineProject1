@@ -4,11 +4,32 @@ import java.util.List;
 
 public interface NoticeCommentService {
 
-  List<NoticeCommentVO> getCommentList(Integer loginUserCode, Long noticeCode);
+  List<NoticeCommentVO> getCommentList(Long noticeCode,
+                                       String sysCk,
+                                       List<Long> allProjectCodes,
+                                       List<Long> adminProjectCodes,
+                                       List<Long> readableProjectCodes);
 
-  NoticeCommentVO createComment(Integer loginUserCode, Long noticeCode, Integer userCode, String content);
+  NoticeCommentVO createComment(Long noticeCode,
+                                Integer userCode,
+                                String content,
+                                String sysCk,
+                                List<Long> allProjectCodes,
+                                List<Long> adminProjectCodes,
+                                List<Long> readableProjectCodes);
 
-  NoticeCommentVO modifyComment(Integer loginUserCode, Long commentCode, Integer userCode, String content);
+  NoticeCommentVO modifyComment(Long commentCode,
+                                Integer userCode,
+                                String content,
+                                String sysCk,
+                                List<Long> allProjectCodes,
+                                List<Long> adminProjectCodes,
+                                List<Long> readableProjectCodes);
 
-  void deleteComment(Integer loginUserCode, Long commentCode, Integer userCode);
+  void deleteComment(Long commentCode,
+                     Integer userCode,
+                     String sysCk,
+                     List<Long> allProjectCodes,
+                     List<Long> adminProjectCodes,
+                     List<Long> readableProjectCodes);
 }

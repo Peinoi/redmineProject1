@@ -3,177 +3,220 @@
 <mapper namespace="com.yedam.app.issue.mapper.IssueMapper">
 	<!-- 목록 조회 -->
 	<select id="selectVisibleIssues" resultType="IssueVO">
-		SELECT
-		i.issue_code,
-		i.project_code,
-		i.status_code,
-		s.code_id AS status_id,
-		i.title,
-		i.description,
-		i.priority,
-		i.assignee_code,
-		i.created_by_code,
-		i.created_at,
-		i.due_at,
-		i.started_at,
-		i.resolved_at,
-		i.updated_at,
-		CASE
-		WHEN i.due_at IS NOT NULL
-		AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
-		THEN 100
-		ELSE i.progress
-		END AS progress,
-		i.position,
-		i.file_code,
+    SELECT
+        i.issue_code,
+        i.project_code,
+        i.status_code,
+        s.code_id AS status_id,
+        i.title,
+        i.priority,
+        i.assignee_code,
+        i.created_by_code,
+        i.created_at,
+        i.due_at,
+        i.started_at,
+        i.resolved_at,
+        i.updated_at,
+        CASE
+            WHEN i.due_at IS NOT NULL
+             AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
+            THEN 100
+            ELSE i.progress
+        END AS progress,
+        i.position,
+        i.file_code,
 
-		p.project_name,
-		p.status AS project_status,
-		cps.code_name AS project_status_name,
+        p.project_name,
+        p.status AS project_status,
+        cps.code_name AS project_status_name,
 
-		cs.code_name AS status_name,
-		cp.code_name AS priority_name,
+        cs.code_name AS status_name,
+        cp.code_name AS priority_name,
 
-		ua.name AS assignee_name,
-		uc.name AS creator_name,
-		
-		i.type_code,
-		t.type_name
+        ua.name AS assignee_name,
+        uc.name AS creator_name,
 
-		FROM issues i 
-		LEFT JOIN projects p ON p.project_code = i.project_code
-		JOIN status s ON s.status_code = i.status_code
+        i.type_code,
+        t.type_name
 
-		LEFT JOIN common_code cs
-		ON cs.code_id = s.code_id
-		AND cs.group_code = 'OB'
+    FROM issues i
+    JOIN projects p
+        ON p.project_code = i.project_code
+    JOIN status s
+        ON s.status_code = i.status_code
+         AND s.project_code = i.project_code
 
-		LEFT JOIN common_code cp
-		ON cp.code_id = i.priority
-		AND cp.group_code = 'OA'
-		
-		LEFT JOIN common_code cps
-		ON p.status = cps.code_id
-		AND cps.group_code = 'OD'
+    LEFT JOIN common_code cs
+        ON cs.code_id = s.code_id
+       AND cs.group_code = 'OB'
 
-		LEFT JOIN users ua ON ua.user_code = i.assignee_code
-		LEFT JOIN users uc ON uc.user_code = i.created_by_code
-		LEFT JOIN types t ON t.type_code = i.type_code
+    LEFT JOIN common_code cp
+        ON cp.code_id = i.priority
+       AND cp.group_code = 'OA'
 
-		WHERE EXISTS (
-		SELECT 1
-		FROM vw_user_auth v
-		WHERE v.user_code = #{userCode}
-		AND v.project_code = i.project_code
-		AND (
-		(v.admin_ck = 'Y' AND v.status IN ('OD1','OD3'))
-		OR
-		(NVL(v.admin_ck,'N') = 'N' AND v.status = 'OD1')
-		)
-		)
+    LEFT JOIN common_code cps
+        ON cps.code_id = p.status
+       AND cps.group_code = 'OD'
 
-		<if test="projectCode != null">
-			AND i.project_code = #{projectCode}
-		</if>
+    LEFT JOIN users ua
+        ON ua.user_code = i.assignee_code
 
-		ORDER BY i.issue_code DESC
-	</select>
+    LEFT JOIN users uc
+        ON uc.user_code = i.created_by_code
+
+    LEFT JOIN types t
+        ON t.type_code = i.type_code
+
+    WHERE 1 = 1
+
+    <choose>
+        <!-- 시스템 권한자 -->
+        <when test='"Y".equals(sysCk)'>
+            AND i.project_code IN
+            <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+            </foreach>
+            AND p.status IN ('OD1', 'OD3')
+        </when>
+
+        <!-- 일반 사용자 -->
+        <otherwise>
+            AND (
+                <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+                    (
+                        i.project_code IN
+                        <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                            #{code}
+                        </foreach>
+                        AND p.status IN ('OD1', 'OD3')
+                    )
+                </if>
+
+                <if test="adminProjectCodes != null and adminProjectCodes.size() > 0
+                       and readableProjectCodes != null and readableProjectCodes.size() > 0">
+                    OR
+                </if>
+
+                <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+                    (
+                        i.project_code IN
+                        <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                            #{code}
+                        </foreach>
+                        AND p.status = 'OD1'
+                    )
+                </if>
+            )
+        </otherwise>
+    </choose>
+
+    <if test="projectCode != null">
+        AND i.project_code = #{projectCode}
+    </if>
+
+    ORDER BY i.issue_code DESC
+</select>
 
 	<!-- 단건 -->
-	<select id="selectIssue" parameterType="IssueVO"
-		resultType="IssueVO">
-		SELECT
-		i.issue_code,
-		i.project_code,
-		i.status_code,
-		i.title,
-		i.description,
-		i.priority,
-		i.assignee_code,
-		i.created_by_code,
-		i.created_at,
-		i.due_at,
-		i.started_at,
-		i.resolved_at,
-		i.updated_at,
-		CASE
-		WHEN i.due_at IS NOT NULL
-		AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
-		THEN 100
-		ELSE i.progress
-		END AS progress,
+	<select id="selectIssue" parameterType="IssueVO" resultType="IssueVO">
+  SELECT
+    i.issue_code,
+    i.project_code,
+    i.status_code,
+    i.title,
+    i.description,
+    i.priority,
+    i.assignee_code,
+    i.created_by_code,
+    i.created_at,
+    i.due_at,
+    i.started_at,
+    i.resolved_at,
+    i.updated_at,
+    CASE
+      WHEN i.due_at IS NOT NULL
+       AND TRUNC(i.due_at) &lt; TRUNC(SYSDATE)
+      THEN 100
+      ELSE i.progress
+    END AS progress,
 
-		i.position,
-		i.file_code,
+    i.position,
+    i.file_code,
 
-		i.par_issue_code,
-		pi.title as par_issue_title,
+    i.par_issue_code,
+    pi.title as par_issue_title,
 
-		s.code_id AS status_id,
+    s.code_id AS status_id,
 
-		p.project_name,
+    p.project_name,
+    p.status AS project_status,
+    cps.code_name AS project_status_name,
 
-		cs.code_name AS status_name,
-		cp.code_name AS priority_name,
+    cs.code_name AS status_name,
+    cp.code_name AS priority_name,
 
-		ua.name AS assignee_name,
-		uc.name AS creator_name,
+    ua.name AS assignee_name,
+    uc.name AS creator_name,
 
-		ad.original_name,
-		ad.path AS file_path,
-		at.uploaded_at,
+    ad.original_name,
+    ad.path AS file_path,
+    at.uploaded_at,
 
-		i.type_code,
-		t.type_name,
+    i.type_code,
+    t.type_name,
 
-		i.reject_code,
-		ir.reason AS reject_reason,
-		ir.rejected_by,
-		ur.name AS rejected_by_name,
-		ir.rejected_at
+    i.reject_code,
+    ir.reason AS reject_reason,
+    ir.rejected_by,
+    ur.name AS rejected_by_name,
+    ir.rejected_at
 
-		FROM issues i
-		LEFT JOIN projects p
-		ON p.project_code = i.project_code
+  FROM issues i
+  LEFT JOIN projects p
+    ON p.project_code = i.project_code
 
-		JOIN status s
-		ON s.status_code = i.status_code
+  JOIN status s
+    ON s.status_code = i.status_code
 
-		LEFT JOIN common_code cs
-		ON cs.code_id = s.code_id
-		AND cs.group_code = 'OB'
+  LEFT JOIN common_code cs
+    ON cs.code_id = s.code_id
+   AND cs.group_code = 'OB'
 
-		LEFT JOIN common_code cp
-		ON cp.code_id = i.priority
-		AND cp.group_code = 'OA'
+  LEFT JOIN common_code cp
+    ON cp.code_id = i.priority
+   AND cp.group_code = 'OA'
 
-		LEFT JOIN users ua
-		ON ua.user_code = i.assignee_code
+  LEFT JOIN common_code cps
+    ON cps.code_id = p.status
+   AND cps.group_code = 'OD'
 
-		LEFT JOIN users uc
-		ON uc.user_code = i.created_by_code
+  LEFT JOIN users ua
+    ON ua.user_code = i.assignee_code
 
-		LEFT JOIN attachments_detail ad
-		ON ad.file_code = i.file_code
-		AND ad.is_used = 1
+  LEFT JOIN users uc
+    ON uc.user_code = i.created_by_code
 
-		LEFT JOIN attachments at
-		ON at.file_code = ad.file_code
+  LEFT JOIN attachments_detail ad
+    ON ad.file_code = i.file_code
+   AND ad.is_used = 1
 
-		LEFT JOIN issues pi
-		ON i.par_issue_code = pi.issue_code
+  LEFT JOIN attachments at
+    ON at.file_code = ad.file_code
 
-		LEFT JOIN types t
-		ON t.type_code = i.type_code
+  LEFT JOIN issues pi
+    ON i.par_issue_code = pi.issue_code
 
-		LEFT JOIN issue_rejects ir
-		ON ir.reject_code = i.reject_code
+  LEFT JOIN types t
+    ON t.type_code = i.type_code
 
-		LEFT JOIN users ur
-		ON ur.user_code = ir.rejected_by
+  LEFT JOIN issue_rejects ir
+    ON ir.reject_code = i.reject_code
 
-		WHERE i.issue_code = #{issueCode}
-	</select>
+  LEFT JOIN users ur
+    ON ur.user_code = ir.rejected_by
+
+  WHERE i.issue_code = #{issueCode}
+</select>
 
 	<!-- 등록 -->
 	<insert id="insertIssue"

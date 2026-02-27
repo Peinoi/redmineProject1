@@ -514,7 +514,7 @@ function renderWorklogs(list) {
 
   const arr = Array.isArray(list) ? list : [];
   if (arr.length === 0) {
-    box.innerHTML = `<div class="empty text-muted">소요시간 이력이 없습니다.</div>`;
+    box.innerHTML = `<div class="empty text-muted">이력이 없거나 조회 권한이 없습니다.</div>`;
     return;
   }
 

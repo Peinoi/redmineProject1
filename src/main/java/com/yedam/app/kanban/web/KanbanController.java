@@ -1,7 +1,10 @@
 package com.yedam.app.kanban.web;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,6 +21,7 @@ import com.yedam.app.kanban.service.KanbanService;
 import com.yedam.app.kanban.web.dto.KanbanMoveRequest;
 import com.yedam.app.kanban.web.dto.ProgressUpdateRequest;
 import com.yedam.app.login.service.UserVO;
+import com.yedam.app.project.service.UserProjectAuthVO;
 
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +31,81 @@ import lombok.RequiredArgsConstructor;
 public class KanbanController {
 
   private final KanbanService kanbanService;
-  private final AuthorityService authorityService; // move API에서만 사용
+  private final AuthorityService authorityService;
+
+  private static class SessionIssueAuth {
+    private final String sysCk;
+    private final List<Long> allProjectCodes;
+    private final List<Long> adminProjectCodes;
+    private final List<Long> readableProjectCodes;
+
+    public SessionIssueAuth(String sysCk,
+                            List<Long> allProjectCodes,
+                            List<Long> adminProjectCodes,
+                            List<Long> readableProjectCodes) {
+      this.sysCk = sysCk;
+      this.allProjectCodes = allProjectCodes;
+      this.adminProjectCodes = adminProjectCodes;
+      this.readableProjectCodes = readableProjectCodes;
+    }
+
+    public String getSysCk() {
+      return sysCk;
+    }
+
+    public List<Long> getAllProjectCodes() {
+      return allProjectCodes;
+    }
+
+    public List<Long> getAdminProjectCodes() {
+      return adminProjectCodes;
+    }
+
+    public List<Long> getReadableProjectCodes() {
+      return readableProjectCodes;
+    }
+  }
+
+  private SessionIssueAuth buildSessionIssueAuth(HttpSession session) {
+    UserVO user = (UserVO) session.getAttribute("user");
+
+    @SuppressWarnings("unchecked")
+    List<UserProjectAuthVO> userAuthList =
+        (List<UserProjectAuthVO>) session.getAttribute("userAuth");
+
+    String sysCk = (user == null ? null : user.getSysCk());
+
+    Set<Long> allProjectSet = new LinkedHashSet<>();
+    Set<Long> adminProjectSet = new LinkedHashSet<>();
+    Set<Long> readableProjectSet = new LinkedHashSet<>();
+
+    if (userAuthList != null) {
+      for (UserProjectAuthVO auth : userAuthList) {
+        if (auth == null || auth.getProjectCode() == null) continue;
+
+        Long code = auth.getProjectCode().longValue();
+
+        allProjectSet.add(code);
+
+        if (auth.getAdmin() != null && auth.getAdmin() == 1) {
+          adminProjectSet.add(code);
+        }
+
+        if ("일감".equals(auth.getCategory()) && "Y".equals(auth.getRdRol())) {
+          readableProjectSet.add(code);
+        }
+      }
+    }
+
+    readableProjectSet.removeAll(adminProjectSet);
+
+    return new SessionIssueAuth(
+        sysCk,
+        new ArrayList<>(allProjectSet),
+        new ArrayList<>(adminProjectSet),
+        new ArrayList<>(readableProjectSet)
+    );
+  }
 
   @GetMapping("/kanbanboard")
   public String kanbanboard(
@@ -40,10 +118,42 @@ public class KanbanController {
     if (user == null || user.getUserCode() == null) return "redirect:/login";
 
     Integer userCode = user.getUserCode().intValue();
-
     String scope = (viewScope == null || viewScope.isBlank()) ? "ALL" : viewScope;
 
-    Map<String, List<IssueVO>> cols = kanbanService.getBoardColumns(userCode, projectCode, scope);
+    SessionIssueAuth auth = buildSessionIssueAuth(session);
+
+    if (projectCode != null) {
+      boolean allowed;
+
+      if ("Y".equals(auth.getSysCk())) {
+        allowed = auth.getAllProjectCodes().contains(projectCode);
+      } else {
+        allowed = auth.getAdminProjectCodes().contains(projectCode)
+            || auth.getReadableProjectCodes().contains(projectCode);
+      }
+
+      if (!allowed) {
+        model.addAttribute("projectCode", projectCode == null ? "" : projectCode);
+        model.addAttribute("userCode", userCode);
+        model.addAttribute("ob1List", List.of());
+        model.addAttribute("ob2List", List.of());
+        model.addAttribute("ob3List", List.of());
+        model.addAttribute("ob4List", List.of());
+        model.addAttribute("ob5List", List.of());
+        model.addAttribute("errorMessage", "해당 프로젝트 조회 권한이 없습니다.");
+        return "kanban/board";
+      }
+    }
+
+    Map<String, List<IssueVO>> cols = kanbanService.getBoardColumns(
+        userCode,
+        projectCode,
+        scope,
+        auth.getSysCk(),
+        auth.getAllProjectCodes(),
+        auth.getAdminProjectCodes(),
+        auth.getReadableProjectCodes()
+    );
 
     model.addAttribute("projectCode", projectCode == null ? "" : projectCode);
     model.addAttribute("userCode", userCode);
@@ -75,8 +185,17 @@ public class KanbanController {
     Long issueCode = req.getIssueCode();
     String to = req.getToStatusCode();
 
-    // 1) 일감 조회(담당자 확인용)
-    IssueVO issue = kanbanService.getIssue(userCode, projectCode, issueCode);
+    SessionIssueAuth auth = buildSessionIssueAuth(session);
+
+    IssueVO issue = kanbanService.getIssue(
+        userCode,
+        projectCode,
+        issueCode,
+        auth.getSysCk(),
+        auth.getAllProjectCodes(),
+        auth.getAdminProjectCodes(),
+        auth.getReadableProjectCodes()
+    );
 
     if (issue == null) {
       return Map.of("success", false, "message", "일감 정보를 찾을 수 없습니다.");
@@ -90,15 +209,13 @@ public class KanbanController {
     boolean isNormalMove = "OB1".equals(to) || "OB2".equals(to) || "OB3".equals(to);
     boolean isAdminMove = "OB4".equals(to) || "OB5".equals(to);
 
-    // 2) 관리자 이동(OB4/OB5)은 관리자만
     if (isAdminMove) {
-      AuthorityVO auth = authorityService.getProjectAuth(userCode, projectCode);
-      boolean isAdmin = (auth != null) && "Y".equalsIgnoreCase(auth.getAdminCk());
+      AuthorityVO authVo = authorityService.getProjectAuth(userCode, projectCode);
+      boolean isAdmin = (authVo != null) && "Y".equalsIgnoreCase(authVo.getAdminCk());
       if (!isAdmin) {
         return Map.of("success", false, "message", "권한이 없습니다.");
       }
     } else if (isNormalMove) {
-      // 3) 일반 이동(OB1/OB2/OB3)은 프로젝트권한 OR 담당자
       if (!(canModifyProject || isAssignee)) {
         return Map.of("success", false, "message", "권한이 없습니다.");
       }
@@ -114,8 +231,6 @@ public class KanbanController {
     }
   }
 
-  
-  // 진척도 업데이트
   @ResponseBody
   @PostMapping("/api/kanban/progress")
   public Map<String, Object> updateProgress(@RequestBody ProgressUpdateRequest req, HttpSession session) {
@@ -132,13 +247,22 @@ public class KanbanController {
     Long projectCode = req.getProjectCode();
     Long issueCode = req.getIssueCode();
 
-    IssueVO issue = kanbanService.getIssue(userCode, projectCode, issueCode);
+    SessionIssueAuth auth = buildSessionIssueAuth(session);
+
+    IssueVO issue = kanbanService.getIssue(
+        userCode,
+        projectCode,
+        issueCode,
+        auth.getSysCk(),
+        auth.getAllProjectCodes(),
+        auth.getAdminProjectCodes(),
+        auth.getReadableProjectCodes()
+    );
 
     if (issue == null) {
       return Map.of("success", false, "message", "일감 정보를 찾을 수 없습니다.");
     }
 
-    // OB2에서만 허용 (statusId가 IssueVO에 들어있어야 함)
     String statusId = issue.getStatusId();
     if (!"OB2".equals(statusId)) {
       return Map.of("success", false, "message", "진행 상태에서만 진척도를 수정할 수 있습니다.");
@@ -164,6 +288,4 @@ public class KanbanController {
       return Map.of("success", false, "message", e.getMessage());
     }
   }
-
-
 }

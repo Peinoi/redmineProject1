@@ -7,7 +7,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface IssueService {
 	// 목록
-	  List<IssueVO> findVisibleIssues(Integer userCode, Long projectCode);
+	List<IssueVO> findVisibleIssues(String sysCk,
+            List<Long> allProjectCodes,
+            List<Long> adminProjectCodes,
+            List<Long> readableProjectCodes,
+            Long projectCode);
 	// 단건조회
 	public IssueVO findByIssueCode(IssueVO issue);
 	// 등록

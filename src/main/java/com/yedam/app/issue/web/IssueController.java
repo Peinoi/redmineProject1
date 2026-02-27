@@ -1,8 +1,11 @@
 package com.yedam.app.issue.web;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,6 +24,7 @@ import com.yedam.app.issue.service.IssueService;
 import com.yedam.app.issue.service.IssueVO;
 import com.yedam.app.log.service.LogService;
 import com.yedam.app.login.service.UserVO;
+import com.yedam.app.project.service.UserProjectAuthVO;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -63,17 +67,105 @@ public class IssueController {
 
   // 목록조회
   @GetMapping("issueList")
-  public String issueList(@RequestParam(required = false) Long projectCode, Model model, HttpSession session) {
-    UserVO user = (UserVO) session.getAttribute("user");
-    if (user == null) return "redirect:/login";
+  public String issueList(@RequestParam(required = false) Long projectCode,
+                          Model model,
+                          HttpSession session) {
 
-    Integer userCode = user.getUserCode();
+      UserVO user = (UserVO) session.getAttribute("user");
+      if (user == null) {
+          return "redirect:/login";
+      }
 
-    List<IssueVO> list = issueService.findVisibleIssues(userCode, projectCode);
-    model.addAttribute("list", list);
-    model.addAttribute("projectCode", projectCode);
+      @SuppressWarnings("unchecked")
+      List<UserProjectAuthVO> userAuthList =
+              (List<UserProjectAuthVO>) session.getAttribute("userAuth");
 
-    return "issue/list";
+      if (userAuthList == null || userAuthList.isEmpty()) {
+          model.addAttribute("list", List.of());
+          model.addAttribute("projectCode", projectCode);
+          model.addAttribute("errorMessage", "권한 정보가 없습니다.");
+          return "issue/list";
+      }
+
+      String sysCk = user.getSysCk();
+
+      Set<Long> allProjectSet = new LinkedHashSet<>();
+      Set<Long> adminProjectSet = new LinkedHashSet<>();
+      Set<Long> readableProjectSet = new LinkedHashSet<>();
+
+      for (UserProjectAuthVO auth : userAuthList) {
+          if (auth == null || auth.getProjectCode() == null) {
+              continue;
+          }
+
+          Long authProjectCode = auth.getProjectCode().longValue();
+
+          // 참여 프로젝트 전체
+          allProjectSet.add(authProjectCode);
+
+          // 관리자 프로젝트
+          if (auth.getAdmin() != null && auth.getAdmin() == 1) {
+              adminProjectSet.add(authProjectCode);
+          }
+
+          // 일반 사용자의 일감 읽기 권한
+          if ("일감".equals(auth.getCategory()) && "Y".equals(auth.getRdRol())) {
+              readableProjectSet.add(authProjectCode);
+          }
+      }
+
+      // 관리자 프로젝트는 readableProjectSet에서 제외
+      readableProjectSet.removeAll(adminProjectSet);
+
+      List<Long> allProjectCodes = new ArrayList<>(allProjectSet);
+      List<Long> adminProjectCodes = new ArrayList<>(adminProjectSet);
+      List<Long> readableProjectCodes = new ArrayList<>(readableProjectSet);
+
+      // sysCk = Y 인데 참여 프로젝트 자체가 없으면 빈 목록
+      if ("Y".equals(sysCk) && allProjectCodes.isEmpty()) {
+          model.addAttribute("list", List.of());
+          model.addAttribute("projectCode", projectCode);
+          return "issue/list";
+      }
+
+      // sysCk = N 인데 관리자/읽기권한 프로젝트가 하나도 없으면 빈 목록
+      if (!"Y".equals(sysCk) && adminProjectCodes.isEmpty() && readableProjectCodes.isEmpty()) {
+          model.addAttribute("list", List.of());
+          model.addAttribute("projectCode", projectCode);
+          return "issue/list";
+      }
+
+      // 특정 프로젝트가 들어왔을 때 권한 체크
+      if (projectCode != null) {
+          boolean allowed;
+
+          if ("Y".equals(sysCk)) {
+              allowed = allProjectCodes.contains(projectCode);
+          } else {
+              allowed = adminProjectCodes.contains(projectCode)
+                      || readableProjectCodes.contains(projectCode);
+          }
+
+          if (!allowed) {
+              model.addAttribute("list", List.of());
+              model.addAttribute("projectCode", projectCode);
+              model.addAttribute("errorMessage", "해당 프로젝트 조회 권한이 없습니다.");
+              return "issue/list";
+          }
+      }
+
+      List<IssueVO> list = issueService.findVisibleIssues(
+              sysCk,
+              allProjectCodes,
+              adminProjectCodes,
+              readableProjectCodes,
+              projectCode
+      );
+
+      model.addAttribute("list", list);
+      model.addAttribute("projectCode", projectCode);
+
+      return "issue/list";
   }
 
 //단건조회

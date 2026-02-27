@@ -8,7 +8,12 @@ import com.yedam.app.issue.service.IssueVO;
 
 public interface IssueMapper {
 	// 로그인 유저의 프로젝트 일감 전체 목록
-	List<IssueVO> selectVisibleIssues(@Param("userCode") Integer userCode, @Param("projectCode") Long projectCode);
+	  List<IssueVO> selectVisibleIssues(@Param("sysCk") String sysCk,
+              @Param("allProjectCodes") List<Long> allProjectCodes,
+              @Param("adminProjectCodes") List<Long> adminProjectCodes,
+              @Param("readableProjectCodes") List<Long> readableProjectCodes,
+              @Param("projectCode") Long projectCode);
+
 
 	// 단건조회
 	public IssueVO selectIssue(IssueVO issue);

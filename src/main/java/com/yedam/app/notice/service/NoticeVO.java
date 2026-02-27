@@ -10,6 +10,8 @@ import lombok.Data;
 public class NoticeVO {
   private Long noticeCode;
   private Long projectCode;
+  private String projectStatus;
+  private String projectStatusName;
 
   private String title;
   private String content;

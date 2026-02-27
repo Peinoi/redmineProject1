@@ -4,154 +4,216 @@
 
 <mapper namespace="com.yedam.app.notice.mapper.NoticeMapper">
 
+  <!-- 목록 -->
   <select id="selectNoticeList" resultType="NoticeVO">
     SELECT
-    n.notice_code   AS noticeCode,
-    n.project_code  AS projectCode,
-    p.project_name  AS projectName,
-    n.title         AS title,
-    n.user_code     AS userCode,
-    u.name          AS creatorName,
-    n.created_at    AS createdAt,
-    n.updated_at    AS updatedAt,
-    n.file_code     AS fileCode
-  FROM notices n
-  JOIN projects p
-    ON p.project_code = n.project_code
-  LEFT JOIN users u
-    ON u.user_code = n.user_code
-
-  JOIN vw_user_auth a
-    ON a.project_code = n.project_code
-   AND a.user_code = #{loginUserCode}
-  WHERE 1=1
-    AND (
-          (a.admin_ck = 'Y' AND a.status IN ('OD1','OD3'))
-       OR (a.admin_ck = 'N' AND a.status = 'OD1')
-    )
-
-  ORDER BY n.notice_code DESC
-</select>
-  
-  <!-- 등록 -->
- <insert id="insertNotice" parameterType="NoticeVO">
-  <selectKey keyProperty="noticeCode" resultType="long" order="BEFORE">
-    SELECT NVL(MAX(n.notice_code), 0) + 1
+      n.notice_code   AS noticeCode,
+      n.project_code  AS projectCode,
+      p.project_name  AS projectName,
+      n.title         AS title,
+      n.user_code     AS userCode,
+      u.name          AS creatorName,
+      n.created_at    AS createdAt,
+      n.updated_at    AS updatedAt,
+      n.file_code     AS fileCode
     FROM notices n
-  </selectKey>
+    JOIN projects p
+      ON p.project_code = n.project_code
+    LEFT JOIN users u
+      ON u.user_code = n.user_code
+    WHERE 1 = 1
 
-  INSERT INTO notices
-  <trim prefix="(" suffix=")" suffixOverrides=",">
-    notice_code,
-    project_code,
-    title,
-    content,
-    user_code,
-    created_at,
-    updated_at,
-    <if test="fileCode != null">file_code,</if>
-  </trim>
-  <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
-    #{noticeCode},
-    #{projectCode},
-    #{title},
-    #{content},
-    #{userCode},
-    SYSTIMESTAMP,
-    SYSTIMESTAMP,
-    <if test="fileCode != null">#{fileCode},</if>
-  </trim>
-</insert>
+    <if test="cond != null and cond.projectCode != null">
+      AND n.project_code = #{cond.projectCode}
+    </if>
 
+    <choose>
+      <when test='"Y".equals(sysCk)'>
+        AND n.project_code IN
+        <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+          #{code}
+        </foreach>
+        AND p.status IN ('OD1', 'OD3')
+      </when>
 
-<!-- 상세 -->
-<select id="selectNoticeInfo" resultType="NoticeVO">
-  SELECT
-    n.notice_code   AS noticeCode,
-    n.project_code  AS projectCode,
-    p.project_name  AS projectName,
-    n.title         AS title,
-    n.content       AS content,
-    n.user_code     AS userCode,
-    u.name          AS creatorName,
-    n.created_at    AS createdAt,
-    n.updated_at    AS updatedAt,
-    n.file_code     AS fileCode,
+      <otherwise>
+        AND (
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status IN ('OD1', 'OD3')
+            )
+          </if>
 
-    d.original_name AS originalName,
-    d.uploaded_at   AS uploadedAt,
-    d.path          AS filePath
-  FROM notices n
-  JOIN projects p
-    ON p.project_code = n.project_code
-  LEFT JOIN users u
-    ON u.user_code = n.user_code
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0 and readableProjectCodes != null and readableProjectCodes.size() > 0">
+            OR
+          </if>
 
-  LEFT JOIN (
+          <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status = 'OD1'
+            )
+          </if>
+        )
+      </otherwise>
+    </choose>
+
+    ORDER BY n.notice_code DESC
+  </select>
+
+  <!-- 등록 -->
+  <insert id="insertNotice" parameterType="NoticeVO">
+    <selectKey keyProperty="noticeCode" resultType="long" order="BEFORE">
+      SELECT NVL(MAX(n.notice_code), 0) + 1
+      FROM notices n
+    </selectKey>
+
+    INSERT INTO notices
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      notice_code,
+      project_code,
+      title,
+      content,
+      user_code,
+      created_at,
+      updated_at,
+      <if test="fileCode != null">file_code,</if>
+    </trim>
+    <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+      #{noticeCode},
+      #{projectCode},
+      #{title},
+      #{content},
+      #{userCode},
+      SYSTIMESTAMP,
+      SYSTIMESTAMP,
+      <if test="fileCode != null">#{fileCode},</if>
+    </trim>
+  </insert>
+
+  <!-- 상세 -->
+  <select id="selectNoticeInfo" resultType="NoticeVO">
     SELECT
-      a.file_code,
-      ad.original_name,
-      ad.path,
-      a.uploaded_at
-    FROM attachments a
-    JOIN attachments_detail ad
-      ON ad.file_code = a.file_code
-     AND ad.is_used = 1
-  ) d
-    ON d.file_code = n.file_code
+      n.notice_code   AS noticeCode,
+      n.project_code  AS projectCode,
+      p.project_name  AS projectName,
+      p.status AS projectStatus,
+      n.title         AS title,
+      n.content       AS content,
+      n.user_code     AS userCode,
+      u.name          AS creatorName,
+      n.created_at    AS createdAt,
+      n.updated_at    AS updatedAt,
+      n.file_code     AS fileCode,
 
-  JOIN vw_user_auth a2
-    ON a2.project_code = n.project_code
-   AND a2.user_code = #{loginUserCode}
-   AND a2.status = 'OD1'
-  WHERE n.notice_code = #{noticeCode}
-</select>
+      d.original_name AS originalName,
+      d.uploaded_at   AS uploadedAt,
+      d.path          AS filePath
+    FROM notices n
+    JOIN projects p
+      ON p.project_code = n.project_code
+    LEFT JOIN users u
+      ON u.user_code = n.user_code
+    LEFT JOIN (
+      SELECT
+        a.file_code,
+        ad.original_name,
+        ad.path,
+        a.uploaded_at
+      FROM attachments a
+      JOIN attachments_detail ad
+        ON ad.file_code = a.file_code
+       AND ad.is_used = 1
+    ) d
+      ON d.file_code = n.file_code
+    WHERE n.notice_code = #{noticeCode}
 
-  
+    <choose>
+      <when test='"Y".equals(sysCk)'>
+        AND n.project_code IN
+        <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+          #{code}
+        </foreach>
+        AND p.status IN ('OD1', 'OD3')
+      </when>
+
+      <otherwise>
+        AND (
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status IN ('OD1', 'OD3')
+            )
+          </if>
+
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0 and readableProjectCodes != null and readableProjectCodes.size() > 0">
+            OR
+          </if>
+
+          <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status = 'OD1'
+            )
+          </if>
+        )
+      </otherwise>
+    </choose>
+  </select>
+
   <!-- 수정 -->
   <update id="updateNotice" parameterType="NoticeVO">
-  UPDATE notices
-  <set>
-  <if test="title != null">
-    title = #{title},  
-  </if>
-  <if test="content != null"> 
-    content = #{content},
-  </if>
-    updated_at = SYSTIMESTAMP,
-    <!-- 삭제 체크면 null로 -->
-    <if test="removeFile != null and removeFile">
-      file_code = NULL,
-    </if>
+    UPDATE notices
+    <set>
+      <if test="title != null">
+        title = #{title},
+      </if>
+      <if test="content != null">
+        content = #{content},
+      </if>
+      updated_at = SYSTIMESTAMP,
 
-    <!-- 삭제 체크 아니고 새 fileCode가 있으면 교체 -->
-    <if test="(removeFile == null or removeFile == false) and fileCode != null">
-      file_code = #{fileCode},
-    </if>
-  </set>
-  WHERE notice_code = #{noticeCode}
-</update>
-  
+      <if test="removeFile != null and removeFile">
+        file_code = NULL,
+      </if>
 
+      <if test="(removeFile == null or removeFile == false) and fileCode != null">
+        file_code = #{fileCode},
+      </if>
+    </set>
+    WHERE notice_code = #{noticeCode}
+  </update>
 
-	<!-- 삭제 -->
-<delete id="deleteNotice">
-  DELETE FROM notices
-  WHERE notice_code = #{noticeCode}
-</delete>
-	
-	
-	<select id="selectNoticeByCode" resultType="NoticeVO">
-  SELECT
-    n.notice_code   AS noticeCode,
-    n.project_code  AS projectCode,
-    n.user_code     AS userCode,
-    n.title         AS title,
-    n.content       AS content,
-    n.created_at    AS createdAt,
-    n.updated_at    AS updatedAt
-  FROM notices n
-  WHERE n.notice_code = #{noticeCode}
-</select>
-	
+  <!-- 삭제 -->
+  <delete id="deleteNotice">
+    DELETE FROM notices
+    WHERE notice_code = #{noticeCode}
+  </delete>
+
+  <select id="selectNoticeByCode" resultType="NoticeVO">
+    SELECT
+      n.notice_code   AS noticeCode,
+      n.project_code  AS projectCode,
+      n.user_code     AS userCode,
+      n.title         AS title,
+      n.content       AS content,
+      n.created_at    AS createdAt,
+      n.updated_at    AS updatedAt
+    FROM notices n
+    WHERE n.notice_code = #{noticeCode}
+  </select>
+
 </mapper>

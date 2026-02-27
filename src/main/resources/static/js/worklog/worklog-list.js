@@ -215,6 +215,7 @@
       issueCode: (d.issueCode || "").trim(),
       projectCode: (d.projectCode || "").trim(),
       projectName: (d.projectName || "").trim(),
+      projectStatus: (d.projectStatus || "").trim(),
       typeCode: (d.typeCode || "").trim(),
       typeName: (d.typeName || "").trim(),
       workerCode: (d.workerCode || "").trim(),
@@ -225,6 +226,16 @@
       spentMinutes: Number(String(d.spentMinutes || "0").trim() || 0),
       loginUserCode: (d.loginUserCode || "").trim(),
     };
+  };
+
+  const isEndedProjectRow = (rowOrTr) => {
+    if (!rowOrTr) return false;
+
+    if (rowOrTr.dataset) {
+      return String(rowOrTr.dataset.projectStatus || "").trim() === "OD3";
+    }
+
+    return String(rowOrTr.projectStatus || "").trim() === "OD3";
   };
 
   const renderPagination = (totalPages) => {
@@ -1985,6 +1996,7 @@
 
     const tr = dropdown.closest("tr.worklogRow");
     const d = tr ? getRow(tr) : null;
+    const endedProject = isEndedProjectRow(tr);
     const workLogCode = d?.worklogCode || "";
     const projectCode = d?.projectCode || "";
 
@@ -1995,6 +2007,11 @@
       menu.style.display = "block";
       placeFixedBelowRight(btn, menu, 4);
       menu.classList.add("show");
+
+      if (endedProject) {
+        applyMenuRules(menu, { canEdit: false, canDelete: false });
+        return;
+      }
 
       applyMenuRules(menu, { canEdit: false, canDelete: false });
 
@@ -2146,6 +2163,12 @@
     if (!ownerTr) return;
 
     const d = getRow(ownerTr);
+
+    if (isEndedProjectRow(ownerTr)) {
+      closeMenusHard();
+      showToast("종료된 프로젝트는 변경 불가합니다.");
+      return;
+    }
 
     let perms;
     try {

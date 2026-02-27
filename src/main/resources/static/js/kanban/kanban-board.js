@@ -93,6 +93,11 @@
     t.show();
   };
 
+  const isEndedProjectCard = (card) => {
+    const projectStatus = String(card?.dataset?.projectStatus || "").trim();
+    return projectStatus === "OD3";
+  };
+
   // ------------------------------
   // Worklog helpers
   // ------------------------------
@@ -1117,6 +1122,11 @@
   const openProgressModal = async (card) => {
     if (!ui.progressModalEl || !progressModal) return;
 
+    if (isEndedProjectCard(card)) {
+      showToast("종료된 프로젝트는 변경 불가합니다.");
+      return;
+    }
+
     const issueCode = Number(card.dataset.issueCode || 0);
     const projectCode = resolveProjectCode(card);
 
@@ -1442,6 +1452,7 @@
   const initSortable = (colBody) => {
     let dragFromCol = null;
     let dragOldIndex = null;
+    let blockedEndedProjectDrag = false;
 
     const isDoneCol = (el) => String(el?.dataset?.status || "") === "OB5";
     const doneThisCol = isDoneCol(colBody);
@@ -1459,11 +1470,20 @@
       onStart: (evt) => {
         dragFromCol = evt.from;
         dragOldIndex = evt.oldIndex;
+        blockedEndedProjectDrag = false;
+
+        if (isEndedProjectCard(evt.item)) {
+          blockedEndedProjectDrag = true;
+          showToast("종료된 프로젝트는 변경 불가합니다.");
+          return;
+        }
 
         if (isDoneCol(evt.from)) toastNoAuthOnce();
       },
 
       onMove: (evt) => {
+        if (blockedEndedProjectDrag) return false;
+        if (isEndedProjectCard(evt.dragged)) return false;
         if (isDoneCol(evt.from)) return false;
         if (evt.dragged && evt.dragged.classList.contains("kb-done"))
           return false;
@@ -1471,6 +1491,12 @@
       },
 
       onEnd: async (evt) => {
+        if (blockedEndedProjectDrag || isEndedProjectCard(evt.item)) {
+          blockedEndedProjectDrag = false;
+          revertToOrigin(evt.item, dragFromCol, dragOldIndex);
+          return;
+        }
+
         if (isSaving.value) {
           revertToOrigin(evt.item, dragFromCol, dragOldIndex);
           return;

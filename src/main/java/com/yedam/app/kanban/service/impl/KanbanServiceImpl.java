@@ -29,17 +29,45 @@ public class KanbanServiceImpl implements KanbanService {
   private final IssueMapper issueMapper;
   private final LogService logService;
   private static final DateTimeFormatter LOG_DT =
-		    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-  
+      DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
   private String fmt(LocalDateTime dt) {
-	  if (dt == null) return null;
-	  return dt.format(LOG_DT);
-	}
+    if (dt == null) return null;
+    return dt.format(LOG_DT);
+  }
 
   @Override
-  public Map<String, List<IssueVO>> getBoardColumns(Integer userCode, Long projectCode, String viewScope) {
+  public Map<String, List<IssueVO>> getBoardColumns(Integer userCode,
+                                                    Long projectCode,
+                                                    String viewScope,
+                                                    String sysCk,
+                                                    List<Long> allProjectCodes,
+                                                    List<Long> adminProjectCodes,
+                                                    List<Long> readableProjectCodes) {
     String scope = (viewScope == null || viewScope.isBlank()) ? "ME" : viewScope;
-    List<IssueVO> list = kanbanMapper.selectKanbanIssuesByScope(userCode, scope, projectCode);
+
+    if ("Y".equals(sysCk)) {
+      if (allProjectCodes == null || allProjectCodes.isEmpty()) {
+        return groupByStatus(List.of());
+      }
+    } else {
+      boolean noAdmin = (adminProjectCodes == null || adminProjectCodes.isEmpty());
+      boolean noRead = (readableProjectCodes == null || readableProjectCodes.isEmpty());
+      if (noAdmin && noRead) {
+        return groupByStatus(List.of());
+      }
+    }
+
+    List<IssueVO> list = kanbanMapper.selectKanbanIssuesByScope(
+        userCode,
+        scope,
+        projectCode,
+        sysCk,
+        allProjectCodes,
+        adminProjectCodes,
+        readableProjectCodes
+    );
+
     return groupByStatus(list);
   }
 
@@ -68,7 +96,6 @@ public class KanbanServiceImpl implements KanbanService {
       throw new IllegalArgumentException("invalid request");
     }
 
-    // 1) before 조회
     IssueVO param = new IssueVO();
     param.setIssueCode(req.getIssueCode());
     IssueVO before = issueMapper.selectIssue(param);
@@ -79,7 +106,6 @@ public class KanbanServiceImpl implements KanbanService {
     boolean hasOrders = req.getToOrder() != null && !req.getToOrder().isEmpty();
     int tmpPos = (req.getToIndex() == null ? 9999 : req.getToIndex() + 1);
 
-    // 2) 상태 + 임시 position 먼저 반영
     kanbanMapper.updateIssueStatusAndPosition(
         req.getProjectCode(),
         req.getIssueCode(),
@@ -88,7 +114,6 @@ public class KanbanServiceImpl implements KanbanService {
         tmpPos
     );
 
-    // 3) from/to 컬럼을 1..N으로 재정렬 저장
     if (hasOrders) {
       List<IssuePosUpdate> updates = new ArrayList<>();
 
@@ -105,10 +130,8 @@ public class KanbanServiceImpl implements KanbanService {
       kanbanMapper.batchUpdatePositions(updates);
     }
 
-    // 4) after 조회
     IssueVO after = issueMapper.selectIssue(param);
 
-    // 5) 변경 meta 만들고 로그 저장
     String meta = buildKanbanMoveMeta(before, after);
 
     logService.addActionLog(
@@ -121,14 +144,12 @@ public class KanbanServiceImpl implements KanbanService {
     );
   }
 
-  // 칸반 이동에서 필요한 것만 기록: status/progress/position
   private String buildKanbanMoveMeta(IssueVO before, IssueVO after) {
     StringBuilder sb = new StringBuilder();
     sb.append("{\"changes\":[");
 
     boolean first = true;
 
-    // status: 비교는 statusId, 기록은 statusName
     first = appendChangeByCode(sb, first, "status",
         before == null ? null : before.getStatusId(),
         after == null ? null : after.getStatusId(),
@@ -136,19 +157,16 @@ public class KanbanServiceImpl implements KanbanService {
         after == null ? null : after.getStatusName()
     );
 
-    // progress
     first = appendChange(sb, first, "progress",
         before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
         after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress())
     );
-    
-    // 시작일
+
     first = appendChange(sb, first, "startedAt",
         before == null ? null : fmt(before.getStartedAt()),
         after == null ? null : fmt(after.getStartedAt())
     );
 
-    // 완료일
     first = appendChange(sb, first, "resolvedAt",
         before == null ? null : fmt(before.getResolvedAt()),
         after == null ? null : fmt(after.getResolvedAt())
@@ -159,8 +177,8 @@ public class KanbanServiceImpl implements KanbanService {
   }
 
   private boolean appendChangeByCode(StringBuilder sb, boolean first, String field,
-                                    String beforeCode, String afterCode,
-                                    String beforeDisplay, String afterDisplay) {
+                                     String beforeCode, String afterCode,
+                                     String beforeDisplay, String afterDisplay) {
     if (beforeCode == null && afterCode == null) return first;
     if (beforeCode != null && beforeCode.equals(afterCode)) return first;
 
@@ -202,27 +220,24 @@ public class KanbanServiceImpl implements KanbanService {
             .replace("\r", "\\r")
             .replace("\t", "\\t");
   }
-  
-  // 진척도 업데이트
+
   @Transactional
   @Override
   public void updateProgress(Integer userCode, Long projectCode, Long issueCode, Integer progress) {
     if (userCode == null || projectCode == null || issueCode == null || progress == null) {
       throw new IllegalArgumentException("invalid request");
     }
-    
+
     IssueVO param = new IssueVO();
     param.setIssueCode(issueCode);
 
     IssueVO before = issueMapper.selectIssue(param);
     if (before == null) throw new IllegalArgumentException("issue not found");
 
-    // 안전: 요청 projectCode와 실제 projectCode가 다르면 차단
     if (before.getProjectCode() == null || !before.getProjectCode().equals(projectCode)) {
       throw new IllegalArgumentException("프로젝트 정보가 일치하지 않습니다.");
     }
 
-    // 진행에서만 수정 허용
     String statusId = before.getStatusId();
     if (!"OB2".equals(statusId)) {
       throw new IllegalArgumentException("진척도 변경은 진행 상태에서만 가능합니다.");
@@ -235,7 +250,6 @@ public class KanbanServiceImpl implements KanbanService {
 
     IssueVO after = issueMapper.selectIssue(param);
 
-    // logs에 남길 meta
     String meta = buildProgressMeta(before, after);
 
     logService.addActionLog(
@@ -254,7 +268,6 @@ public class KanbanServiceImpl implements KanbanService {
 
     boolean first = true;
 
-    // progress
     first = appendChange(sb, first, "progress",
         before == null || before.getProgress() == null ? null : String.valueOf(before.getProgress()),
         after == null || after.getProgress() == null ? null : String.valueOf(after.getProgress())
@@ -263,13 +276,34 @@ public class KanbanServiceImpl implements KanbanService {
     sb.append("]}");
     return sb.toString();
   }
-  
+
   @Override
   @Transactional(readOnly = true)
-  public IssueVO getIssue(Integer userCode, Long projectCode, Long issueCode) {
+  public IssueVO getIssue(Integer userCode,
+                          Long projectCode,
+                          Long issueCode,
+                          String sysCk,
+                          List<Long> allProjectCodes,
+                          List<Long> adminProjectCodes,
+                          List<Long> readableProjectCodes) {
     if (userCode == null || projectCode == null || issueCode == null) return null;
-    return kanbanMapper.selectIssueForAuth(userCode, projectCode, issueCode);
+
+    if ("Y".equals(sysCk)) {
+      if (allProjectCodes == null || allProjectCodes.isEmpty()) return null;
+    } else {
+      boolean noAdmin = (adminProjectCodes == null || adminProjectCodes.isEmpty());
+      boolean noRead = (readableProjectCodes == null || readableProjectCodes.isEmpty());
+      if (noAdmin && noRead) return null;
+    }
+
+    return kanbanMapper.selectIssueForAuth(
+        userCode,
+        projectCode,
+        issueCode,
+        sysCk,
+        allProjectCodes,
+        adminProjectCodes,
+        readableProjectCodes
+    );
   }
-
-
 }

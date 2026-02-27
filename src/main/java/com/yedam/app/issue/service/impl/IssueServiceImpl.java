@@ -24,8 +24,18 @@ public class IssueServiceImpl implements IssueService {
   private final LogService logService;
 
   @Override
-  public List<IssueVO> findVisibleIssues(Integer userCode, Long projectCode) {
-    return issueMapper.selectVisibleIssues(userCode, projectCode);
+  public List<IssueVO> findVisibleIssues(String sysCk,
+                                         List<Long> allProjectCodes,
+                                         List<Long> adminProjectCodes,
+                                         List<Long> readableProjectCodes,
+                                         Long projectCode) {
+      return issueMapper.selectVisibleIssues(
+              sysCk,
+              allProjectCodes,
+              adminProjectCodes,
+              readableProjectCodes,
+              projectCode
+      );
   }
 
   @Override

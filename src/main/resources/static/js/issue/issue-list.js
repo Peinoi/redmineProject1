@@ -233,6 +233,11 @@
     bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 }).show();
   };
 
+  const isEndedProject = (tr) => {
+    const projectStatus = (tr?.dataset?.projectStatus || "").trim();
+    return projectStatus === "OD3";
+  };
+
   const renderListButtons = (listEl, items, onPick) => {
     if (!listEl) return;
     listEl.innerHTML = "";
@@ -963,9 +968,18 @@
     const menu = dropdown?.querySelector(".issue-dropdown-menu");
     if (!btn || !menu) return;
 
+    const tr = dropdown.closest("tr.issueRow");
+
+    // 종료 프로젝트면 메뉴 자체를 열지 않음
+    if (isEndedProject(tr)) {
+      e.preventDefault();
+      closeMenusHard();
+      showToast("종료된 프로젝트는 변경 불가합니다.");
+      return;
+    }
+
     bootstrap.Dropdown.getOrCreateInstance(btn, { autoClose: "outside" });
 
-    const tr = dropdown.closest("tr.issueRow");
     const issueCode = tr?.dataset?.issueCode || "";
     const projectCode = tr?.dataset?.projectCode || "";
 
@@ -977,13 +991,10 @@
       placeFixedBelowRight(btn, menu, 4);
       menu.classList.add("show");
 
-      // 1) 기본은 잠금(권한 조회 전까지)
       applyMenuRules(menu, { canEdit: false, canDelete: false });
 
-      // 2) 완료면 무조건 잠금 유지
       if ((tr?.dataset?.statusId || "") === "OB5") return;
 
-      // 3) 서버 권한 조회해서 반영
       try {
         const perms = await fetchIssueMenuPerms(projectCode, issueCode);
         applyMenuRules(menu, perms);
@@ -1057,6 +1068,12 @@
 
     const ownerTr = findRowByIssueCode(issueCode) || tr;
     const rowInfo = getPermsFromRow(ownerTr);
+
+    if (isEndedProject(ownerTr)) {
+      showToast("종료된 프로젝트는 변경 불가합니다.");
+      return;
+    }
+
     if (rowInfo.statusId === "OB5") {
       showToast("완료된 일감은 더 이상 변경할 수 없습니다.");
       return;

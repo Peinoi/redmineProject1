@@ -21,15 +21,53 @@
     FROM comments c
     JOIN notices n
       ON n.notice_code = c.notice_code
-    JOIN vw_user_auth a
-      ON a.project_code = n.project_code
-     AND a.user_code = #{loginUserCode}
-     AND a.status = 'OD1'
+    JOIN projects p
+      ON p.project_code = n.project_code
     LEFT JOIN users u
       ON u.user_code = c.user_code
     LEFT JOIN users du
       ON du.user_code = c.deleted_by_code
     WHERE c.notice_code = #{noticeCode}
+
+    <!-- 세션 권한 기반 프로젝트/상태 필터 -->
+    <choose>
+      <when test='"Y".equals(sysCk)'>
+        AND n.project_code IN
+        <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+          #{code}
+        </foreach>
+        AND p.status IN ('OD1', 'OD3')
+      </when>
+
+      <otherwise>
+        AND (
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status IN ('OD1', 'OD3')
+            )
+          </if>
+
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0 and readableProjectCodes != null and readableProjectCodes.size() > 0">
+            OR
+          </if>
+
+          <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status = 'OD1'
+            )
+          </if>
+        )
+      </otherwise>
+    </choose>
+
     ORDER BY c.comment_code DESC
   </select>
 
@@ -45,17 +83,57 @@
       c.updated_at        AS updatedAt,
       c.is_deleted        AS isDeleted,
       c.deleted_at        AS deletedAt,
-      c.deleted_by_code   AS deletedByCode
+      c.deleted_by_code   AS deletedByCode,
+      du.name             AS deletedByName
     FROM comments c
     JOIN notices n
       ON n.notice_code = c.notice_code
-    JOIN vw_user_auth a
-      ON a.project_code = n.project_code
-     AND a.user_code = #{loginUserCode}
-     AND a.status = 'OD1'
+    JOIN projects p
+      ON p.project_code = n.project_code
     LEFT JOIN users u
       ON u.user_code = c.user_code
+    LEFT JOIN users du
+      ON du.user_code = c.deleted_by_code
     WHERE c.comment_code = #{commentCode}
+
+    <!-- 세션 권한 기반 프로젝트/상태 필터 -->
+    <choose>
+      <when test='"Y".equals(sysCk)'>
+        AND n.project_code IN
+        <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+          #{code}
+        </foreach>
+        AND p.status IN ('OD1', 'OD3')
+      </when>
+
+      <otherwise>
+        AND (
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status IN ('OD1', 'OD3')
+            )
+          </if>
+
+          <if test="adminProjectCodes != null and adminProjectCodes.size() > 0 and readableProjectCodes != null and readableProjectCodes.size() > 0">
+            OR
+          </if>
+
+          <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+            (
+              n.project_code IN
+              <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                #{code}
+              </foreach>
+              AND p.status = 'OD1'
+            )
+          </if>
+        )
+      </otherwise>
+    </choose>
   </select>
 
   <!-- 등록 -->
@@ -83,7 +161,7 @@
     )
   </insert>
 
-  <!-- 수정 삭제 된 건 수정 금지 -->
+  <!-- 수정 (삭제된 건 수정 금지) -->
   <update id="updateComment" parameterType="NoticeCommentVO">
     UPDATE comments
        SET content = #{content},
@@ -92,7 +170,7 @@
        AND is_deleted = 0
   </update>
 
-  <!-- 삭제 -->
+  <!-- 삭제(소프트) -->
   <update id="softDeleteComment">
     UPDATE comments
        SET is_deleted = 1,

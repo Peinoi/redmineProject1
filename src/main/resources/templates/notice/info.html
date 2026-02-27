@@ -22,7 +22,10 @@
         <i class="fas fa-arrow-left me-1"></i>돌아가기
       </button>
 
-      <div class="d-flex gap-2" th:if="${showManageButtons}">
+      <div
+        class="d-flex gap-2"
+        th:if="${showManageButtons and notice.projectStatus != 'OD3'}"
+      >
         <button
           type="button"
           class="btn btn-success"
@@ -121,105 +124,124 @@
     <section class="notice-comments">
       <h4 class="section-title">댓글</h4>
 
-      <div class="comment-write" th:if="${canWriteComment}">
-        <input type="hidden" id="noticeCode" th:value="${notice.noticeCode}" />
-        <textarea
-          id="commentContent"
-          class="form-control"
-          rows="3"
-          placeholder="댓글을 입력하세요. (Enter 등록)"
-        ></textarea>
-
-        <div class="d-flex justify-content-between align-items-center mt-2">
-          <div class="text-muted small" id="commentCounter">0 / 500</div>
-          <button type="button" class="btn btn-success" id="btnCommentSubmit">
-            등록
-          </button>
-        </div>
-      </div>
-      <div
-        class="comment-write-disabled text-muted"
-        th:if="${!canWriteComment}"
-      >
-        댓글 작성 권한이 없습니다.
+      <div class="comment-write-disabled text-muted" th:if="${!canReadComment}">
+        댓글 조회 권한이 없습니다.
       </div>
 
-      <div class="comment-list" id="commentList">
+      <div th:if="${canReadComment}">
         <div
-          class="comment-empty"
-          th:if="${comments == null or #lists.isEmpty(comments)}"
+          class="comment-write"
+          th:if="${canWriteComment and notice.projectStatus != 'OD3'}"
         >
-          댓글이 없습니다.
+          <input
+            type="hidden"
+            id="noticeCode"
+            th:value="${notice.noticeCode}"
+          />
+          <textarea
+            id="commentContent"
+            class="form-control"
+            rows="3"
+            placeholder="댓글을 입력하세요. (Enter 등록)"
+          ></textarea>
+
+          <div class="d-flex justify-content-between align-items-center mt-2">
+            <div class="text-muted small" id="commentCounter">0 / 500</div>
+            <button type="button" class="btn btn-success" id="btnCommentSubmit">
+              등록
+            </button>
+          </div>
         </div>
 
         <div
-          class="comment-item"
-          th:each="c : ${comments}"
-          th:attr="data-comment-code=${c.commentCode}, data-user-code=${c.userCode}, data-is-deleted=${c.isDeleted}"
+          class="comment-write-disabled text-muted"
+          th:if="${canReadComment and notice.projectStatus == 'OD3'}"
         >
-          <div class="comment-head">
-            <div class="head-left">
-              <a
-                class="comment-writer user-link text-decoration-none"
-                th:if="${c.userCode != null}"
-                th:href="@{/users/{userCode}(userCode=${c.userCode})}"
-                th:text="${c.userName != null ? c.userName : c.userCode}"
-                >작성자</a
-              >
+          종료된 프로젝트는 댓글을 작성할 수 없습니다.
+        </div>
 
-              <span
-                class="comment-writer"
-                th:if="${c.userCode == null}"
-                th:text="${c.userName != null ? c.userName : '-'}"
-                >-</span
-              >
-              <span
-                class="comment-time"
-                th:text="${#temporals.format(c.createdAt,'yyyy-MM-dd HH:mm')}"
-                >시간</span
-              >
-            </div>
+        <div
+          class="comment-write-disabled text-muted"
+          th:if="${canReadComment and notice.projectStatus != 'OD3' and !canWriteComment}"
+        >
+          댓글 작성 권한이 없습니다.
+        </div>
 
-            <div class="head-actions" th:if="${c.isDeleted == 0}">
-              <!-- 수정/ 작성자 -->
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary btnCommentEdit"
-                th:if="${c.userCode == loginUserCode}"
-                th:attr="data-can-modify=${canModifyComment}"
-              >
-                수정
-              </button>
-
-              <!-- 삭제/ 작성자 관리자 -->
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-danger btnCommentDelete"
-                th:if="${c.userCode == loginUserCode or isAdmin}"
-                th:attr="data-can-delete=${canDeleteComment}"
-              >
-                삭제
-              </button>
-            </div>
+        <div class="comment-list" id="commentList">
+          <div
+            class="comment-empty"
+            th:if="${comments == null or #lists.isEmpty(comments)}"
+          >
+            댓글이 없습니다.
           </div>
 
-          <!-- 본문 -->
-          <pre
-            class="comment-body"
-            th:if="${c.isDeleted == 0}"
-            th:text="${c.content}"
+          <div
+            class="comment-item"
+            th:each="c : ${comments}"
+            th:attr="data-comment-code=${c.commentCode}, data-user-code=${c.userCode}, data-is-deleted=${c.isDeleted}"
           >
+            <div class="comment-head">
+              <div class="head-left">
+                <a
+                  class="comment-writer user-link text-decoration-none"
+                  th:if="${c.userCode != null}"
+                  th:href="@{/users/{userCode}(userCode=${c.userCode})}"
+                  th:text="${c.userName != null ? c.userName : c.userCode}"
+                  >작성자</a
+                >
+
+                <span
+                  class="comment-writer"
+                  th:if="${c.userCode == null}"
+                  th:text="${c.userName != null ? c.userName : '-'}"
+                  >-</span
+                >
+
+                <span
+                  class="comment-time"
+                  th:text="${#temporals.format(c.createdAt,'yyyy-MM-dd HH:mm')}"
+                  >시간</span
+                >
+              </div>
+
+              <div class="head-actions" th:if="${c.isDeleted == 0}">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-secondary btnCommentEdit"
+                  th:if="${c.userCode == loginUserCode}"
+                  th:attr="data-can-modify=${canModifyComment}"
+                >
+                  수정
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-danger btnCommentDelete"
+                  th:if="${c.userCode == loginUserCode or isAdmin}"
+                  th:attr="data-can-delete=${canDeleteComment}"
+                >
+                  삭제
+                </button>
+              </div>
+            </div>
+
+            <pre
+              class="comment-body"
+              th:if="${c.isDeleted == 0}"
+              th:text="${c.content}"
+            >
 댓글</pre
-          >
-          <pre
-            class="comment-body deleted"
-            th:if="${c.isDeleted == 1}"
-            th:with="canSeeMeta=${isAdmin or c.userCode == loginUserCode or c.deletedByCode == loginUserCode}"
-          ><span
-    th:if="${canSeeMeta}"
-    th:text="|${c.deletedAt != null ? #temporals.format(c.deletedAt,'yyyy-MM-dd HH:mm') : '-'} · ${c.deletedByName != null ? c.deletedByName : c.deletedByCode}에게 삭제된 댓글입니다.|"
-  ></span><span th:unless="${canSeeMeta}">삭제된 댓글입니다.</span>
-</pre>
+            >
+
+            <pre
+              class="comment-body deleted"
+              th:if="${c.isDeleted == 1}"
+              th:with="canSeeMeta=${isAdmin or c.userCode == loginUserCode or c.deletedByCode == loginUserCode}"
+            ><span
+          th:if="${canSeeMeta}"
+          th:text="|${c.deletedAt != null ? #temporals.format(c.deletedAt,'yyyy-MM-dd HH:mm') : '-'} · ${c.deletedByName != null ? c.deletedByName : c.deletedByCode}에게 삭제된 댓글입니다.|"
+        ></span><span th:unless="${canSeeMeta}">삭제된 댓글입니다.</span></pre>
+          </div>
         </div>
       </div>
     </section>

@@ -5,79 +5,143 @@
 
 <mapper namespace="com.yedam.app.worklog.mapper.WorkLogMapper">
 
-<!-- 목록 -->
+  <!-- 목록 -->
   <select id="selectWorklogList" resultType="map">
-  SELECT
-    wl.work_log_code  AS "workLogCode",
-    i.issue_code      AS "issueCode",
-    i.title           AS "issueTitle",
-    p.project_code    AS "projectCode",
-    p.project_name    AS "projectName",
-    i.type_code       AS "typeCode",
-    t.type_name       AS "typeName",
-    u.user_code       AS "workerCode",
-    u.name            AS "workerName",
-    TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
-    wl.spent_minutes  AS "spentMinutes",
-    wl.description    AS "description"
-  FROM work_logs wl
-  JOIN issues i ON i.issue_code = wl.issue_code
-  JOIN projects p ON p.project_code = i.project_code
-  JOIN users u ON u.user_code = wl.worker_code
-  LEFT JOIN types t ON t.type_code = i.type_code
-  <where>
+    SELECT
+      wl.work_log_code  AS "workLogCode",
+      i.issue_code      AS "issueCode",
+      i.title           AS "issueTitle",
+      p.project_code    AS "projectCode",
+      p.project_name    AS "projectName",
+      p.status          AS "projectStatus",
+      i.type_code       AS "typeCode",
+      t.type_name       AS "typeName",
+      u.user_code       AS "workerCode",
+      u.name            AS "workerName",
+      TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
+      wl.spent_minutes  AS "spentMinutes",
+      wl.description    AS "description"
+    FROM work_logs wl
+    JOIN issues i ON i.issue_code = wl.issue_code
+    JOIN projects p ON p.project_code = i.project_code
+    JOIN users u ON u.user_code = wl.worker_code
+    LEFT JOIN types t ON t.type_code = i.type_code
+    <where>
 
-    <!-- 로그인 유저가 참여한 프로젝트만 -->
-    <if test="loginUserCode != null">
-      EXISTS (
-        SELECT 1
-        FROM vw_user_auth va
-        WHERE va.project_code = p.project_code
-          AND va.user_code = #{loginUserCode}
-      )
-    </if>
+      <choose>
+        <when test='"Y".equals(sysCk)'>
+          p.project_code IN
+          <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+            #{code}
+          </foreach>
+          AND p.status IN ('OD1', 'OD3')
+        </when>
 
-    <if test="from != null and from != ''">
-      AND wl.work_date &gt;= TO_DATE(#{from}, 'YYYY-MM-DD')
-    </if>
-    <if test="to != null and to != ''">
-      AND wl.work_date &lt; TO_DATE(#{to}, 'YYYY-MM-DD') + 1
-    </if>
-  </where>
-  ORDER BY wl.work_log_code DESC
-</select>
+        <otherwise>
+          (
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status IN ('OD1', 'OD3')
+              )
+            </if>
 
-  <!--  일감 상세 -->
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0
+                   and readableProjectCodes != null and readableProjectCodes.size() > 0">
+              OR
+            </if>
+
+            <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status = 'OD1'
+              )
+            </if>
+          )
+        </otherwise>
+      </choose>
+
+      <if test="from != null and from != ''">
+        AND wl.work_date &gt;= TO_DATE(#{from}, 'YYYY-MM-DD')
+      </if>
+
+      <if test="to != null and to != ''">
+        AND wl.work_date &lt; TO_DATE(#{to}, 'YYYY-MM-DD') + 1
+      </if>
+    </where>
+    ORDER BY wl.work_log_code DESC
+  </select>
+
+  <!-- 일감 기준 프리필 -->
   <select id="selectIssuePrefill" resultType="map">
-  SELECT
-    wl.work_log_code  AS "workLogCode",
-    wl.issue_code     AS "issueCode",
-    i.title           AS "issueTitle",
-    p.project_code    AS "projectCode",
-    p.project_name    AS "projectName",
-    i.type_code       AS "typeCode",
-    t.type_name       AS "typeName",
-    wl.worker_code    AS "workerCode",
-    u.name            AS "workerName",
-    TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
-    wl.spent_minutes  AS "spentMinutes",
-    wl.description    AS "description"
-  FROM work_logs wl
-  JOIN issues i ON i.issue_code = wl.issue_code
-  JOIN projects p ON p.project_code = i.project_code
-  JOIN users u ON u.user_code = wl.worker_code
-  LEFT JOIN types t ON t.type_code = i.type_code
-  WHERE wl.issue_code = #{issueCode}
-    AND EXISTS (
-      SELECT 1
-      FROM vw_user_auth va
-      WHERE va.project_code = p.project_code
-        AND va.user_code = #{loginUserCode}
-    )
-  ORDER BY wl.work_date DESC, wl.work_log_code DESC
-</select>
+    SELECT
+      wl.work_log_code  AS "workLogCode",
+      wl.issue_code     AS "issueCode",
+      i.title           AS "issueTitle",
+      p.project_code    AS "projectCode",
+      p.project_name    AS "projectName",
+      i.type_code       AS "typeCode",
+      t.type_name       AS "typeName",
+      wl.worker_code    AS "workerCode",
+      u.name            AS "workerName",
+      TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
+      wl.spent_minutes  AS "spentMinutes",
+      wl.description    AS "description"
+    FROM work_logs wl
+    JOIN issues i ON i.issue_code = wl.issue_code
+    JOIN projects p ON p.project_code = i.project_code
+    JOIN users u ON u.user_code = wl.worker_code
+    LEFT JOIN types t ON t.type_code = i.type_code
+    WHERE wl.issue_code = #{issueCode}
+      AND
+      <choose>
+        <when test='"Y".equals(sysCk)'>
+          p.project_code IN
+          <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+            #{code}
+          </foreach>
+          AND p.status IN ('OD1', 'OD3')
+        </when>
 
-<!-- 담당자 -->
+        <otherwise>
+          (
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status IN ('OD1', 'OD3')
+              )
+            </if>
+
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0
+                   and readableProjectCodes != null and readableProjectCodes.size() > 0">
+              OR
+            </if>
+
+            <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status = 'OD1'
+              )
+            </if>
+          )
+        </otherwise>
+      </choose>
+    ORDER BY wl.work_date DESC, wl.work_log_code DESC
+  </select>
+
+  <!-- 일감 권한 정보 -->
   <select id="selectIssueAuthInfo" resultType="map">
     SELECT
       i.issue_code    AS "issueCode",
@@ -87,170 +151,236 @@
     WHERE i.issue_code = #{issueCode}
   </select>
 
-<!-- 관리자 -->
+  <!-- 기존 관리자 체크 (남겨둠) -->
   <select id="selectProjectAdminCk" resultType="string">
-  SELECT NVL(MAX(va.admin_ck), 'N')
-  FROM vw_user_auth va
-  WHERE va.project_code = #{projectCode}
-    AND va.user_code = #{userCode}
-</select>
+    SELECT NVL(MAX(va.admin_ck), 'N')
+    FROM vw_user_auth va
+    WHERE va.project_code = #{projectCode}
+      AND va.user_code = #{userCode}
+  </select>
 
- <insert id="insertWorkLog" parameterType="WorkLogVO">
-  <selectKey keyProperty="workLogCode" resultType="long" order="BEFORE">
-    SELECT NVL(MAX(wl.work_log_code), 0) + 1
-    FROM work_logs wl
-  </selectKey>
+  <insert id="insertWorkLog" parameterType="WorkLogVO">
+    <selectKey keyProperty="workLogCode" resultType="long" order="BEFORE">
+      SELECT NVL(MAX(wl.work_log_code), 0) + 1
+      FROM work_logs wl
+    </selectKey>
 
-  INSERT INTO work_logs (
-    work_log_code,
-    issue_code,
-    work_date,
-    worker_code,
-    spent_minutes,
-    description
-  ) VALUES ( 
-    #{workLogCode},
-    #{issueCode},
-    #{workDate},
-    #{workerCode},
-    #{spentMinutes},
-    #{description}
-  )
-</insert>
-
-
-<!-- 단건 -->
-<select id="selectWorklogDetail" resultType="map">
-  SELECT
-    wl.work_log_code  AS "workLogCode",
-    wl.issue_code     AS "issueCode",
-    i.title           AS "issueTitle",
-    p.project_code    AS "projectCode",
-    p.project_name    AS "projectName",
-    i.type_code       AS "typeCode",
-    t.type_name       AS "typeName",
-    wl.worker_code    AS "workerCode",
-    u.name            AS "workerName",
-    TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
-    wl.spent_minutes  AS "spentMinutes",
-    wl.description    AS "description"
-  FROM work_logs wl
-  JOIN issues i ON i.issue_code = wl.issue_code
-  JOIN projects p ON p.project_code = i.project_code
-  JOIN users u ON u.user_code = wl.worker_code
-  LEFT JOIN types t ON t.type_code = i.type_code
-  WHERE wl.work_log_code = #{workLogCode}
-    AND EXISTS (
-      SELECT 1
-      FROM vw_user_auth va
-      WHERE va.project_code = p.project_code
-        AND va.user_code = #{loginUserCode}
+    INSERT INTO work_logs (
+      work_log_code,
+      issue_code,
+      work_date,
+      worker_code,
+      spent_minutes,
+      description
+    ) VALUES (
+      #{workLogCode},
+      #{issueCode},
+      #{workDate},
+      #{workerCode},
+      #{spentMinutes},
+      #{description}
     )
-</select>
+  </insert>
 
-<!-- 수정 권한 -->
-<select id="selectWorklogAuthInfo" resultType="map">
-  SELECT
-    wl.work_log_code  AS "workLogCode",
-    wl.issue_code     AS "issueCode",
-    wl.worker_code    AS "workerCode",
-    i.project_code    AS "projectCode",
-    i.assignee_code   AS "assigneeCode"
-  FROM work_logs wl
-  JOIN issues i ON i.issue_code = wl.issue_code
-  WHERE wl.work_log_code = #{workLogCode}
-</select>
-
-<!-- 수정 -->
-<update id="updateWorkLog" parameterType="WorkLogVO">
-  UPDATE work_logs
-  SET
-    work_date = #{workDate},
-    worker_code = #{workerCode},
-    spent_minutes = #{spentMinutes},
-    description = #{description}
-  WHERE work_log_code = #{workLogCode}
-</update>
-
-<!-- 삭제 -->
-<delete id="deleteWorkLog">
-  DELETE FROM work_logs
-  WHERE work_log_code = #{workLogCode}
-</delete>
-
-<!-- 통계 -->
-<select id="selectWorklogStats" resultType="map">
-  WITH flags AS (
+  <!-- 단건 -->
+  <select id="selectWorklogDetail" resultType="map">
     SELECT
-      #{includeType}  AS it,
-      #{includeWorker} AS iw,
-      #{includeIssue} AS ii
-    FROM dual
-  )
-  SELECT
-    p.project_code AS "projectCode",
-    p.project_name AS "projectName",
+      wl.work_log_code  AS "workLogCode",
+      wl.issue_code     AS "issueCode",
+      i.title           AS "issueTitle",
+      p.project_code    AS "projectCode",
+      p.project_name    AS "projectName",
+       p.status          AS "projectStatus",
+      i.type_code       AS "typeCode",
+      t.type_name       AS "typeName",
+      wl.worker_code    AS "workerCode",
+      u.name            AS "workerName",
+      TO_CHAR(wl.work_date, 'YYYY-MM-DD') AS "workDate",
+      wl.spent_minutes  AS "spentMinutes",
+      wl.description    AS "description"
+    FROM work_logs wl
+    JOIN issues i ON i.issue_code = wl.issue_code
+    JOIN projects p ON p.project_code = i.project_code
+    JOIN users u ON u.user_code = wl.worker_code
+    LEFT JOIN types t ON t.type_code = i.type_code
+    WHERE wl.work_log_code = #{workLogCode}
+      AND
+      <choose>
+        <when test='"Y".equals(sysCk)'>
+          p.project_code IN
+          <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+            #{code}
+          </foreach>
+          AND p.status IN ('OD1', 'OD3')
+        </when>
 
-    CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END AS "typeCode",
-    CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END AS "typeName",
+        <otherwise>
+          (
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status IN ('OD1', 'OD3')
+              )
+            </if>
 
-    CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END AS "workerCode",
-    CASE WHEN f.iw = 1 THEN u.name ELSE '-' END AS "workerName",
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0
+                   and readableProjectCodes != null and readableProjectCodes.size() > 0">
+              OR
+            </if>
 
-    CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END AS "issueCode",
-    CASE WHEN f.ii = 1 THEN i.title ELSE '-' END AS "issueTitle",
+            <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status = 'OD1'
+              )
+            </if>
+          )
+        </otherwise>
+      </choose>
+  </select>
 
-    SUM(wl.spent_minutes) AS "minutes"
+  <!-- 수정/삭제용 권한 정보 -->
+  <select id="selectWorklogAuthInfo" resultType="map">
+    SELECT
+      wl.work_log_code  AS "workLogCode",
+      wl.issue_code     AS "issueCode",
+      wl.worker_code    AS "workerCode",
+      i.project_code    AS "projectCode",
+      i.assignee_code   AS "assigneeCode"
+    FROM work_logs wl
+    JOIN issues i ON i.issue_code = wl.issue_code
+    WHERE wl.work_log_code = #{workLogCode}
+  </select>
 
-  FROM flags f
-  JOIN work_logs wl ON 1=1
-  JOIN issues i   ON i.issue_code = wl.issue_code
-  JOIN projects p ON p.project_code = i.project_code
-  JOIN users u    ON u.user_code = wl.worker_code
-  LEFT JOIN types t ON t.type_code = i.type_code
+  <!-- 수정 -->
+  <update id="updateWorkLog" parameterType="WorkLogVO">
+    UPDATE work_logs
+    SET
+      work_date = #{workDate},
+      worker_code = #{workerCode},
+      spent_minutes = #{spentMinutes},
+      description = #{description}
+    WHERE work_log_code = #{workLogCode}
+  </update>
 
-  <where>
-    EXISTS (
-      SELECT 1
-      FROM vw_user_auth va
-      WHERE va.project_code = p.project_code
-        AND va.user_code = #{loginUserCode}
+  <!-- 삭제 -->
+  <delete id="deleteWorkLog">
+    DELETE FROM work_logs
+    WHERE work_log_code = #{workLogCode}
+  </delete>
+
+  <!-- 통계 -->
+  <select id="selectWorklogStats" resultType="map">
+    WITH flags AS (
+      SELECT
+        #{includeType}   AS it,
+        #{includeWorker} AS iw,
+        #{includeIssue}  AS ii
+      FROM dual
     )
+    SELECT
+      p.project_code AS "projectCode",
+      p.project_name AS "projectName",
 
-    <if test="projectCode != null">
-      AND p.project_code = #{projectCode}
+      CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END AS "typeCode",
+      CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END AS "typeName",
+
+      CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END AS "workerCode",
+      CASE WHEN f.iw = 1 THEN u.name ELSE '-' END AS "workerName",
+
+      CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END AS "issueCode",
+      CASE WHEN f.ii = 1 THEN i.title ELSE '-' END AS "issueTitle",
+
+      SUM(wl.spent_minutes) AS "minutes"
+
+    FROM flags f
+    JOIN work_logs wl ON 1 = 1
+    JOIN issues i   ON i.issue_code = wl.issue_code
+    JOIN projects p ON p.project_code = i.project_code
+    JOIN users u    ON u.user_code = wl.worker_code
+    LEFT JOIN types t ON t.type_code = i.type_code
+
+    <where>
+      <choose>
+        <when test='"Y".equals(sysCk)'>
+          p.project_code IN
+          <foreach collection="allProjectCodes" item="code" open="(" separator="," close=")">
+            #{code}
+          </foreach>
+          AND p.status IN ('OD1', 'OD3')
+        </when>
+
+        <otherwise>
+          (
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="adminProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status IN ('OD1', 'OD3')
+              )
+            </if>
+
+            <if test="adminProjectCodes != null and adminProjectCodes.size() > 0
+                   and readableProjectCodes != null and readableProjectCodes.size() > 0">
+              OR
+            </if>
+
+            <if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+              (
+                p.project_code IN
+                <foreach collection="readableProjectCodes" item="code" open="(" separator="," close=")">
+                  #{code}
+                </foreach>
+                AND p.status = 'OD1'
+              )
+            </if>
+          )
+        </otherwise>
+      </choose>
+
+      <if test="projectCode != null">
+        AND p.project_code = #{projectCode}
+      </if>
+
+      <if test="typeCode != null">
+        AND i.type_code = #{typeCode}
+      </if>
+
+      <if test="workerCode != null">
+        AND wl.worker_code = #{workerCode}
+      </if>
+
+      <if test="issueTitle != null and issueTitle != ''">
+        AND i.title LIKE '%' || #{issueTitle} || '%'
+      </if>
+    </where>
+
+    GROUP BY
+      p.project_code,
+      p.project_name,
+
+      CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END,
+      CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END,
+
+      CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END,
+      CASE WHEN f.iw = 1 THEN u.name ELSE '-' END,
+
+      CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END,
+      CASE WHEN f.ii = 1 THEN i.title ELSE '-' END
+
+    <if test="minMinutes != null">
+      HAVING SUM(wl.spent_minutes) &gt;= #{minMinutes}
     </if>
 
-    <if test="typeCode != null">
-      AND i.type_code = #{typeCode}
-    </if>
+    ORDER BY p.project_name
+  </select>
 
-    <if test="workerCode != null">
-      AND wl.worker_code = #{workerCode}
-    </if>
-
-    <if test="issueTitle != null and issueTitle != ''">
-      AND i.title LIKE '%' || #{issueTitle} || '%'
-    </if>
-  </where>
-
-  GROUP BY
-    p.project_code,
-    p.project_name,
-
-    CASE WHEN f.it = 1 THEN NVL(t.type_code, 0) ELSE 0 END,
-    CASE WHEN f.it = 1 THEN NVL(t.type_name, '-') ELSE '-' END,
-
-    CASE WHEN f.iw = 1 THEN u.user_code ELSE 0 END,
-    CASE WHEN f.iw = 1 THEN u.name ELSE '-' END,
-
-    CASE WHEN f.ii = 1 THEN i.issue_code ELSE 0 END,
-    CASE WHEN f.ii = 1 THEN i.title ELSE '-' END
-
-  <if test="minMinutes != null">
-    HAVING SUM(wl.spent_minutes) &gt;= #{minMinutes}
-  </if>
-
-  ORDER BY p.project_name
-</select>
 </mapper>
