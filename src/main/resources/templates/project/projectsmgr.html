@@ -148,25 +148,27 @@
 
 									<th:block
 										th:with="
-            planProg=${progMap.get(pro.projectCode).planProg},
-            actualProg=${progMap.get(pro.projectCode).actualProg ?: 0}">
+    planProg=${progMap.get(pro.projectCode).planProg},
+    actualProg=${progMap.get(pro.projectCode).actualProg ?: 0},
+    diffProg=${planProg - actualProg}">
 
-										<div class="progress mb-1" role="progressbar"
-											th:attr="aria-valuenow=${planProg}" aria-valuemin="0"
-											aria-valuemax="100" style="height: 20px;">
-											<div class="progress-bar progress-bar-striped bg-secondary"
-												th:style="|width: ${planProg}%|" th:text="|${planProg}%|">
-											</div>
-										</div>
+										<div class="progress"
+											style="height: 28px; background-color: #F1F3F5; border-radius: 6px; overflow: hidden;"
+											data-bs-toggle="tooltip"
+											th:title="|현재: ${actualProg}% / 예상: ${planProg}%|">
 
-										<div class="progress" role="progressbar"
-											th:attr="aria-valuenow=${actualProg}" aria-valuemin="0"
-											aria-valuemax="100" style="height: 20px;">
-											<div
-												class="progress-bar progress-bar-striped progress-bar-animated"
-												th:classappend="${actualProg >= planProg} ? 'bg-primary' : (${planProg - actualProg <= 10} ? 'bg-warning' : 'bg-danger')"
-												th:style="|width: ${actualProg}%|"
+											<div class="progress-bar"
+												th:style="|
+                width: ${actualProg}%; 
+                background-color: ${actualProg >= planProg ? '#4A90E2' : (diffProg <= 10 ? '#F5A623' : '#E74C3C')};
+                transition: width 0.5s ease-in-out;
+             |"
 												th:text="|${actualProg}%|"></div>
+
+											<div th:if="${diffProg > 0}" class="progress-bar text-dark"
+												th:style="|width: ${diffProg}%; background-color: #C6CCC9; font-weight: 600; font-size: 0.8rem;|"
+												th:text="${diffProg >= 15} ? |${planProg}%| : ''">
+											</div>
 										</div>
 									</th:block>
 								</div>

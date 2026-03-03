@@ -184,7 +184,7 @@
 
 	function resetFilters() {
 		ui.title.value = "";
-		ui.priority.value = "OD1";
+		ui.priority.value = "all";
 		// 담당자 및 날짜 필터 초기화
 		if (ui.assigneeSelect) ui.assigneeSelect.selectedIndex = 0;
 		ui.dateFrom.value = "";
