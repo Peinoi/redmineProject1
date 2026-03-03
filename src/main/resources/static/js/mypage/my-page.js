@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
 	// ✅ 현재 모드 (ME / ADMIN)
 	// =========================
 	const MODE = (grid.dataset.mode || "ME").toUpperCase();
+	
+	initModePickerModal();
 
 	// =========================
 	// ✅ 블록 타입 라벨(모달 표시용) - 모드별
@@ -460,23 +462,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// 관리자 집계표 클릭 시 목록 fetch해서 렌더링
 	initAdminDrilldown();
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-	const sel = document.getElementById("adminProjectSelect");
-	if (!sel) return;
-
-	sel.addEventListener("change", () => {
-		const pc = sel.value;
-		const params = new URLSearchParams(window.location.search);
-		const days = params.get("days") || "7";
-
-		if (!pc) {
-			window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ME`;
-		} else {
-			window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ADMIN&projectCode=${encodeURIComponent(pc)}`;
-		}
-	});
 });
 
 function initBlockPaging() {
@@ -1141,4 +1126,79 @@ function bsStatusChipClass(statusId) {
 		default:
 			return "text-bg-light text-dark border";
 	}
+}
+
+function initModePickerModal() {
+  const btn = document.getElementById("btnModePicker");
+  const modalEl = document.getElementById("modePickerModal");
+  if (!btn || !modalEl || !window.bootstrap?.Modal) return;
+
+  const modal = new bootstrap.Modal(modalEl);
+  const search = document.getElementById("modePickerSearch");
+  const list = modalEl.querySelector(".mode-picker-list");
+  const labelEl = document.getElementById("modePickerLabel");
+
+  // 공용: days 유지
+  const getDays = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("days") || "7";
+  };
+
+  // 공용: 모드 이동
+  const goME = () => {
+    const days = getDays();
+    window.location.href = `/my?days=${encodeURIComponent(days)}&mode=ME`;
+  };
+
+  const goADMIN = (projectCode) => {
+    const days = getDays();
+    window.location.href =
+      `/my?days=${encodeURIComponent(days)}&mode=ADMIN&projectCode=${encodeURIComponent(projectCode)}`;
+  };
+
+  // 버튼 클릭 → 모달 오픈
+  btn.addEventListener("click", () => {
+    modal.show();
+    // 열릴 때 검색창 포커스 + 기존 검색어 초기화는 취향
+    requestAnimationFrame(() => {
+      if (search) {
+        search.value = "";
+        search.focus();
+        // 목록 숨김 초기화
+        modalEl.querySelectorAll(".mode-picker-item").forEach((el) => (el.style.display = ""));
+      }
+    });
+  });
+
+  // 리스트 클릭 → 이동
+  list?.addEventListener("click", (e) => {
+    const item = e.target.closest("[data-project]");
+    if (!item) return;
+
+    const pc = (item.dataset.project || "").trim();
+
+    // (선택) 라벨 즉시 변경하고 싶으면
+    if (labelEl) {
+      if (!pc) labelEl.textContent = "내 모드";
+      else labelEl.textContent = `관리자 모드: ${item.dataset.name || ""}`;
+    }
+
+    modal.hide();
+
+    // 모달 닫히는 애니메이션 끝나고 이동(깔끔)
+    setTimeout(() => {
+      if (!pc) goME();
+      else goADMIN(pc);
+    }, 80);
+  });
+
+  // 검색 필터
+  search?.addEventListener("input", () => {
+    const q = (search.value || "").trim().toLowerCase();
+
+    modalEl.querySelectorAll(".mode-picker-item").forEach((el) => {
+      const name = (el.dataset.name || "").toLowerCase();
+      el.style.display = !q || name.includes(q) ? "" : "none";
+    });
+  });
 }

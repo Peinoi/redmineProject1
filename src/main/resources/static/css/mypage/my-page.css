@@ -732,3 +732,8 @@
 .card-header {
 	line-height: 31px;
 }
+
+.mode-picker-list{
+  max-height: 420px;
+  overflow: auto;
+}

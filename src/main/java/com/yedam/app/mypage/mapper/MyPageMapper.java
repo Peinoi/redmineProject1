@@ -85,4 +85,6 @@ public interface MyPageMapper {
 
 	// ✅ Authz.adminProjects(Set) 기반으로 코드+이름만 조회
 	List<AdminProjectOptionDTO> selectProjectOptionsByCodes(@Param("codes") List<Integer> codes);
+	
+	List<AdminProjectOptionDTO> selectAllProjectOptions();
 }
