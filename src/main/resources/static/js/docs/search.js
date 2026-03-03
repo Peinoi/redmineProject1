@@ -92,7 +92,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			modal.show();
 		} catch (e) {
 			console.error("등록자 목록 로드 실패:", e);
-			alert("등록자 목록을 불러올 수 없습니다.");
+			showToast("등록자 목록을 불러올 수 없습니다.");
 		}
 	});
 
@@ -222,28 +222,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	const folderTreeEl = document.getElementById("folderModalTree");
 	if (folderTreeEl) folderTreeEl.innerHTML = "";
 
-	// ================= Toast =================
-	const showToast = (message) => {
-		const toastId = "commonToast";
-		let toastEl = document.getElementById(toastId);
-		if (!toastEl) {
-			toastEl = document.createElement("div");
-			toastEl.id = toastId;
-			toastEl.className = "toast align-items-center text-bg-dark border-0";
-			toastEl.setAttribute("role", "alert");
-			toastEl.setAttribute("aria-live", "assertive");
-			toastEl.setAttribute("aria-atomic", "true");
-			toastEl.style.cssText = "position:fixed;right:16px;bottom:16px;z-index:1080";
-			toastEl.innerHTML = `
-                <div class="d-flex">
-                    <div class="toast-body" id="commonToastBody"></div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>`;
-			document.body.appendChild(toastEl);
-		}
-		document.getElementById("commonToastBody").textContent = message;
-		bootstrap.Toast.getOrCreateInstance(toastEl, { delay: 1800 }).show();
-	};
+
 
 	// ================= Cache =================
 	let projectCache = [];
@@ -254,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		try {
 			const res = await fetch("/api/projects/modal", { headers: { Accept: "application/json" } });
 			if (res.status === 403) {
-				alert('권한이 없습니다.');
+				showToast('권한이 없습니다.');
 				return;
 			}
 			if (!res.ok) throw new Error("프로젝트 목록을 불러오지 못했습니다.");
@@ -870,16 +849,20 @@ document.addEventListener("DOMContentLoaded", () => {
 			delBtn.dataset.folderName = folder.name;
 			delBtn.addEventListener("click", async (e) => {
 				e.stopPropagation();
-				if (!confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`)) return;
+				const isConfirmed = await window.showConfirm(
+					`'${folder.name}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`
+				);
+
+				if (!isConfirmed) return;
 				try {
 					const res = await fetch(`/api/folders/delete/${folder.code}`, { method: "DELETE" });
 					const data = await res.json();
 					if (res.status === 403) {
-						alert('권한이 없습니다.');
+						showToast('권한이 없습니다.');
 						return;
 					}
 					if (!res.ok) {
-						alert(data.message);
+						showToast(data.message);
 						return;
 					}
 					// 캐시 초기화 후 트리 갱신
@@ -894,7 +877,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						: treeData;
 					renderFolderTree(filtered, document.getElementById("folderModalTree"));
 				} catch (e) {
-					alert("서버 오류가 발생했습니다.");
+					showToast("서버 오류가 발생했습니다.");
 				}
 			});
 			div.appendChild(delBtn);
@@ -1104,7 +1087,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			});
 
 			if (res.status === 403) {
-				alert('권한이 없습니다.');
+				showToast('권한이 없습니다.');
 				return;
 			}
 
@@ -1131,7 +1114,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 	});
 
-	document.getElementById("btnSubmitUpload")?.addEventListener("click", () => {
+	document.getElementById("btnSubmitUpload")?.addEventListener("click", async () => {
 		// 유효성 검사
 		if (!ui.uploadFolderValue?.value) {
 			showToast("저장 폴더를 선택해주세요.");
@@ -1142,7 +1125,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		// 에러 파일 있는지 체크
 		const hasError = Array.from(managedFiles.files).some(f => {
 			const ext = f.name.split(".").pop().toLowerCase();
 			return f.size > FILE_MAX_SIZE || !ALLOWED_EXTS.includes(ext);
@@ -1152,16 +1134,38 @@ document.addEventListener("DOMContentLoaded", () => {
 			return;
 		}
 
-		// submit 직전 hidden input에 값 강제 세팅
-		document.getElementById("uploadFolderCode").value = ui.uploadFolderValue.value;
-		document.getElementById("uploadProjectValue").value = ui.uploadProjectValue.value;
+		// FormData 구성
+		const formData = new FormData();
+		formData.append("folderCode", ui.uploadFolderValue.value);
+		formData.append("projectCode", ui.uploadProjectValue.value);
+		Array.from(managedFiles.files).forEach(f => formData.append("files", f));
 
-		// form에 최신 파일 목록 반영 후 submit
-		ui.uploadFiles.files = managedFiles.files;
+		try {
+			const res = await fetch("/docsUpload", {
+				method: "POST",
+				headers: { "Accept": "application/json" },
+				body: formData
+			});
 
-		document.getElementById("uploadForm").submit();
+			if (res.status === 403) {
+				showToast("등록 권한이 없습니다.");
+				return;
+			}
+
+			if (!res.ok) {
+				showToast("업로드 중 오류가 발생했습니다.");
+				return;
+			}
+
+			// 성공
+			bootstrap.Modal.getInstance(document.getElementById("docUploadModal"))?.hide();
+			showToast("업로드가 완료되었습니다.");
+			if (window.docsReload) window.docsReload({});
+
+		} catch (e) {
+			showToast("서버 오류가 발생했습니다.");
+		}
 	});
-
 	// ================= 초기화 버튼 =================
 	document.getElementById("btnResetFilters")?.addEventListener("click", () => {
 		if (ui.filterProjectText) ui.filterProjectText.value = "";

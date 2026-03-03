@@ -159,7 +159,11 @@ function rebuildDocsTable(rows, tbody) {
 			const fileCode = btn.dataset.fileCode;
 			const fileName = btn.dataset.fileName;
 			const projectCode = btn.closest("tr").dataset.projectCode;
-			if (!confirm(`'${fileName}' 파일을 삭제하시겠습니까?`)) return;
+			const isConfirmed = await window.showConfirm(
+				`'${fileName}' 파일을 삭제하시겠습니까?`
+			);
+
+			if (!isConfirmed) return;
 			try {
 				const res = await fetch(`/api/docs/${fileCode}?projectCode=${projectCode}`, { method: "DELETE" });
 				if (res.status === 403) {
@@ -173,7 +177,7 @@ function rebuildDocsTable(rows, tbody) {
 				if (!res.ok) throw new Error("삭제 실패");
 				btn.closest("tr").remove();
 			} catch (e) {
-				alert(e.message);
+				showToast(e.message);
 			}
 		});
 	});
@@ -185,7 +189,12 @@ function rebuildDocsTable(rows, tbody) {
 			const folderCode = btn.dataset.folderCode;
 			const folderName = btn.dataset.folderName;
 			const projectCode = btn.closest("tr").dataset.projectCode;
-			if (!confirm(`'${folderName}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`)) return;
+
+			const isConfirmed = await window.showConfirm(
+				`'${folderName}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`
+			);
+
+			if (!isConfirmed) return;
 			try {
 				const res = await fetch(`/api/folders/delete/${folderCode}?projectCode=${projectCode}`, { method: "DELETE" });
 
@@ -199,12 +208,12 @@ function rebuildDocsTable(rows, tbody) {
 				}
 				const data = await res.json();
 				if (!res.ok) {
-					alert(data.message);
+					showToast(data.message);
 					return;
 				}
 				btn.closest("tr").remove();
 			} catch (e) {
-				alert("서버 오류가 발생했습니다.");
+				showToast("서버 오류가 발생했습니다.");
 			}
 		});
 	});

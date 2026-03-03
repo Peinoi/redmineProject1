@@ -42,7 +42,8 @@ const showConfirm = (message) => {
         const messageEl = document.getElementById('confirmMessage');
         const okBtn = document.getElementById('confirmOkBtn');
 
-        messageEl.textContent = message;
+		messageEl.style.whiteSpace = "pre-line";
+		messageEl.textContent = message;  // 그대로 유지
 
         const modal = new bootstrap.Modal(modalEl);
 
@@ -62,3 +63,6 @@ const showConfirm = (message) => {
         modal.show();
     });
 };
+
+window.showToast = showToast;
+window.showConfirm = showConfirm;

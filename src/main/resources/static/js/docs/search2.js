@@ -67,7 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			modal.show();
 		} catch (e) {
 			console.error("등록자 목록 로드 실패:", e);
-			alert("등록자 목록을 불러올 수 없습니다.");
+			showToast("등록자 목록을 불러올 수 없습니다.");
 		}
 	});
 
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		try {
 			const res = await fetch("/api/projects/modal", { headers: { Accept: "application/json" } });
 			if (res.status === 403) {
-				alert('권한이 없습니다.');
+				showToast('권한이 없습니다.');
 				return;
 			}
 			if (!res.ok) throw new Error("프로젝트 목록을 불러오지 못했습니다.");
@@ -361,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		const ok = await ensureFolderCache();
 		if (!ok) return;
-		
+
 		const okProject = await ensureProjectCache();
 		if (!okProject) return;
 
@@ -779,16 +779,20 @@ document.addEventListener("DOMContentLoaded", () => {
 			delBtn.dataset.folderName = folder.name;
 			delBtn.addEventListener("click", async (e) => {
 				e.stopPropagation();
-				if (!confirm(`'${folder.name}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`)) return;
+				const isConfirmed = await window.showConfirm(
+					`'${folder.name}' 폴더를 삭제하시겠습니까?\n비어있는 폴더만 삭제 가능합니다.`
+				);
+
+				if (!isConfirmed) return;
 				try {
 					const res = await fetch(`/api/folders/delete/${folder.code}`, { method: "DELETE" });
 					const data = await res.json();
 					if (res.status === 403) {
-						alert('권한이 없습니다.');
+						showToast('권한이 없습니다.');
 						return;
 					}
 					if (!res.ok) {
-						alert(data.message);
+						showToast(data.message);
 						return;
 					}
 					// 캐시 초기화 후 트리 갱신
@@ -803,7 +807,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						: treeData;
 					renderFolderTree(filtered, document.getElementById("folderModalTree"));
 				} catch (e) {
-					alert("서버 오류가 발생했습니다.");
+					showToast("서버 오류가 발생했습니다.");
 				}
 			});
 			div.appendChild(delBtn);
@@ -1008,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			});
 
 			if (res.status === 403) {
-				alert('권한이 없습니다.');
+				showToast('권한이 없습니다.');
 				return;
 			}
 

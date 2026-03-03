@@ -74,8 +74,8 @@
 
 	<th:block layout:fragment="pageScript">
 		<script th:inline="javascript">
-	    	window.currentProject = [[${session.currentProject}]];
-	    	console.log(currentProject);
+			window.currentProject = /*[[${session.currentProject}]]*/null;
+			console.log(currentProject);
 		</script>
 		<script th:src="@{/js/common/toast.js}"></script>
 		<script th:src="@{/js/docs/search.js}"></script>
