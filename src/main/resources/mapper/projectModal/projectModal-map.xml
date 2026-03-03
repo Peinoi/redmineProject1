@@ -7,7 +7,8 @@
 		SELECT DISTINCT
 		project_code AS projectCode,
 		project_name AS projectName,
-		created_on AS createdOn
+		created_on AS createdOn,
+		status AS projectStatusCode
 		FROM vw_user_auth
 		WHERE user_code = #{userCode}
 		AND ( status = 'OD1'

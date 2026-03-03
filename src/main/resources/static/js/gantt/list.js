@@ -47,6 +47,13 @@
 		"낮음": "#69B87C"
 	};
 
+	const isOverdueTask = (task) => {
+		const todayMidnight = new Date();
+		todayMidnight.setHours(0, 0, 0, 0);
+		return task.originalEnd && task.originalEnd < todayMidnight
+			&& task.status !== '완료' && task.status !== '해결';
+	};
+
 	gantt.templates.task_text = function(start, end, task) {
 		if (task.rowType === "PROJECT") {
 			return `${task.text}(${task.actualProg ?? 0}%)`;
@@ -86,11 +93,7 @@
 				template: (t) => {
 					if (!t.priority) return '';
 
-					const isOverdue =
-						t.end_date &&
-						t.end_date < new Date() &&
-						t.status !== '완료' &&
-						t.status !== '해결';
+					const isOverdue = isOverdueTask(t);
 
 					const map = {
 						'긴급': 'danger',
@@ -116,11 +119,7 @@
 				template: (t) => {
 					if (!t.status) return '';
 
-					const isOverdue =
-						t.end_date &&
-						t.end_date < new Date() &&
-						t.status !== '완료' &&
-						t.status !== '해결';
+					const isOverdue = isOverdueTask(t);
 
 					const map = {
 						'신규': 'primary',
@@ -154,20 +153,26 @@
 					return DateUtils.getYYYYMMDD(t.start_date);
 				}
 			},
-			{ name: "end_date", label: "종료일", align: "center", width: 110, min_width: 110 },
+			{
+				name: "end_date",
+				label: "종료일",
+				align: "center",
+				width: 110,
+				min_width: 110,
+				template: (t) => {
+					const d = t.originalEnd || t.end_date;
+					return d ? DateUtils.getYYYYMMDD(d) : '';
+				}
+			},
 			{
 				name: "assigneeName",
-				label: "작업자",
+				label: "담당자",
 				align: "center",
 				width: 80,
 				template: (t) => {
 					if (!t.assigneeName || !t.assigneeCode) return '-';
 
-					const isOverdue =
-						t.end_date &&
-						t.end_date < new Date() &&
-						t.status !== '완료' &&
-						t.status !== '해결';
+					const isOverdue = isOverdueTask(t);
 
 					const color = isOverdue ? '#dc2626' : '#374151';
 
@@ -232,8 +237,7 @@
 
 	gantt.templates.grid_row_class = function(start, end, task) {
 		if (task.rowType !== 'ISSUE') return '';
-		const isOverdue = task.end_date && task.end_date < new Date()
-			&& task.status !== '완료' && task.status !== '해결';
+		const isOverdue = isOverdueTask(task);
 		if (isOverdue) return 'row-overdue';
 	};
 
@@ -255,10 +259,7 @@
 		if (task.rowType === "ISSUE") {
 			classes.push("issue-clickable");
 
-			const isOverdue =
-				end && end < new Date() &&
-				task.status !== '완료' &&
-				task.status !== '해결';
+			const isOverdue = isOverdueTask(task);
 
 			if (isOverdue) {
 				classes.push("overdue-task");
@@ -299,14 +300,12 @@
 
 		if (task.rowType !== "ISSUE") return null;
 
-		const isOverdue =
-			task.end_date &&
-			task.end_date < new Date() &&
-			task.status !== '완료' &&
-			task.status !== '해결';
+		const isOverdue = isOverdueTask(task);
 
 		const startStr = task.status === '신규' ? '-' : DateUtils.getYYYYMMDD(task.start_date);
-		const endStr = task.end_date ? DateUtils.getYYYYMMDD(task.end_date) : '-';
+		const endStr = task.originalEnd
+			? DateUtils.getYYYYMMDD(task.originalEnd)
+			: (task.end_date ? DateUtils.getYYYYMMDD(task.end_date) : '-');
 
 		const typeChain = [task.parTypeName, task.typeName]
 			.filter(Boolean)
@@ -333,7 +332,7 @@
 	            <div style="color:${isOverdue ? '#ff6b6b' : 'inherit'}">
 	                ${endStr}${isOverdue ? ' (초과)' : ''}
 	            </div>
-	            <div>👤 작업자</div><div>${task.assigneeName ?? '-'}</div>
+	            <div>👤 담당자</div><div>${task.assigneeName ?? '-'}</div>
 				<div>👤 등록자</div><div>${task.createdByName ?? '-'}</div>
 	        </div>
 	    </div>`;
@@ -349,8 +348,8 @@
 	   ======================================================================== */
 	const getFilteredDataWithHierarchy = (data, filters) => {
 		const title = filters.title?.trim()?.toLowerCase() || "";
-		const tCode = filters.type?.trim() || "";
-		const pCode = filters.projectCode?.trim() || "";
+		const tCode = filters.type != null ? String(filters.type).trim() : "";
+		const pCode = filters.projectCode != null ? String(filters.projectCode).trim() : "";
 
 		let typeCodesSet = new Set();
 		if (tCode) {
@@ -386,7 +385,7 @@
 			if (filters.status && item.issueStatus !== filters.status) ok = false;
 			if (filters.priority && item.priority !== filters.priority) ok = false;
 			if (filters.assigneeCode && String(item.assigneeCode) !== String(filters.assigneeCode)) ok = false;
-			if (filters.creatorCode && String(item.creatorCode) !== String(filters.creatorCode)) ok = false;
+			if (filters.createdByCode && String(item.createdByCode) !== String(filters.createdByCode)) ok = false;
 
 			if (filters.createdAt) {
 				const created = toValidDate(item.createdOn);
@@ -415,7 +414,7 @@
 
 		const hasAnyFilter = pCode || filters.projectStatus || title || tCode || filters.status ||
 			filters.priority || filters.assigneeCode ||
-			filters.creatorCode || filters.createdAt || filters.dueAt;
+			filters.createdByCode || filters.createdAt || filters.dueAt;
 
 		if (hasAnyFilter) {
 			filteredIssues.forEach(issue => {
@@ -603,15 +602,23 @@
 				let start = toValidDate(item.issueStartDate);
 				let end = toValidDate(item.issueEndDate);
 
+				const originalEnd = toValidDate(item.issueEndDate);
+
+				const todayMidnight = new Date();
+				todayMidnight.setHours(0, 0, 0, 0);
+				const isOverdue = originalEnd && originalEnd < todayMidnight
+					&& item.issueStatus !== '완료' && item.issueStatus !== '해결';
+
 				if (!start && !end) { start = new Date(); end = new Date(); }
 				if (!start && end) start = new Date(end);
 				if (start && !end) end = new Date(start);
 
+				let displayEnd = new Date(end);
+				if (start && end && start.toDateString() === end.toDateString()) {
+					displayEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate() + 1, 0, 0, 0);
+				}
+
 				const typeInfo = typeMap[String(item.typeCode)] || { typeName: '-', parTypeName: null };
-
-				const isOverdue = end && end < new Date() &&
-					item.issueStatus !== '완료' && item.issueStatus !== '해결';
-
 				const taskColor = isOverdue
 					? "#dc2626"
 					: (ISSUE_PRIORITY_COLORS[item.priority] || "#5AB2FF");
@@ -621,7 +628,8 @@
 					text: item.title,
 					title: item.title,
 					start_date: start,
-					end_date: end,
+					end_date: displayEnd,
+					originalEnd: originalEnd,
 					progress: (item.progress || 0) / 100,
 					priority: item.priority,
 					status: item.issueStatus,
@@ -659,7 +667,7 @@
 
 	// 엑셀 - 계층구조 포함
 	window.exportExcel = function() {
-		const rows = [["작업명", "우선순위", "상태", "진척도", "시작일", "종료일", "작업자"]];
+		const rows = [["작업명", "우선순위", "상태", "진척도", "시작일", "종료일", "담당자"]];
 
 		gantt.eachTask(function(task) {
 			const level = gantt.calculateTaskLevel(task);
@@ -675,7 +683,7 @@
 				indent + task.text,
 				task.priority || "",
 				task.status || "",
-				task.textProgress  || "",
+				task.textProgress || "",
 				start,
 				end,
 				task.assigneeName || ""
@@ -732,6 +740,20 @@
 				if (emptyEl) emptyEl.style.display = "none";
 				if (ganttEl) ganttEl.style.visibility = "visible";
 
+				// parse 전에 날짜 범위를 먼저 강제 고정
+				if (window.ganttRange?.start && window.ganttRange?.end) {
+					gantt.config.start_date = new Date(window.ganttRange.start);
+					gantt.config.end_date = new Date(window.ganttRange.end);
+				} else {
+					const defaultStart = new Date(today.getFullYear(), today.getMonth(), 1);
+					const defaultEnd = new Date(defaultStart);
+					defaultEnd.setMonth(defaultEnd.getMonth() + 6);
+					gantt.config.start_date = defaultStart;
+					gantt.config.end_date = defaultEnd;
+				}
+
+				gantt.config.fit_tasks = false;
+
 				try {
 					gantt.parse(ganttData);
 				} catch (parseError) {
@@ -765,6 +787,13 @@
 
 			gantt.init("e7eGantt");
 
+			gantt.config.readonly = false;        // 전체 readonly는 유지
+			gantt.config.drag_move = false;       // 바 드래그 이동 비활성화
+			gantt.config.drag_resize = false;     // 바 크기 조절 비활성화
+			gantt.config.drag_progress = false;   // 진척도 드래그 비활성화
+			gantt.config.drag_links = false;      // 화살표(링크) 드래그 비활성화
+			gantt.config.drag_timeline = false;   // 타임라인 스크롤 드래그 비활성화
+
 			const ro = new ResizeObserver(() => {
 				gantt.setSizes();
 				gantt.render();
@@ -774,6 +803,16 @@
 			if (ganttEl) ro.observe(ganttEl);
 
 			gantt.config.open_tree_initially = true;
+
+			// 링크 클릭 차단
+			gantt.attachEvent("onLinkClick", function(id, e) {
+				return false;
+			});
+
+			// 링크 더블클릭 차단 (삭제 모달 방지)
+			gantt.attachEvent("onLinkDblClick", function(id, e) {
+				return false;
+			});
 
 			gantt.attachEvent("onTaskDblClick", function(id, e) {
 				if (e.target && e.target.closest("a")) return true;
@@ -796,7 +835,8 @@
 			});
 
 			gantt.setSizes();
-			fData();
+
+			//fData({});
 		});
 
 		window.addEventListener("resize", () => {

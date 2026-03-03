@@ -56,3 +56,15 @@
 	font-size: 13px;
 	color: #6b7280;
 }
+
+.click-row {
+	cursor: pointer;
+}
+
+.list-group-item-action {
+	cursor: pointer;
+}
+
+.page-item {
+	cursor: pointer;
+}

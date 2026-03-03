@@ -55,6 +55,10 @@
 
 	</div>
 
+	<script th:inline="javascript">
+    	window.currentProject = [[${session.currentProject}]];
+    	console.log(currentProject);
+	</script>
 	<script th:src="@{/js/calendar/list.js}"></script>
 	<script th:src="@{/js/gantt/search.js}"></script>
 </body>

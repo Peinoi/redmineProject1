@@ -20,18 +20,29 @@
 		<!-- 검색/필터 -->
 		<div th:replace="~{docs/search :: searchCondition(view='docs/list')}"></div>
 
+		<!-- 로딩 스피너 -->
+		<div id="docsLoadingSpinner"
+			class="d-flex justify-content-center align-items-center"
+			style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); z-index: 1000; display: none !important;">
+			<div class="spinner-border text-primary" role="status"
+				style="width: 3rem; height: 3rem;">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+		</div>
+
 		<!-- 폴더 + 파일 테이블 -->
-		<div class="card">
-			<div class="card-body p-0">
-				<table class="table table-hover mb-0">
-					<thead class="table-light">
+		<div class="card docs-list-card" style="position: relative;">
+			<div class="card-body p-0"
+				style="overflow: hidden; border-radius: 0 0 12px 12px;">
+				<table class="table table-hover align-middle mb-0" id="docsTable">
+					<thead>
 						<tr>
 							<th>구분</th>
 							<th style="width: 10%">파일 크기</th>
-							<th style="width: 8%">다운로드</th>
+							<th style="width: 8%" class="text-center">다운로드</th>
 							<th style="width: 12%">파일 등록일</th>
 							<th style="width: 12%">파일 등록자</th>
-							<th style="width: 8%">삭제</th>
+							<th style="width: 8%" class="text-center">삭제</th>
 						</tr>
 					</thead>
 					<tbody id="docsTableBody">
@@ -52,17 +63,20 @@
 							th:data-uploaded-at="${doc.uploadedAtStr}"
 							th:data-uploader-code="${doc.createdCode}"
 							th:data-uploader="${doc.uploaderName}"
-							th:data-row-type="${doc.rowType}"
-							style="display:none">
+							th:data-row-type="${doc.rowType}" style="display: none">
 						</tr>
 					</tbody>
 				</table>
 			</div>
 		</div>
-
 	</div>
 
+
 	<th:block layout:fragment="pageScript">
+		<script th:inline="javascript">
+	    	window.currentProject = [[${session.currentProject}]];
+	    	console.log(currentProject);
+		</script>
 		<script th:src="@{/js/common/toast.js}"></script>
 		<script th:src="@{/js/docs/search.js}"></script>
 		<script th:src="@{/js/docs/list.js}"></script>

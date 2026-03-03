@@ -212,3 +212,12 @@
 	color: #fff;
 	border-color: #dc2626;
 }
+
+.gantt_task_link:hover .gantt_line_wrapper, .gantt_task_link:hover .gantt_link_arrow
+	{
+	cursor: default !important;
+}
+
+.gantt_line_wrapper, .gantt_link_arrow {
+	pointer-events: none;
+}

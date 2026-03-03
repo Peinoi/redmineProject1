@@ -98,7 +98,8 @@
 	),
 	
 	AUTH_PROJECT AS (
-	    SELECT p.project_code, p.project_name
+	    SELECT p.project_code, p.project_name, p.status,
+	           ua.admin_ck, ua.rd_rol, ua.wr_rol, ua.mo_rol, ua.del_rol
 	    FROM projects p
 	    JOIN USER_AUTH ua ON ua.project_code = p.project_code
 	    WHERE 1=1
@@ -131,11 +132,15 @@
 	    SELECT
 	        NULL AS file_code, NULL AS original_name, NULL AS size_bytes,
 	        NULL AS uploaded_at, NULL AS mime_type, NULL AS folder_code,
-	        ap.project_code, ap.project_name, NULL AS uploaderName,
+	        ap.project_code, ap.project_name, 
+	        ap.status AS projectStatusName, NULL AS uploaderName,
 	        NULL AS folder_path, 0 AS folder_depth, NULL AS folder_name,
 	        TO_CHAR(ap.project_code, 'FM0000000000') AS sort_path,
 	        'PROJECT' AS row_type,
-	        NULL AS createdCode
+	        NULL AS createdCode,
+	        -- 권한 데이터 매핑
+	        DECODE(ap.admin_ck, 'Y', 1, 0) AS admin,
+	        ap.rd_rol, ap.wr_rol, ap.mo_rol, ap.del_rol
 	    FROM AUTH_PROJECT ap
 	    WHERE 1=1
 	    <if test="(fileName != null and fileName != '') or (uploaderName != null and uploaderName != '') or (createdFrom != null and createdFrom != '') or (fileType != null and fileType != '') or (createdCode != null and createdCode != '')">
@@ -153,11 +158,16 @@
 	    /* 2️⃣ 폴더 : 파일 검색 조건에 맞는 파일을 가진 폴더 + 그 폴더의 모든 상위 부모 */
 	    SELECT
 	        NULL, NULL, NULL, NULL, NULL,
-	        ft.folder_code, ft.project_code, ap.project_name, NULL,
+	        ft.folder_code, ft.project_code, 
+	        ap.project_name, 
+	        ap.status AS projectStatusName, NULL,
 	        ft.folder_path, ft.folder_depth, ft.folder_name,
 	        TO_CHAR(ft.project_code, 'FM0000000000') || ft.sort_path,
 	        'FOLDER',
-	        NULL AS createdCode
+	        NULL AS createdCode,
+	        -- 권한 데이터 매핑
+	        DECODE(ap.admin_ck, 'Y', 1, 0) AS admin,
+	        ap.rd_rol, ap.wr_rol, ap.mo_rol, ap.del_rol
 	    FROM FOLDER_TREE ft
 	    JOIN AUTH_PROJECT ap ON ft.project_code = ap.project_code
 	    WHERE 1=1
@@ -199,12 +209,17 @@
 	    /* 3️⃣ 파일 : 실제 조건에 맞는 파일만 */
 	    SELECT
 	        da.file_code, da.original_name, da.size_bytes, da.uploaded_at,
-	        da.mime_type, da.folder_code, da.project_code, ap.project_name,
+	        da.mime_type, da.folder_code, da.project_code, 
+	        ap.project_name,
+	        ap.status AS projectStatusName,
 	        u.name AS uploaderName,
 	        ft.folder_path, ft.folder_depth, ft.folder_name,
 	        TO_CHAR(da.project_code, 'FM0000000000') || ft.sort_path || '/' || LPAD(da.file_code, 10, '0'),
 	        'FILE',
-	        da.user_code AS createdCode
+	        da.user_code AS createdCode,
+	        -- 권한 데이터 매핑
+	        DECODE(ap.admin_ck, 'Y', 1, 0) AS admin,
+	        ap.rd_rol, ap.wr_rol, ap.mo_rol, ap.del_rol
 	    FROM documents_attachments da
 	    JOIN AUTH_PROJECT ap ON da.project_code = ap.project_code
 	    LEFT JOIN users u ON da.user_code = u.user_code

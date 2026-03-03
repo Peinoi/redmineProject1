@@ -13,6 +13,7 @@
 		projectValue: $("#filterProjectValue"),
 		projectStatus: $("#filterProjectStatus"),
 		status: $("#filterStatus"),
+		title: $("#filterTitle"),
 		priority: $("#filterPriority"),
 		assigneeText: $("#filterAssigneeText"),
 		assigneeValue: $("#filterAssigneeValue"),
@@ -232,18 +233,30 @@
 		const psLabel = psCode ? PROJECT_STATUS_LABEL[psCode] : "";
 		const sLabel = sCode ? STATUS_LABEL[sCode] : "";
 		const prLabel = prCode ? PRIORITY_LABEL[prCode] : "";
+		const duration = window.ganttRange || null;
+		const projectCode =
+			window.currentProject?.projectCode ||
+			ui.projectValue?.value ||
+			"";
 
 		return {
-			projectCode: ui.projectValue?.value || "",
+			projectCode: String(window.currentProject?.projectCode || ui.projectValue?.value || ""),
+			projectName: ui.projectText?.value || "",
 			projectStatus: psLabel,
+			projectStatusCode: psCode,
 			title: ui.title?.value?.trim()?.toLowerCase() || "",
 			type: ui.typeValue?.value || "",
+			typeName: ui.typeText?.value || "",
 			status: sLabel,  // 라벨로 변환
 			priority: prLabel,  // 라벨로 변환
 			assigneeCode: ui.assigneeValue?.value || "",
-			creatorCode: ui.creatorValue?.value || "",
+			assigneeName: ui.assigneeText?.value || "",
+			createdByCode: ui.creatorValue?.value || "",
+			creatorName: ui.creatorText?.value || "",
 			createdAt: ui.createdAt?.value || "",
-			dueAt: ui.dueAt?.value || ""
+			dueAt: ui.dueAt?.value || "",
+			durationStart: duration?.start || null,
+			durationEnd: duration?.end || null
 		};
 	};
 
@@ -516,6 +529,7 @@
 			if (matchedUsers.length > 0) {
 				result.push({
 					projectName: p.projectName,
+					projectCode: p.projectCode,
 					children: matchedUsers
 				});
 			}
@@ -611,7 +625,7 @@
 			window.ganttReload({  // {} 대신 명시적으로
 				projectCode: "", projectStatus: "", title: "",
 				type: "", status: "", priority: "",
-				assigneeCode: "", creatorCode: "", createdAt: "", dueAt: ""
+				assigneeCode: "", createdByCode: "", createdAt: "", dueAt: ""
 			});
 		}
 
@@ -748,15 +762,31 @@
 		const toggleBtn = document.getElementById("btnToggleSearch");
 		const wrapper = document.getElementById("searchConditionWrapper");
 
-		if (!toggleBtn || !wrapper) return;
+		if (toggleBtn && wrapper) {
+			wrapper.addEventListener("shown.bs.collapse", () => {
+				toggleBtn.textContent = "검색조건 닫기";
+			});
 
-		wrapper.addEventListener("shown.bs.collapse", () => {
-			toggleBtn.textContent = "검색조건 닫기";
-		});
+			wrapper.addEventListener("hidden.bs.collapse", () => {
+				toggleBtn.textContent = "검색조건 열기";
+			});
+		}
 
-		wrapper.addEventListener("hidden.bs.collapse", () => {
-			toggleBtn.textContent = "검색조건 열기";
-		});
+		// 세션 프로젝트 자동 세팅
+		if (window.currentProject && window.currentProject.projectCode) {
+			ui.projectValue.value = window.currentProject.projectCode;
+			ui.projectText.value = window.currentProject.projectName;
+		}
+
+		// 🔥 무조건 한 번만 실행
+		if (window.ganttReload) {
+			window.ganttReload(getGanttFilters());
+		}
+
+		if (window.calendarReload) {
+			window.calendarReload(getGanttFilters());
+		}
+
 	});
 
 })();

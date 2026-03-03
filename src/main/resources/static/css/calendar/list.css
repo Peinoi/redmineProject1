@@ -46,7 +46,7 @@
 
 /* 셀 최소 높이 고정 */
 .fc .fc-daygrid-day-frame {
-	min-height: 120px !important;
+	min-height: 160px !important;
 }
 
 /* 네비게이션 버튼 - 비즈니스 톤 */

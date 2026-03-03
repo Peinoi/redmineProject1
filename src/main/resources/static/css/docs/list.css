@@ -17,15 +17,6 @@
 	color: #6b7280;
 }
 
-/* ================== 검색 영역 ================== */
-.search-filters {
-	background: #f4f7f5;
-	padding: 12px;
-	border-radius: 8px;
-	margin-bottom: 15px;
-	border: 1px solid #d1e3d0;
-}
-
 /* ================== 트리 구조 (모달용) ================== */
 .folder-tree ul {
 	list-style: none;
@@ -41,72 +32,116 @@
 	margin-left: 4px;
 }
 
-.folder-tree li .toggle::before {
-	content: "▶";
-	display: inline-block;
-	width: 12px;
-}
-
-.folder-tree li.open>.toggle::before {
-	content: "▼";
+/* ================== 문서 목록 카드 ================== */
+.docs-list-card {
+	border-radius: 12px;
+	border: 1px solid #e5e7eb;
+	background: #ffffff;
+	overflow: hidden;
 }
 
 /* ================== 문서 목록 테이블 ================== */
+#docsTable {
+	width: 100%;
+	margin: 0;
+}
 
-/* 프로젝트 헤더 행 */
-.project-header td {
-	background-color: #f0f4f8;
-	font-weight: 600;
-	font-size: 0.95rem;
-	border-left: 4px solid #4a90d9;
-	padding: 10px 14px !important;
+#docsTable thead th {
+	font-size: 14px;
+	font-weight: 800;
+	vertical-align: middle;
+	background-color: rgb(224, 229, 243);
+	color: #111827 !important;
+	border-bottom: 1px solid #e5e7eb;
+	padding: 12px 14px;
+}
+
+#docsTable tbody td {
+	font-size: 14px;
+	vertical-align: middle;
+	color: #111827;
+	border-color: #eeeeee;
+	padding: 8px 10px;
+}
+
+/* 프로젝트 행 */
+#docsTable .row-project td {
+	background-color: #ffffff !important;
+	font-weight: 800 !important;
+	font-size: 14px;
+	color: #111827 !important;
+	padding: 8px 10px !important;
+	border-bottom: 1px solid #e5e7eb !important;
 	cursor: pointer;
 	user-select: none;
 }
 
-.project-header:hover td {
-	background-color: #e4ecf5;
+#docsTable .row-project:hover td {
+	background-color: #f9fafb !important;
 }
 
 .project-toggle {
 	display: inline-block;
 	width: 16px;
-	font-size: 0.75rem;
+	font-size: 0.7rem;
 	color: #555;
+	margin-right: 4px;
+}
+
+.project-icon {
+	color: #111827;
+	margin-right: 6px;
+}
+
+/* 폴더 행 */
+#docsTable .row-folder td {
+	background-color: #f8f9fa !important;
+	color: #111827 !important;
+	font-weight: 600 !important;
+	font-size: 14px;
+	padding: 8px 10px;
+	border-bottom: 1px solid #eeeeee !important;
+	cursor: pointer;
+	line-height: 1.4;
+}
+
+#docsTable .row-folder:hover td {
+	background-color: #e9ecef !important;
+}
+
+.folder-icon {
+	color: #111827;
+	margin-right: 6px;
 }
 
 /* 파일 행 */
-.file-row td {
+#docsTable .row-file td {
 	vertical-align: middle;
+	font-size: 14px;
+	color: #374151 !important;
+	padding: 8px 10px;
+	border-bottom: 1px solid #f3f4f6 !important;
+	line-height: 1.4;
 }
 
-/* 들여쓰기 + 파일명 */
-.file-indent {
-	display: inline-block;
+#docsTable .row-file:hover td {
+	background-color: #f9fafb !important;
 }
 
-/* 폴더 경로 뱃지 */
-.folder-path-badge {
+/* 마지막 행 border 제거 */
+#docsTable tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.row-file .btn-sm, .row-folder .btn-sm {
+	padding: 3px 8px;
 	font-size: 0.78rem;
-	color: #888;
-	background: #f1f3f5;
-	border-radius: 4px;
-	padding: 1px 6px;
-	margin-left: 8px;
 }
 
-/* ================== 버튼 ================== */
-.btn-download {
-	font-size: 0.85rem;
-}
-
-.btn-delete {
-	font-size: 0.85rem;
-}
-
-/* ================== 날짜 input ================== */
-.search-filters .d-flex>input[type="date"] {
-	min-width: 0;
+/* 빈 상태 */
+#docsTable tbody tr td[colspan] {
+	color: #9ca3af;
+	font-size: 14px;
 }
 
 /* ================== 모달 중첩 방지 ================== */
@@ -185,39 +220,4 @@ body.modal-open .modal-backdrop+.modal-backdrop {
 
 .file-preview-item.is-error .file-name {
 	color: #dc2626;
-}
-
-.folder-level-row td {
-	background-color: #f8f9fa;
-	color: #444;
-	font-weight: 500;
-	padding-top: 6px !important;
-	padding-bottom: 6px !important;
-}
-
-.row-project td {
-	background-color: #f0f4f8;
-	font-weight: 600;
-	border-left: 4px solid #4a90d9;
-	padding: 10px 14px !important;
-}
-
-.row-project:hover td {
-	background-color: #e4ecf5;
-}
-
-.row-folder td {
-	background-color: #f8f9fa;
-	color: #444;
-	font-weight: 500;
-	padding-top: 6px !important;
-	padding-bottom: 6px !important;
-}
-
-.row-folder:hover td {
-	background-color: #f1f3f5;
-}
-
-.row-file td {
-	vertical-align: middle;
 }

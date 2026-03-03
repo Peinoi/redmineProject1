@@ -93,7 +93,7 @@ public class DocsController {
 		 * System.out.println("docsVO.delRol = " + docsVO.getDelRol());
 		 * System.out.println("===================="); // ====================
 		 */
-		
+
 		boolean isAdmin = "Y".equals(user.getSysCk());
 		docsVO.setUserCode(user.getUserCode());
 		docsVO.setAdmin(isAdmin ? 1 : 0);
@@ -306,8 +306,17 @@ public class DocsController {
 		setAuthFromSession(docsVO, session);
 		boolean isAdmin = setUserInfo(docsVO, user);
 
-		if (!isAdmin && (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty())) {
-			docsVO.setProjectStatusName("OD1");
+		// 관리자일 경우
+		if (isAdmin) {
+			// 특정 상태를 선택해서 검색한 게 아니라면, 상태 필터를 제거하여 OD1, OD2, OD3 모두 나오게 함
+			if ("".equals(docsVO.getProjectStatusName())) {
+				docsVO.setProjectStatusName(null);
+			}
+		} else {
+			// 일반 유저일 경우 (진행중인 것만 강제)
+			if (docsVO.getProjectStatusName() == null || docsVO.getProjectStatusName().isEmpty()) {
+				docsVO.setProjectStatusName("OD1");
+			}
 		}
 
 		List<DocsVO> docsList = docsService.getDocsList(docsVO);

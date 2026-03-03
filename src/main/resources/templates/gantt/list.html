@@ -69,6 +69,10 @@
 		</div>
 	</div>
 
+	<script th:inline="javascript">
+    	window.currentProject = [[${session.currentProject}]];
+    	console.log(currentProject);
+	</script>
 	<script th:src="@{/js/dhtmlx/dhtmlxgantt.js}"></script>
 	<script src="https://export.dhtmlx.com/gantt/api.js"></script>
 	<script

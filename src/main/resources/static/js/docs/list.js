@@ -330,86 +330,102 @@ function hasChildren(projectCode, folderPath, allRows) {
 	});
 }
 
+// 수정 후
 document.addEventListener("DOMContentLoaded", () => {
 	const tbody = document.getElementById("docsTableBody");
-	tbody.innerHTML = ""; // 서버 렌더링 데이터 즉시 제거
+	tbody.innerHTML = "";
 
 	const projectStatusEl = document.getElementById("filterProjectStatus");
-	const initialStatus = projectStatusEl?.value || "OD1";
+	const initialStatus = projectStatusEl?.value || "";
 
-	window.docsReload({ projectStatusName: initialStatus });
+	// 세션 프로젝트 자동 세팅
+	if (window.currentProject?.projectCode) {
+		const pCode = String(window.currentProject.projectCode);
+		const pName = window.currentProject.projectName || "";
+
+		const projectValueEl = document.getElementById("filterProjectValue");
+		const projectTextEl = document.getElementById("filterProjectText");
+		if (projectValueEl) projectValueEl.value = pCode;
+		if (projectTextEl) projectTextEl.value = pName;
+
+		window.docsReload({
+			projectCode: pCode,
+			projectStatusName: initialStatus
+		});
+	} else {
+		window.docsReload({ projectStatusName: initialStatus });
+	}
 });
 
 // ================= AJAX 조회 =================
 window.docsReload = async (filters = {}) => {
-	const params = new URLSearchParams();
-	if (filters.projectCode) params.append("projectCode", filters.projectCode);
-	if (filters.projectStatusName) params.append("projectStatusName", filters.projectStatusName);
-	if (filters.folderCode) params.append("folderCode", filters.folderCode);
-	if (filters.fileName) params.append("fileName", filters.fileName);
-	if (filters.createdCode) params.append("createdCode", filters.createdCode);
-	if (filters.fileType) params.append("fileType", filters.fileType);
-	if (filters.createdFrom) params.append("createdFrom", filters.createdFrom);
-	if (filters.createdTo) params.append("createdTo", filters.createdTo);
+	const spinner = document.getElementById("docsLoadingSpinner");
+	if (spinner) spinner.style.display = "flex";  // 추가
 
-	const res = await fetch(`/api/docs/list?${params}`, { headers: { Accept: "application/json" } });
-	if (!res.ok) return;
-	const data = await res.json();
+	try {                                          // try로 감싸기
+		const params = new URLSearchParams();
+		if (filters.projectCode) params.append("projectCode", filters.projectCode);
+		if (filters.projectStatusName) params.append("projectStatusName", filters.projectStatusName);
+		if (filters.folderCode) params.append("folderCode", filters.folderCode);
+		if (filters.fileName) params.append("fileName", filters.fileName);
+		if (filters.createdCode) params.append("createdCode", filters.createdCode);
+		if (filters.fileType) params.append("fileType", filters.fileType);
+		if (filters.createdFrom) params.append("createdFrom", filters.createdFrom);
+		if (filters.createdTo) params.append("createdTo", filters.createdTo);
 
-	const tbody = document.getElementById("docsTableBody");
-	tbody.innerHTML = "";
+		const res = await fetch(`/api/docs/list?${params}`, { headers: { Accept: "application/json" } });
+		if (!res.ok) return;
+		const data = await res.json();
 
-	if (!data.length) {
-		tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">등록된 문서가 없습니다.</td></tr>`;
-		return;
-	}
+		const tbody = document.getElementById("docsTableBody");
+		tbody.innerHTML = "";
 
-	// 기존 렌더링 재사용: 데이터를 tr로 변환 후 rebuildDocsTable 호출
-	const fakeRows = data.map(doc => {
-		const tr = document.createElement("tr");
-		tr.className = "doc-row";
-		tr.dataset.projectCode = doc.projectCode || "";
-		tr.dataset.projectName = doc.projectName || "";
-		tr.dataset.fileCode = doc.fileCode || "";
-		tr.dataset.fileName = doc.originalName || "";
-		tr.dataset.folderCode = doc.folderCode || "";
-		tr.dataset.folderName = doc.folderName || "";
-		tr.dataset.folderPath = doc.folderPath || "";
-		tr.dataset.folderDepth = doc.folderDepth || 0;
-		tr.dataset.size = doc.sizeBytes || 0;
-		tr.dataset.uploadedAt = doc.uploadedAtStr || "";
-		tr.dataset.uploaderCode = doc.createdCode || "";
-		tr.dataset.uploader = doc.uploaderName || "";
-		tr.dataset.rowType = doc.rowType || "";
-		return tr;
-	});
+		if (!data.length) {
+			tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">등록된 문서가 없습니다.</td></tr>`;
+			return;
+		}
 
-	rebuildDocsTable(fakeRows, tbody);
+		const fakeRows = data.map(doc => {
+			const tr = document.createElement("tr");
+			tr.className = "doc-row";
+			tr.dataset.projectCode = doc.projectCode || "";
+			tr.dataset.projectName = doc.projectName || "";
+			tr.dataset.fileCode = doc.fileCode || "";
+			tr.dataset.fileName = doc.originalName || "";
+			tr.dataset.folderCode = doc.folderCode || "";
+			tr.dataset.folderName = doc.folderName || "";
+			tr.dataset.folderPath = doc.folderPath || "";
+			tr.dataset.folderDepth = doc.folderDepth || 0;
+			tr.dataset.size = doc.sizeBytes || 0;
+			tr.dataset.uploadedAt = doc.uploadedAtStr || "";
+			tr.dataset.uploaderCode = doc.createdCode || "";
+			tr.dataset.uploader = doc.uploaderName || "";
+			tr.dataset.rowType = doc.rowType || "";
+			return tr;
+		});
 
-	// 자동 펼침 로직
-	// 검색 조건이 하나라도 있는 경우에만 실행
-	const hasFilter = filters.fileName || filters.folderCode || filters.createdCode ||
-		filters.fileType || filters.createdFrom || filters.uploaderName;
+		rebuildDocsTable(fakeRows, tbody);
 
-	if (hasFilter) {
-		// 데이터가 그려지는 시간을 고려해 아주 잠깐의 지연 후 실행
+		const hasFilter = filters.fileName || filters.folderCode || filters.createdCode ||
+			filters.fileType || filters.createdFrom || filters.uploaderName;
+
+		if (hasFilter) {
+			setTimeout(() => {
+				const toggles = tbody.querySelectorAll(".row-project, .row-folder");
+				toggles.forEach(row => {
+					const icon = row.querySelector(".project-toggle, .folder-toggle");
+					if (icon && icon.textContent.trim() === "▶") {
+						row.click();
+					}
+				});
+			}, 50);
+		}
+
+	} catch (e) {                                  // catch 추가
+		console.error("문서 데이터 조회 실패:", e);
+	} finally {                                    // finally로 스피너 제거
 		setTimeout(() => {
-			// 모든 프로젝트와 폴더 행을 찾아서
-			const toggles = tbody.querySelectorAll(".row-project, .row-folder");
-			toggles.forEach(row => {
-				const icon = row.querySelector(".project-toggle, .folder-toggle");
-				// 아이콘이 '▶' (닫힘) 상태라면 클릭해서 펼침
-				if (icon && icon.textContent.trim() === "▶") {
-					row.click();
-				}
-			});
-		}, 50);
+			if (spinner) spinner.style.setProperty("display", "none", "important");
+		}, 400);
 	}
 };
-
-document.addEventListener("DOMContentLoaded", () => {
-	const projectStatusEl = document.getElementById("filterProjectStatus");
-	const initialStatus = projectStatusEl?.value || "OD1";
-
-	window.docsReload({ projectStatusName: initialStatus });
-});
