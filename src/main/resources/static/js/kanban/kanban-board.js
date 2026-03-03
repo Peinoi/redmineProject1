@@ -101,6 +101,19 @@
     return projectStatus === "OD3";
   };
 
+  const mapCompleteErrorMessage = (message, toStatusCode) => {
+    const msg = String(message || "").trim();
+
+    if (
+      toStatusCode === "OB5" &&
+      (msg.includes("ORA-02290") || msg.includes("CHK_ISSUES_DATES"))
+    ) {
+      return "시작일이 오늘보다 늦어 완료 처리할 수 없습니다.";
+    }
+
+    return msg || "저장에 실패했습니다.";
+  };
+
   // ------------------------------
   // Worklog helpers
   // ------------------------------
@@ -1089,6 +1102,12 @@
       return;
     }
 
+    if (toStatusCode === "OB5") {
+      setProgressUI(card, 100);
+      setStatusUI(card, "OB5");
+      return;
+    }
+
     if (data && typeof data === "object") {
       if (data.statusId) setStatusUI(card, data.statusId);
       if (data.progress != null) setProgressUI(card, data.progress);
@@ -1667,7 +1686,7 @@
           updateCounts();
           updateCardStates();
         } catch (err) {
-          showToast(err?.message || "저장에 실패했습니다.");
+          showToast(mapCompleteErrorMessage(err?.message, toStatusCode));
           revertToOrigin(item, dragFromCol, dragOldIndex);
         } finally {
           isSaving.value = false;

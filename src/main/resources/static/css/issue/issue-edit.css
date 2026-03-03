@@ -461,3 +461,43 @@
 #typeModalTree .ti-parent-item {
   font-weight: 800;
 }
+
+/* =========================================================
+   Modal content scroll area
+   검색창 아래 목록만 스크롤
+   ========================================================= */
+
+#typeModalTree,
+#parIssueModalTree,
+#assigneeModalList {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 스크롤 안쪽 여백 조금 */
+#typeModalTree,
+#parIssueModalTree,
+#assigneeModalList {
+  padding-right: 4px;
+}
+
+/* 필요하면 스크롤바도 조금 깔끔하게 */
+#typeModalTree::-webkit-scrollbar,
+#parIssueModalTree::-webkit-scrollbar,
+#assigneeModalList::-webkit-scrollbar {
+  width: 8px;
+}
+
+#typeModalTree::-webkit-scrollbar-thumb,
+#parIssueModalTree::-webkit-scrollbar-thumb,
+#assigneeModalList::-webkit-scrollbar-thumb {
+  background: #cfd6df;
+  border-radius: 999px;
+}
+
+#typeModalTree::-webkit-scrollbar-track,
+#parIssueModalTree::-webkit-scrollbar-track,
+#assigneeModalList::-webkit-scrollbar-track {
+  background: transparent;
+}

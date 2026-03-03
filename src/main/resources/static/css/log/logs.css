@@ -90,8 +90,8 @@
 /* 이력 영역 */
 .log-area {
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 12px;
+  overflow: hidden;
   min-height: 360px;
   background: #ffffff;
 }
@@ -100,8 +100,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 10px;
-  margin-bottom: 8px;
+  gap: 8px;
+  font-weight: 800;
+  padding: 10px 12px;
+  background-color: rgb(224, 229, 243);
+  color: #111827;
   border-bottom: 1px solid #e5e7eb;
 }
 
@@ -150,14 +153,19 @@
 
 /* 작업이력 렌더 영역: 내부 스크롤 */
 .log-render {
-  margin-top: 10px;
+  margin-top: 0;
+  padding: 10px 12px 0;
+  padding-right: 6px;
 
-  max-height: 520px;
+  max-height: 560px;
   overflow-y: auto;
   overflow-x: hidden;
 
-  padding-right: 6px;
   scroll-behavior: smooth;
+}
+
+#logEmpty {
+  padding: 14px 12px;
 }
 
 /* 스크롤바(크롬/엣지) */
@@ -502,4 +510,39 @@ ol {
   background: #d5dbe3 !important;
   color: #111827 !important;
   box-shadow: 0 4px 14px rgba(17, 24, 39, 0.1) !important;
+}
+
+/* =========================================================
+   Modal content scroll area
+   검색창 아래 목록만 스크롤
+   ========================================================= */
+
+#projectModalList,
+#userModalList {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 스크롤 안쪽 여백 조금 */
+#projectModalList,
+#userModalList {
+  padding-right: 4px;
+}
+
+/* 필요하면 스크롤바도 조금 깔끔하게 */
+#projectModalList::-webkit-scrollbar,
+#userModalList::-webkit-scrollbar {
+  width: 8px;
+}
+
+#projectModalList::-webkit-scrollbar-thumb,
+#userModalList::-webkit-scrollbar-thumb {
+  background: #cfd6df;
+  border-radius: 999px;
+}
+
+#projectModalList::-webkit-scrollbar-track,
+#userModalList::-webkit-scrollbar-track {
+  background: transparent;
 }

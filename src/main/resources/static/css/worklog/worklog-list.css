@@ -509,3 +509,48 @@
   margin: 8px 6px;
   opacity: 0.4;
 }
+
+/* =========================================================
+   Modal content scroll area
+   검색창 아래 목록만 스크롤
+   ========================================================= */
+
+#projectModalList,
+#typeModalTree,
+#workerModalTree,
+#issueModalTree {
+  max-height: 420px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 스크롤 안쪽 여백 조금 */
+#projectModalList,
+#typeModalTree,
+#workerModalTree,
+#issueModalTree {
+  padding-right: 4px;
+}
+
+/* 필요하면 스크롤바도 조금 깔끔하게 */
+#projectModalList::-webkit-scrollbar,
+#typeModalTree::-webkit-scrollbar,
+#workerModalTree::-webkit-scrollbar,
+#issueModalTree::-webkit-scrollbar {
+  width: 8px;
+}
+
+#projectModalList::-webkit-scrollbar-thumb,
+#typeModalTree::-webkit-scrollbar-thumb,
+#workerModalTree::-webkit-scrollbar-thumb,
+#issueModalTree::-webkit-scrollbar-thumb {
+  background: #cfd6df;
+  border-radius: 999px;
+}
+
+#projectModalList::-webkit-scrollbar-track,
+#typeModalTree::-webkit-scrollbar-track,
+#workerModalTree::-webkit-scrollbar-track,
+#issueModalTree::-webkit-scrollbar-track {
+  background: transparent;
+}
