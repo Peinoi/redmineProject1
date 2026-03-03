@@ -25,7 +25,7 @@ function rebuildDocsTable(rows, tbody) {
 			tr.dataset.projectCode = projectCode;
 			tr.style.cursor = "pointer";
 			tr.innerHTML = `
-					<td colspan="6" class="fw-bold py-2">
+					<td colspan="6">
 						<span class="project-toggle me-2">▶</span>
 						<i class="fa-solid fa-folder-closed project-icon me-1"></i> ${projectName}
 					</td>`;
