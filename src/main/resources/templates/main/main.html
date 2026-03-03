@@ -55,7 +55,16 @@
 						</div>
 					</div>
 
-					<!-- ✅ real content -->
+					<!-- fixed legend (항상 진행/종료 표시 + 색 고정) -->
+					<div class="donut-legend-fixed skeleton-hide" id="donutLegendFixed">
+						<span class="lg-item"> <i class="lg-dot lg-progress"></i>진행
+							<span class="lg-cnt" id="lgCntProgress">0</span>
+						</span> <span class="lg-item"> <i class="lg-dot lg-done"></i>종료 <span
+							class="lg-cnt" id="lgCntDone">0</span>
+						</span>
+					</div>
+
+					<!-- real content -->
 					<div class="chart-wrap skeleton-hide">
 						<div id="donutchart" class="chart-box"></div>
 					</div>

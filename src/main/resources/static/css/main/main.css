@@ -67,7 +67,7 @@
   overflow: hidden;
 }
 
-.btn-sm {
+.card-header .btn-sm {
 	font-size: 0.6rem !important;
 }
 
@@ -738,4 +738,36 @@
 /* out-month 공휴일은 너무 진하면 부담이면 톤 다운(선택) */
 .memo-cal-cell.is-out.is-holiday .memo-cal-day{
   color: #fca5a5; /* red-300 */
+}
+
+/* =========================
+   Donut fixed legend
+   ========================= */
+.donut-legend-fixed{
+  display:flex;
+  justify-content:flex-start;
+  align-items:center;
+  gap:14px;
+  padding:10px 20px 0;  
+  font-size:13px;
+  color:#374151;
+}
+.donut-legend-fixed .lg-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+.donut-legend-fixed .lg-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  display:inline-block;
+}
+.donut-legend-fixed .lg-progress{ background:#3b9ff6; }
+.donut-legend-fixed .lg-done{ background:#9ca3af; }
+
+.donut-legend-fixed .lg-cnt{
+  font-weight: 400;
+  font-size: 13px;
 }

@@ -101,9 +101,9 @@ public class UserPageServiceImpl implements UserPageService {
 			String day = log.getCreatedAt() == null ? "unknown" : dayFmt.format(log.getCreatedAt());
 			String time = log.getCreatedAt() == null ? "" : timeFmt.format(log.getCreatedAt());
 
-			// ✅ meta가 {"changes":[]} 인 로그는 스킵 (내 페이지와 동일)
-			if (isEmptyChangesMeta(log.getMeta(), om)) {
-				continue;
+			// ✅ meta가 {"changes":[]} 인 로그는 스킵 (내 페이지와 동일) CREATE는 예외
+			if (isEmptyChangesMeta(log.getMeta(), om) && !"CREATE".equalsIgnoreCase(log.getActionType())) {
+			    continue;
 			}
 
 			WorkLogViewDTO dto = new WorkLogViewDTO();
@@ -114,7 +114,7 @@ public class UserPageServiceImpl implements UserPageService {
 			dto.setProjectName(log.getProjectName());
 			dto.setIssueTitle(log.getIssueTitle());
 			dto.setTargetCode(log.getTargetCode());
-			dto.setDetailHtml(buildDetailHtml(log.getMeta(), om)); // 아래 함수
+			dto.setDetailHtml(buildDetailHtml(log.getMeta(), log.getActionType(), om)); // 아래 함수
 
 			grouped.computeIfAbsent(day, k -> new ArrayList<>()).add(dto);
 		}
@@ -141,15 +141,20 @@ public class UserPageServiceImpl implements UserPageService {
 		}
 	}
 
-	private String buildDetailHtml(String meta, ObjectMapper om) {
-		if (meta == null || meta.isBlank())
-			return "";
+	private String buildDetailHtml(String meta, String actionType, ObjectMapper om) {
+		// ✅ meta가 비어있으면: 등록이면 문구, 그 외는 빈값
+		if (meta == null || meta.isBlank()) {
+			return isCreate(actionType) ? "생성되었습니다." : "";
+		}
 
 		try {
 			JsonNode root = om.readTree(meta);
 			JsonNode changes = root.get("changes");
-			if (changes == null || !changes.isArray() || changes.size() == 0)
-				return "";
+
+			// ✅ 변경내역이 없으면: 등록이면 문구, 그 외는 빈값
+			if (changes == null || !changes.isArray() || changes.size() == 0) {
+				return isCreate(actionType) ? "생성되었습니다." : "";
+			}
 
 			StringBuilder sb = new StringBuilder();
 			for (JsonNode c : changes) {
@@ -161,20 +166,18 @@ public class UserPageServiceImpl implements UserPageService {
 				String beforeDisp = formatValueByField(field, before);
 				String afterDisp = formatValueByField(field, after);
 
-				// null이면 공백처럼 표시
-				if (beforeDisp == null)
-					beforeDisp = "";
-				if (afterDisp == null)
-					afterDisp = "";
-
-				sb.append(escapeHtml(label)).append(" : ").append(escapeHtml(beforeDisp)).append(" &gt;&gt; ")
-						.append(escapeHtml(afterDisp)).append("<br>");
+				sb.append(escapeHtml(label)).append(" : ").append(escapeHtml(beforeDisp == null ? "" : beforeDisp))
+						.append(" &gt;&gt; ").append(escapeHtml(afterDisp == null ? "" : afterDisp)).append("<br>");
 			}
 			return sb.toString();
 		} catch (Exception e) {
-			// meta가 JSON이 아닐 때 대비 (그냥 그대로 보여주고 싶으면 이쪽에서 escape해서 반환)
-			return escapeHtml(meta);
+			// 파싱 실패 시: 등록이면 문구, 아니면 meta 텍스트
+			return isCreate(actionType) ? "생성되었습니다." : escapeHtml(meta);
 		}
+	}
+
+	private boolean isCreate(String actionType) {
+		return actionType != null && "CREATE".equalsIgnoreCase(actionType.trim());
 	}
 
 	private String toFieldLabel(String field) {

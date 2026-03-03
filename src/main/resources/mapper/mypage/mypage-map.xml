@@ -518,6 +518,14 @@
     ORDER BY p.project_name
   </select>
   
+  	<select id="selectAllProjectOptions" resultType="com.yedam.app.mypage.service.AdminProjectOptionDTO">
+  SELECT
+      p.project_code AS projectCode,
+      p.project_name AS projectName
+  FROM projects p
+  ORDER BY p.project_name
+	</select>
+  
   <!-- =========================================================
      공통: ME 수정 가능 플래그
      - isSys=true  : 무조건 Y

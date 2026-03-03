@@ -22,14 +22,41 @@
 				<div class="x-page-title-right d-flex align-items-center gap-2">
 					<div th:if="${!#lists.isEmpty(adminProjectList)}"
 						class="d-flex align-items-center gap-2">
-						<select class="form-select form-select-sm" id="adminProjectSelect"
-							style="min-width: 240px;">
-							<option value="">내 모드</option>
-							<option th:each="p : ${adminProjectList}"
-								th:value="${p.projectCode}"
-								th:selected="${mode == 'ADMIN' and adminProjectCode == p.projectCode}"
-								th:text="|관리자 모드: ${p.projectName}|"></option>
-						</select>
+						<button type="button" class="btn btn-sm btn-outline-secondary"
+							id="btnModePicker">
+							<span id="modePickerLabel"
+								th:text="${mode=='ADMIN' ? '관리자 모드: ' + adminProjectName : '내 모드'}">내
+								모드</span>
+						</button>
+
+						<div class="modal fade" id="modePickerModal" tabindex="-1"
+							aria-hidden="true">
+							<div class="modal-dialog modal-dialog-centered modal-lg">
+								<div class="modal-content">
+									<div class="modal-header">
+										<h5 class="modal-title">모드 선택</h5>
+										<button type="button" class="btn-close"
+											data-bs-dismiss="modal"></button>
+									</div>
+
+									<div class="modal-body">
+										<input type="text" class="form-control" id="modePickerSearch"
+											placeholder="프로젝트명 검색">
+
+										<div class="list-group mt-3 mode-picker-list">
+											<button type="button"
+												class="list-group-item list-group-item-action"
+												data-project="">내 모드</button>
+
+											<button th:each="p : ${adminProjectList}" type="button"
+												class="list-group-item list-group-item-action mode-picker-item"
+												th:attr="data-project=${p.projectCode}, data-name=${p.projectName}"
+												th:text="|관리자 모드: ${p.projectName}|"></button>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
 					</div>
 
 					<button type="button" class="btn btn-success btn-sm"

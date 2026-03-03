@@ -22,6 +22,13 @@ google.charts.setOnLoadCallback(() => {
 
 let donutChart, donutData;
 
+// ✅ Donut single-slice workaround (더미 슬라이스)
+const DONUT_DUMMY_LABEL = "__DUMMY__";
+const DONUT_DUMMY_VALUE = 0.0001;
+
+// ✅ Donut legend 고정(진행/종료 항상 표시)
+const DONUT_FIXED_LABELS = ["진행", "종료"];
+
 async function loadDonutChart() {
 	const chartEl = document.getElementById("donutchart");
 	if (!chartEl) return;
@@ -41,26 +48,80 @@ async function loadDonutChart() {
 			return;
 		}
 
-		const reversed = [...list].reverse();
+		// =========================
+		// ✅ 1) API 결과를 Map으로 정규화
+		// =========================
+		const cntMap = new Map(); // key: 라벨, val: 숫자
+		(list || []).forEach((item) => {
+			const value = Number(item.codeNameCnt ?? item.CODE_NAME_CNT ?? 0);
+			const name = String(item.codeName ?? item.CODE_NAME ?? "").trim();
+			if (!name) return;
+			cntMap.set(name, (cntMap.get(name) || 0) + value);
+		});
 
+		// =========================
+		// ✅ 2) 진행/종료는 항상 존재하도록 보정(없으면 0으로)
+		// =========================
+		const normalized = DONUT_FIXED_LABELS.map((label) => ({
+			codeName: label,
+			codeNameCnt: Number(cntMap.get(label) || 0),
+		}));
+
+		// ✅ fixed legend 숫자 업데이트(진행/종료)
+		const elProg = document.getElementById("lgCntProgress");
+		const elDone = document.getElementById("lgCntDone");
+		
+		const progCnt = Number(normalized.find(x => x.codeName === "진행")?.codeNameCnt ?? 0);
+		const doneCnt = Number(normalized.find(x => x.codeName === "종료")?.codeNameCnt ?? 0);
+
+		if (elProg) elProg.textContent = `${progCnt}개`;
+		if (elDone) elDone.textContent = `${doneCnt}개`;
+
+		// =========================
+		// ✅ 3) legend를 2개 유지하면서도
+		//    종료가 0일 때 차트에 "쪼끄만 흔적"만 남기기 위해 더미값 주입
+		//    (legend는 라벨이 있으면 보이고, slice는 거의 안 보임)
+		// =========================
+		let hasInjectedTinyForZero = false;
+		const adjusted = normalized.map((row) => {
+			if (row.codeName === "종료" && row.codeNameCnt === 0) {
+				hasInjectedTinyForZero = true;
+				return { ...row, codeNameCnt: DONUT_DUMMY_VALUE };
+			}
+			return row;
+		});
+
+		// =========================
+		// ✅ 4) DataTable 생성
+		// =========================
 		donutData = new google.visualization.DataTable();
 		donutData.addColumn("string", "상태");
 		donutData.addColumn("number", "개수");
 		donutData.addColumn({ type: "string", role: "tooltip" });
 
-		reversed.forEach((item) => {
-			const value = Number(item.codeNameCnt ?? item.CODE_NAME_CNT ?? 0);
-			const name = String(item.codeName ?? item.CODE_NAME ?? "");
-			donutData.addRow([name, value, `${name}: ${value}개`]);
+		adjusted.forEach((row) => {
+			const name = row.codeName;
+			const value = Number(row.codeNameCnt || 0);
+
+			// ✅ 종료가 0이라 더미값 넣은 경우, 툴팁/표시는 "0개"로
+			if (hasInjectedTinyForZero && name === "종료") {
+				donutData.addRow([name, value, `${name}: 0개`]);
+				return;
+			}
+
+			donutData.addRow([name, value, `${name}: ${Math.trunc(value)}개`]);
 		});
 
+		// =========================
+		// ✅ 5) 차트 그리기
+		// =========================
 		donutChart = new google.visualization.PieChart(chartEl);
-		drawDonutChart();
+		drawDonutChart({ zeroDoneShownAsTiny: hasInjectedTinyForZero });
 
 		let t;
 		window.addEventListener("resize", () => {
 			clearTimeout(t);
-			t = setTimeout(drawDonutChart, 120);
+			t = setTimeout(() => drawDonutChart({ zeroDoneShownAsTiny: hasInjectedTinyForZero }), 120);
 		});
 	} catch (e) {
 		console.error("[donut] load error:", e);
@@ -71,7 +132,7 @@ async function loadDonutChart() {
 	}
 }
 
-function drawDonutChart() {
+function drawDonutChart({ zeroDoneShownAsTiny = false } = {}) {
 	if (!donutChart || !donutData) return;
 
 	const el = document.getElementById("donutchart");
@@ -79,17 +140,30 @@ function drawDonutChart() {
 
 	const w = el.getBoundingClientRect().width;
 
+	// 종료(2번째)가 0이면 tiny 슬라이스가 아주 얇게 보일 수 있음
+	// → 파이 조각은 거의 티 안 나게 아주 연한 회색으로만 처리(legend는 우리가 직접 만듦)
+	const slices = zeroDoneShownAsTiny
+		? { 1: { color: "#f3f4f6", textStyle: { color: "transparent" } } }
+		: {};
+
 	donutChart.draw(donutData, {
 		pieHole: 0.4,
 		colors: ["#3b9ff6", "#9ca3af"],
-		legend: { position: "top", textStyle: { fontSize: 13 } },
+
+		// ✅ 구글 legend 끄고, HTML 고정 legend 사용
+		legend: "none",
+
 		pieSliceText: "value",
 		pieSliceTextStyle: { fontSize: 16, bold: true },
+
+		sliceVisibilityThreshold: 0,
+		slices,
+
 		chartArea: {
 			left: 10,
-			top: 55,
+			top: 10,          // ✅ legend가 없어졌으니 top 여백 줄임
 			width: Math.max(w - 20, 0),
-			height: "75%",
+			height: "85%",
 		},
 	});
 }
@@ -484,7 +558,7 @@ function initMemoCalendar() {
 
 		document.querySelectorAll(".tooltip").forEach((t) => t.remove());
 	}
-	
+
 	function applyTooltip(el, dateStr, memoContent, holidayName) {
 		if (!hasBS) return;
 
