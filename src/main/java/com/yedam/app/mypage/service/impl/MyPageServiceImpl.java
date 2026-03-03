@@ -498,7 +498,8 @@ public class MyPageServiceImpl implements MyPageService {
         default       -> { targetUrl = null; linkable = false; }
       }
 
-      dto.setIssueTitle("[" + typeLabel + "] " + title);
+      dto.setTargetTypeLabel(typeLabel);
+      dto.setIssueTitle(title);  
       dto.setDetailHtml(buildDetailHtml(log.getMeta(), om));
       dto.setTargetUrl(targetUrl);
       dto.setTargetLink(linkable);
@@ -573,7 +574,14 @@ public class MyPageServiceImpl implements MyPageService {
       case "dueAt" -> "마감일";
       case "resolvedAt" -> "완료일";
       case "progress" -> "진척도";
+      case "priority" -> "우선순위";
+      case "assignee" -> "담당자";
+      case "type" -> "유형";
+      case "parentIssue" -> "상위일감";
       case "rejectReason" -> "반려 사유";
+      case "description" -> "설명";
+      case "title" -> "제목";
+      case "content" -> "내용";
       default -> f;
     };
   }
@@ -581,6 +589,10 @@ public class MyPageServiceImpl implements MyPageService {
   private String formatValueByField(String field, String v) {
     if (v == null || "null".equals(v)) return "";
     String f = (field == null) ? "" : field.trim();
+    
+    if ("content".equalsIgnoreCase(f) || "description".equalsIgnoreCase(f)) {
+        return stripHtmlToText(v);
+    }
 
     if ("startedAt".equals(f) || "dueAt".equals(f) || "resolvedAt".equals(f)) {
       try {
@@ -595,6 +607,26 @@ public class MyPageServiceImpl implements MyPageService {
     }
     return v;
   }
+  
+  // html 태그 제거
+  private String stripHtmlToText(String html) {
+	  if (html == null) return "";
+	  String s = html;
+
+	  // 자주 보이는 nbsp 처리
+	  s = s.replace("&nbsp;", " ");
+
+	  // 태그 제거
+	  s = s.replaceAll("(?is)<script[^>]*>.*?</script>", "");
+	  s = s.replaceAll("(?is)<style[^>]*>.*?</style>", "");
+	  s = s.replaceAll("(?is)<[^>]+>", " ");
+
+	  // 공백 정리
+	  s = s.replaceAll("[\\t\\n\\r]+", " ");
+	  s = s.replaceAll(" +", " ").trim();
+
+	  return s;
+	}
 
   private String text(JsonNode n) {
     return (n == null || n.isNull()) ? null : n.asText();

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.yedam.app.main.mapper.MainMapper;
 import com.yedam.app.main.service.AssigneeIssStaVO;
+import com.yedam.app.main.service.MainHolidayDTO;
 import com.yedam.app.main.service.MainMemoDTO;
 import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MainService;
@@ -132,6 +133,18 @@ public class MainServiceImpl implements MainService{
 	    List<Integer> readable = new ArrayList<>(readableProjects);
 	    List<Integer> admin    = (adminProjects == null ? List.of() : new ArrayList<>(adminProjects));
 	    return mainMapper.selectCodeNameCntByProjects2(readable, admin);
+	}
+	
+	@Override
+	public List<MainHolidayDTO> findHolidaysByMonth(String month) {
+	  YearMonth ym = YearMonth.parse(month);
+	  LocalDate from = ym.atDay(1);
+	  LocalDate to   = ym.plusMonths(1).atDay(1);
+
+	  return mainMapper.selectHolidaysByMonth(
+	      from.format(DTF),
+	      to.format(DTF)
+	  );
 	}
 	
 }

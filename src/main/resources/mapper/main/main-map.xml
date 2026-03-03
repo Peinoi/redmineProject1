@@ -345,6 +345,21 @@
   		ORDER BY memo_date ASC
   	]]>
 	</select>
+	
+	<!-- ======================= MAIN 공휴일 달력 ======================= -->
+	<select id="selectHolidaysByMonth" resultType="MainHolidayDTO">
+	<![CDATA[
+  	SELECT
+    	TO_CHAR(TRUNC(h.dt), 'YYYY-MM-DD') AS holiDate,
+    	h.holi_nm AS holiName
+  	FROM holiday h
+  	WHERE h.use_yn = 'Y'
+    AND h.dt >= TRUNC(TO_DATE(#{fromDate}, 'YYYY-MM-DD'))
+    AND h.dt <  TRUNC(TO_DATE(#{toDate},   'YYYY-MM-DD'))
+    
+  	ORDER BY h.dt ASC
+	]]>
+	</select>
 
 	<select id="selectMemoByDate" resultType="MainMemoDTO">
   	<![CDATA[

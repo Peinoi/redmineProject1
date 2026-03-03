@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.yedam.app.login.service.UserVO;
 import com.yedam.app.main.service.AssigneeIssStaVO;
+import com.yedam.app.main.service.MainHolidayDTO;
 import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MainService;
 import com.yedam.app.main.service.MyTopIssueVO;
@@ -234,5 +235,16 @@ public class MainController {
 
 		boolean deleted = mainService.removeMemo(user.getUserCode(), date);
 		return ResponseEntity.ok(Map.of("ok", true, "deleted", deleted));
+	}
+	
+	@GetMapping("/api/main/holidays")
+	@ResponseBody
+	public List<MainHolidayDTO> holidaysByMonth(
+	    @RequestParam String month, // "YYYY-MM"
+	    HttpSession session
+	) {
+	  UserVO user = (UserVO) session.getAttribute("user");
+	  if (user == null) return List.of();
+	  return mainService.findHolidaysByMonth(month);
 	}
 }

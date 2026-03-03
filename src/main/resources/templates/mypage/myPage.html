@@ -53,7 +53,7 @@
 						<i class="fas fa-grip-vertical me-2 drag-handle" title="드래그로 이동"></i>
 						<span
 							th:text="${
-						  b.blockType == 'ASSIGNED'   ? (mode == 'ADMIN' ? '담당자별 할당 일감 현황' : '내 할당 일감')
+						  b.blockType == 'ASSIGNED'   ? (mode == 'ADMIN' ? '담당자별 담당 일감 현황' : '내 담당 일감')
 						: b.blockType == 'REGISTERED'? (mode == 'ADMIN' ? '등록자별 등록 일감 현황' : '내 등록 일감')
 						: b.blockType == 'NOTICE'     ? (mode == 'ADMIN' ? '최근공지 (선택 프로젝트)' : '최근공지 (내 프로젝트)')
 						: b.blockType == 'CALENDAR'   ? (mode == 'ADMIN' ? '주간 간트 (프로젝트 전체)' : '주간 간트 (내 일감)')
@@ -84,7 +84,7 @@
 						<div th:if="${b.blockType == 'CALENDAR' and mode != 'ADMIN'}"
 							class="cal-filter">
 							<label class="cal-check"> <input type="checkbox"
-								class="calFilterChk" data-kind="ASSIGNED" checked> <span>할당</span>
+								class="calFilterChk" data-kind="ASSIGNED" checked> <span>담당</span>
 							</label> <label class="cal-check"> <input type="checkbox"
 								class="calFilterChk" data-kind="REGISTERED" checked> <span>등록</span>
 							</label>
@@ -106,7 +106,7 @@
 						<!-- 내 모드: 이슈 리스트 -->
 						<div th:if="${mode != 'ADMIN'}">
 							<div th:if="${#lists.isEmpty(blockData['ASSIGNED'])}"
-								class="text-muted">할당된 일감이 없습니다.</div>
+								class="text-muted">담당된 일감이 없습니다.</div>
 
 							<table th:if="${!#lists.isEmpty(blockData['ASSIGNED'])}"
 								class="table table-hover mb-0 my-table" data-ellipsis-scope="1">

@@ -189,7 +189,13 @@ public class UserPageServiceImpl implements UserPageService {
 		case "dueAt" -> "마감일";
 		case "resolvedAt" -> "완료일";
 		case "progress" -> "진척도";
+		case "priority" -> "우선순위";
+		case "assignee" -> "담당자";
+		case "type" -> "유형";
+		case "parentIssue" -> "상위일감";
 		case "rejectReason" -> "반려 사유";
+		case "description" -> "설명";
+		case "title" -> "제목";
 		default -> f;
 		};
 	}
@@ -199,6 +205,10 @@ public class UserPageServiceImpl implements UserPageService {
 			return "";
 
 		String f = (field == null) ? "" : field.trim();
+
+		if ("description".equalsIgnoreCase(f)) {
+			return stripHtmlToText(v);
+		}
 
 		if ("startedAt".equals(f) || "dueAt".equals(f) || "resolvedAt".equals(f)) {
 			// 1) ISO_LOCAL_DATE_TIME: 2026-02-12T16:59:31
@@ -219,6 +229,27 @@ public class UserPageServiceImpl implements UserPageService {
 		}
 
 		return v;
+	}
+
+	// html 태그 제거
+	private String stripHtmlToText(String html) {
+		if (html == null)
+			return "";
+		String s = html;
+
+		// 자주 보이는 nbsp 처리
+		s = s.replace("&nbsp;", " ");
+
+		// 태그 제거
+		s = s.replaceAll("(?is)<script[^>]*>.*?</script>", "");
+		s = s.replaceAll("(?is)<style[^>]*>.*?</style>", "");
+		s = s.replaceAll("(?is)<[^>]+>", " ");
+
+		// 공백 정리
+		s = s.replaceAll("[\\t\\n\\r]+", " ");
+		s = s.replaceAll(" +", " ").trim();
+
+		return s;
 	}
 
 	private String text(JsonNode n) {

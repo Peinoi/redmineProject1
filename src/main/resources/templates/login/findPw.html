@@ -34,6 +34,11 @@
 											type="text" placeholder="전화번호" maxlength="13"
 											oninput="formatPhone(this)" /> <label for="phone">전화번호</label>
 									</div>
+
+									<div class="mb-3 d-flex justify-content-end align-items-center">
+										<a class="small" th:href="@{/login}">로그인으로</a>
+									</div>
+
 									<div
 										class="d-flex align-items-center justify-content-center mt-4 mb-0">
 										<button type="submit" class="btn btn-primary">인증메일 발송</button>

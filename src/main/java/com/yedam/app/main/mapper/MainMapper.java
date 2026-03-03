@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Param;
 
 import com.yedam.app.main.service.AssigneeIssStaVO;
+import com.yedam.app.main.service.MainHolidayDTO;
 import com.yedam.app.main.service.MainMemoDTO;
 import com.yedam.app.main.service.MainProjectStatusVO;
 import com.yedam.app.main.service.MyTopIssueVO;
@@ -65,9 +66,11 @@ public interface MainMapper {
 
 	int selectTodayProgressRateByProjects(@Param("userCode") Integer userCode,
 			@Param("projectCodes") List<Integer> projectCodes);
-	
+
 	List<MainProjectStatusVO> selectCodeNameCntByProjects2(
-		    @Param("readableProjectCodes") List<Integer> readableProjectCodes,
-		    @Param("adminProjectCodes") List<Integer> adminProjectCodes
-		);
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes,
+			@Param("adminProjectCodes") List<Integer> adminProjectCodes);
+
+	// 공휴일
+	List<MainHolidayDTO> selectHolidaysByMonth(String fromDate, String toDate);
 }

@@ -46,4 +46,7 @@ public interface MainService {
 	int findTodayProgressRate(Integer userCode, Set<Integer> readableProjects);
 	
 	List<MainProjectStatusVO> findCodeNameCntByProjects(Set<Integer> readableProjects, Set<Integer> adminProjects);
+	
+	// 공휴일
+	List<MainHolidayDTO> findHolidaysByMonth(String month); // "YYYY-MM"
 }

@@ -25,9 +25,26 @@
 											oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
 										<label for="inputOtp">인증번호6자리</label>
 									</div>
-									<div class="text-center mt-2">
-										<small id="expiresTimer" class="text-muted"></small>
+
+									<div class="position-relative mt-2 mb-3" style="height: 24px;">
+
+										<!-- 왼쪽 OTP 재발송 -->
+										<a
+											class="small position-absolute top-50 start-0 translate-middle-y"
+											href="#" id="btnResendOtp"> 인증번호 재발송 </a>
+
+										<!-- 가운데 타이머 -->
+										<small id="expiresTimer"
+											class="text-muted position-absolute top-50 start-50 translate-middle">
+										</small>
+
+										<!-- 오른쪽 로그인 링크 -->
+										<a
+											class="small position-absolute top-50 end-0 translate-middle-y"
+											th:href="@{/login}"> 로그인으로 </a>
+
 									</div>
+
 									<div
 										class="d-flex align-items-center justify-content-center mt-4 mb-0">
 										<button type="submit" class="btn btn-primary">확인</button>
@@ -72,69 +89,109 @@
 		th:replace="~{common/configs/default_configs :: BottomScript}"></th:block>
 
 	<script th:inline="javascript">
-		// 모델에서 만료시간 가져오기
-		const expiresAt = /*[[${expiresAt}]]*/ null; // 타임리프에서 먼저 읽고 js로 변환
+  // 초기 만료시간(서버 렌더)
+  let expiresAt = /*[[${expiresAt}]]*/ null;
 
-		// 만료 시 이동할 URL context-path 고려해서 thymeleaf로 생성
-		const redirectUrl = /*[[@{/findPw}]]*/ "/findPw";
+  const redirectUrl = /*[[@{/findPw}]]*/ "/findPw";
+  const resendUrl   = /*[[@{/findPw/resend}]]*/ "/findPw/resend";
 
-		// 분,초 항상 두자리 보여주기 함수
-		function pad2(n) {
-			return String(n).padStart(2, '0');
-		}
+  let intervalId = null;
 
-		// 남은 시간을 mm:ss 로 변환
-		function formatLeft(ms) {
-			// 밀리초 → 초 소수점 버림 음수 방지 
-			const totalSec = Math.max(0, Math.floor(ms / 1000));
-			// 분: 60으로 나누고 소수점 버림
-			const min = Math.floor(totalSec / 60); 
-			// 초: 60으로 나눈 나머지
-			const sec = totalSec % 60;
-			// 분(2자리):초(2자리) 형태로 만듬
-			return `${pad2(min)}:${pad2(sec)}`;
-		}
-		
-		// DOM이 다 로드된 뒤
-		document.addEventListener("DOMContentLoaded", function () {
-			// 타이머 표시할 요소 가져오기
-			const timerEl = document.getElementById("expiresTimer");
-			
-			// 만료시간이 안 내려왔거나 타이머 영역이 없으면 종료
-			if (!expiresAt || !timerEl) return;
-			
-			const tick = () => {
-				// 남은시간 = 만료시각 - 현재시각
-				const left = expiresAt - Date.now();
-				
-				// 만료되었으면
-				if(left <= 0) {
-					timerEl.textContent = "인증 시간이 만료되었습니다";
-					// 글자 강조
-					timerEl.classList.remove("text-muted");
-					timerEl.classList.add("text-danger");
-					
-					// 타이머 중지
-					clearInterval(intervalId);
-					
-					// 1.5초 보여주고 비밀번호 찾기 페이지로 이동
-			        setTimeout(() => {
-			          window.location.replace(redirectUrl); // 뒤로가기로 이 페이지 못 오게
-			        }, 1500);
-					
-					return;
-				}
-				
-				// 만료시간 표시
-				timerEl.textContent = `${formatLeft(left)}`;
-			};
-			
-			// tick 실행
-			tick();
-			// 이후 매 1초
-			const intervalId = setInterval(tick, 1000);
-		});
-	</script>
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function formatLeft(ms){
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${pad2(min)}:${pad2(sec)}`;
+  }
+
+  function stopTimer(){
+    if (intervalId) {
+      clearInterval(intervalId);
+      intervalId = null;
+    }
+  }
+
+  function startTimer(){
+    const timerEl = document.getElementById("expiresTimer");
+    if (!expiresAt || !timerEl) return;
+
+    // 상태 초기화
+    timerEl.classList.remove("text-danger");
+    timerEl.classList.add("text-muted");
+
+    const tick = () => {
+      const left = expiresAt - Date.now();
+
+      if (left <= 0) {
+        timerEl.textContent = "인증 시간이 만료되었습니다";
+        timerEl.classList.remove("text-muted");
+        timerEl.classList.add("text-danger");
+
+        stopTimer();
+
+        setTimeout(() => {
+          window.location.replace(redirectUrl);
+        }, 1500);
+        return;
+      }
+
+      timerEl.textContent = formatLeft(left);
+    };
+
+    stopTimer();
+    tick();
+    intervalId = setInterval(tick, 1000);
+  }
+
+  async function resendOtp(){
+    const btn = document.getElementById("btnResendOtp");
+    if (!btn) return;
+
+    // 연타 방지
+    if (btn.dataset.busy === "1") return;
+    btn.dataset.busy = "1";
+    btn.style.pointerEvents = "none";
+    btn.style.opacity = "0.6";
+
+    try{
+      const res = await fetch(resendUrl, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch" }
+      });
+
+      if (!res.ok) throw new Error("resend failed: " + res.status);
+
+      const data = await res.json();
+      if (!data || data.ok !== true) throw new Error(data?.msg || "resend failed");
+
+      // ✅ 새 만료시간으로 갱신 + 타이머 재시작
+      expiresAt = Number(data.expiresAt);
+      startTimer();
+
+    } catch(e){
+      console.error(e);
+      alert("재발송에 실패했습니다. 다시 시도해주세요.");
+    } finally{
+      btn.dataset.busy = "0";
+      btn.style.pointerEvents = "";
+      btn.style.opacity = "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    startTimer();
+
+    const btn = document.getElementById("btnResendOtp");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        resendOtp();
+      });
+    }
+  });
+</script>
 
 	<script
 		th:if="${verifyErrorMsg != null and #strings.length(#strings.trim(verifyErrorMsg)) > 0}">

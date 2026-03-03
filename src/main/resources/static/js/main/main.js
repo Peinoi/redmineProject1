@@ -387,6 +387,7 @@ function initMemoCalendar() {
 
 	let memoMap = new Map();
 	let openDateStr = null;
+	let holidayMap = new Map(); // key: YYYY-MM-DD, value: 휴일명
 
 	function pad2(n) {
 		return String(n).padStart(2, "0");
@@ -407,62 +408,70 @@ function initMemoCalendar() {
 			.replaceAll("'", "&#039;");
 	}
 
-	function buildMemoTooltipHTML(dateStr, content) {
-		const safe = escapeHtmlMemo(content).replaceAll("\n", "<br/>");
-		return `
-      <div style="min-width:180px; max-width:280px;">
-        <div style="font-weight:900; margin-bottom:6px;">${escapeHtmlMemo(dateStr)}</div>
-        <div style="font-size:12px; line-height:1.35;">${safe}</div>
-      </div>
-    `.trim();
-	}
-
 	async function loadMonth() {
 		setLoading("cardMemoCal", true);
 		try {
 			const month = ym(cur);
 			labelEl.textContent = month;
 
-			const res = await fetch(
-				`/api/main/memos?month=${encodeURIComponent(month)}&_ts=${Date.now()}`,
-				{
+			const [memoRes, holiRes] = await Promise.all([
+				fetch(`/api/main/memos?month=${encodeURIComponent(month)}&_ts=${Date.now()}`, {
 					headers: { Accept: "application/json" },
 					cache: "no-store",
-				}
-			);
+				}),
+				fetch(`/api/main/holidays?month=${encodeURIComponent(month)}&_ts=${Date.now()}`, {
+					headers: { Accept: "application/json" },
+					cache: "no-store",
+				}),
+			]);
 
-			const list = res.ok ? await res.json() : [];
+			const memoList = memoRes.ok ? await memoRes.json() : [];
+			const holiList = holiRes.ok ? await holiRes.json() : [];
+
 			memoMap = new Map();
-			(list || []).forEach((m) => {
-				const key = (m.memoDate || "").trim(); // "YYYY-MM-DD"
+			(memoList || []).forEach((m) => {
+				const key = (m.memoDate || "").trim();
 				if (key) memoMap.set(key, m.content || "");
+			});
+
+			holidayMap = new Map();
+			(holiList || []).forEach((h) => {
+				const key = (h.holiDate || "").trim();
+				if (key) holidayMap.set(key, (h.holiName || "").trim());
 			});
 
 			render();
 		} catch (e) {
-			console.error("[memo] load error:", e);
+			console.error("[memo/holiday] load error:", e);
 			memoMap = new Map();
+			holidayMap = new Map();
 			render();
 		} finally {
 			setLoading("cardMemoCal", false);
 		}
 	}
 
-	function applyTooltip(el, dateStr, content) {
-		if (!hasBS) return;
+	function buildMemoTooltipHTML(dateStr, memoContent, holidayName) {
+		const safeDate = escapeHtmlMemo(dateStr);
 
-		const html = buildMemoTooltipHTML(dateStr, content);
+		const safeHoli = escapeHtmlMemo(holidayName || "");
+		const safeMemo = escapeHtmlMemo(memoContent || "").replaceAll("\n", "<br/>");
 
-		el.setAttribute("data-bs-toggle", "tooltip");
-		el.setAttribute("data-bs-placement", "top");
-		el.setAttribute("data-bs-html", "true");
-		el.setAttribute("data-bs-title", html);
+		const holiBlock = holidayName
+			? `<div style="font-weight:900; color:#dc2626; margin-bottom:6px;">${safeHoli}</div>`
+			: "";
 
-		new bootstrap.Tooltip(el, {
-			trigger: "hover",
-			container: "body",
-			html: true,
-		});
+		const memoBlock = (memoContent && memoContent.trim())
+			? `<div style="font-size:12px; line-height:1.35;">${safeMemo}</div>`
+			: `<div style="font-size:12px; color:#6b7280;">메모 없음</div>`;
+
+		return `
+	    <div style="min-width:180px; max-width:280px;">
+	      <div style="font-weight:900; margin-bottom:6px;">${safeDate}</div>
+	      ${holiBlock}
+	      ${memoBlock}
+	    </div>
+	  `.trim();
 	}
 
 	function clearAllMemoTooltips() {
@@ -474,6 +483,23 @@ function initMemoCalendar() {
 		});
 
 		document.querySelectorAll(".tooltip").forEach((t) => t.remove());
+	}
+	
+	function applyTooltip(el, dateStr, memoContent, holidayName) {
+		if (!hasBS) return;
+
+		const html = buildMemoTooltipHTML(dateStr, memoContent, holidayName);
+
+		el.setAttribute("data-bs-toggle", "tooltip");
+		el.setAttribute("data-bs-placement", "top");
+		el.setAttribute("data-bs-html", "true");
+		el.setAttribute("data-bs-title", html);
+
+		new bootstrap.Tooltip(el, {
+			trigger: "hover",
+			container: "body",
+			html: true,
+		});
 	}
 
 	function render() {
@@ -510,15 +536,36 @@ function initMemoCalendar() {
 			const inMonth = d.getMonth() === cur.getMonth();
 			if (!inMonth) cell.classList.add("is-out");
 
+			// 오늘 강조
+			const today = new Date();
+			if (isSameYMD(d, today)) {
+				cell.classList.add("is-today");
+			}
+
+			// 주말 구분
+			if (isWeekend(d)) {
+				cell.classList.add(d.getDay() === 0 ? "is-sun" : "is-sat");
+			}
+
 			const dateStr = ymd(d);
 			const memo = memoMap.get(dateStr);
+			const holi = holidayMap.get(dateStr); // 휴일명
 
-			if (memo && memo.trim().length > 0) {
-				cell.classList.add("has-memo");
-				const dot = document.createElement("div");
-				dot.className = "memo-cal-dot";
-				cell.appendChild(dot);
-				applyTooltip(cell, dateStr, memo);
+			// ✅ 공휴일이면 날짜 빨강
+			if (holi) {
+				cell.classList.add("is-holiday");
+			}
+
+			// ✅ 메모 dot + tooltip (메모/공휴일 중 하나라도 있으면 툴팁)
+			if ((memo && memo.trim().length > 0) || (holi && holi.trim().length > 0)) {
+				// 메모가 있으면 dot 유지
+				if (memo && memo.trim().length > 0) {
+					cell.classList.add("has-memo");
+					const dot = document.createElement("div");
+					dot.className = "memo-cal-dot";
+					cell.appendChild(dot);
+				}
+				applyTooltip(cell, dateStr, memo || "", holi || "");
 			}
 
 			const day = document.createElement("div");
@@ -542,6 +589,18 @@ function initMemoCalendar() {
 				btnDelete.style.display = (memoMap.get(dateStr) || "").trim() ? "" : "none";
 				modal.show();
 			});
+
+			// ✅ today / weekend 표시용 헬퍼
+			function isSameYMD(a, b) {
+				return a.getFullYear() === b.getFullYear()
+					&& a.getMonth() === b.getMonth()
+					&& a.getDate() === b.getDate();
+			}
+
+			function isWeekend(dateObj) {
+				const dow = dateObj.getDay(); // 0=일, 6=토
+				return dow === 0 || dow === 6;
+			}
 
 			grid.appendChild(cell);
 		}

@@ -1,13 +1,16 @@
 package com.yedam.app.login.web;
 
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.yedam.app.login.service.FindPwService;
@@ -192,6 +195,30 @@ public class FindPwController {
 		session.removeAttribute(S_EMAIL);
 		
 		return "redirect:/findPw/pwReset";
+	}
+	
+	@PostMapping("/findPw/resend")
+	@ResponseBody
+	public ResponseEntity<?> resendOtp(HttpSession session) {
+
+	    Integer userCode = (Integer) session.getAttribute(S_USER_CODE);
+	    String email = (String) session.getAttribute(S_EMAIL);
+
+	    if (userCode == null || email == null) {
+	        return ResponseEntity.status(401).body(Map.of("ok", false, "msg", "인증 세션이 없습니다."));
+	    }
+
+	    // ✅ 새 OTP 발급 (이전 OTP는 세션 덮어쓰기로 자동 무효)
+	    String otp = generateOtp6();
+	    long newExpiresAt = System.currentTimeMillis() + OTP_TTL_MS;
+
+	    session.setAttribute(S_OTP, otp);
+	    session.setAttribute(S_EXPIRES, newExpiresAt);
+
+	    // ✅ 비동기 재발송
+	    findPwService.sendOtpMailAsync(email, otp);
+
+	    return ResponseEntity.ok(Map.of("ok", true, "expiresAt", newExpiresAt));
 	}
 	
 	// 인증번호 생성

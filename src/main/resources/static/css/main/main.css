@@ -67,6 +67,10 @@
   overflow: hidden;
 }
 
+.btn-sm {
+	font-size: 0.6rem !important;
+}
+
 .main-card .card-body.p-0 {
   padding: 0 !important;
 }
@@ -688,4 +692,50 @@
 .sk-progress-overlay .sk{
   background: linear-gradient(90deg, #ececec 25%, #f7f7f7 37%, #ececec 63%);
   background-size: 900px 100%;
+}
+
+/* =========================
+   Memo Calendar - Today / Weekend
+   ========================= */
+
+/* 기본 주말 톤 (글자만 살짝) */
+.memo-cal-cell.is-sun .memo-cal-day{
+  color: #dc2626; /* red-600 */
+}
+.memo-cal-cell.is-sat .memo-cal-day{
+  color: #2563eb; /* blue-600 */
+}
+
+/* 오늘 강조: 테두리/배경/살짝 그림자 */
+.memo-cal-cell.is-today{
+  border-color: #6366f1;          /* indigo-500 */
+  background: #eef2ff;            /* indigo-50 */
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.18) inset;
+}
+
+/* 오늘이면서 주말이면 너무 튀지 않게(선택) */
+.memo-cal-cell.is-today.is-out{
+  background: #f3f4f6;            /* out-month면 톤 다운 */
+  border-color: #d1d5db;
+  box-shadow: none;
+}
+
+/* out-month 주말은 더 옅게 */
+.memo-cal-cell.is-out.is-sun .memo-cal-day,
+.memo-cal-cell.is-out.is-sat .memo-cal-day{
+  color: #9ca3af;
+}
+
+.memo-cal-cell.is-today .memo-cal-dot{
+  transform: scale(1.15);
+}
+
+/* 공휴일: 날짜 글자 빨간색 */
+.memo-cal-cell.is-holiday .memo-cal-day{
+  color: #dc2626; /* red-600 */
+}
+
+/* out-month 공휴일은 너무 진하면 부담이면 톤 다운(선택) */
+.memo-cal-cell.is-out.is-holiday .memo-cal-day{
+  color: #fca5a5; /* red-300 */
 }

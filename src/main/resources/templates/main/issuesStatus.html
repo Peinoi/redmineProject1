@@ -14,22 +14,22 @@
 		<!-- 타이틀 영역 -->
 		<div class="x-page-title">
 			<h3 class="page-title">
-				<span th:text="|[${projectName}]|">[프로젝트명]</span>
-				<span th:text="${isAdmin} ? ' - 담당자별 일감현황' : ' - 내 일감현황'"> - 담당자별 일감현황</span>
+				<span th:text="|[${projectName}]|">[프로젝트명]</span> <span
+					th:text="${isAdmin} ? ' - 담당자별 일감현황' : ' - 내 일감현황'"> - 담당자별
+					일감현황</span>
 			</h3>
 			<div class="page-title-sub">
 				<span
 					th:text="${isAdmin} ? '프로젝트 담당자별 일감을 확인할 수 있습니다.' : '해당 프로젝트에서 내 일감을 확인할 수 있습니다.'">
-					프로젝트 담당자별 일감을 확인할 수 있습니다.
-				</span>
+					프로젝트 담당자별 일감을 확인할 수 있습니다. </span>
 			</div>
 		</div>
 
-		<!-- 메인으로 버튼 -->
+		<!-- 돌아가기 버튼 -->
 		<div class="mb-3">
-			<a class="btn btn-secondary" th:href="@{/G2main}">
+			<button type="button" class="btn btn-secondary" id="btnBack">
 				<i class="fas fa-arrow-left me-1"></i>돌아가기
-			</a>
+			</button>
 		</div>
 
 		<!-- 카드 -->
@@ -37,32 +37,34 @@
 
 			<!-- ================== 담당자별/내 일감현황 ================== -->
 			<div class="card mb-4">
-				<div class="card-header d-flex align-items-center justify-content-between">
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
 					<div>
-						<i class="fas fa-table me-1"></i>
-						<span th:text="${isAdmin} ? '담당자별 일감현황' : '내 일감현황'">담당자별 일감현황</span>
+						<i class="fas fa-table me-1"></i> <span
+							th:text="${isAdmin} ? '담당자별 일감현황' : '내 일감현황'">담당자별 일감현황</span>
 					</div>
 
 					<div class="text-muted small">
-						<span th:if="${isAdmin}">프로젝트 전체 기준</span>
-						<span th:unless="${isAdmin}">본인 기준</span>
+						<span th:if="${isAdmin}">프로젝트 전체 기준</span> <span
+							th:unless="${isAdmin}">본인 기준</span>
 					</div>
 				</div>
 
 				<div class="card-body">
 					<div class="table-responsive">
-						<table class="table table-hover align-middle text-center" id="issStaTable">
+						<table class="table table-hover align-middle text-center"
+							id="issStaTable">
 							<!-- ✅ 번호 컬럼 고정용 -->
 							<colgroup>
-								<col style="width:70px;">
-								<col style="width:30%;">
+								<col style="width: 70px;">
+								<col style="width: 30%;">
 								<col>
 								<col>
 								<col>
 								<col>
 								<col>
-								<col style="width:90px;">
-								<col style="width:20%;">
+								<col style="width: 90px;">
+								<col style="width: 20%;">
 							</colgroup>
 
 							<thead>
@@ -83,10 +85,9 @@
 								<tr th:each="l, stat : ${AssIssStaList}">
 									<td th:text="${stat.index + 1}">1</td>
 
-									<td>
-										<a th:href="@{/users/{userCode}(userCode=${l.userCode})}"
-										   th:text="${l.userName}"
-										   class="user-link text-decoration-none"></a>
+									<td><a
+										th:href="@{/users/{userCode}(userCode=${l.userCode})}"
+										th:text="${l.userName}" class="user-link text-decoration-none"></a>
 									</td>
 
 									<td>
@@ -130,8 +131,8 @@
 											<div class="progress" style="width: 100px; height: 8px;">
 												<div class="progress-bar" role="progressbar"
 													th:style="|width:${l.progressRate}%;|"
-													th:attr="aria-valuenow=${l.progressRate}"
-													aria-valuemin="0" aria-valuemax="100"></div>
+													th:attr="aria-valuenow=${l.progressRate}" aria-valuemin="0"
+													aria-valuemax="100"></div>
 											</div>
 											<span class="small text-muted" th:text="|${l.progressRate}%|">0%</span>
 										</div>
@@ -150,32 +151,35 @@
 			<!-- ✅ 관리자일 때만: 아래 목록 패널 -->
 			<div class="isssta-card-slot half" th:if="${isAdmin}">
 				<div class="card mb-4 isssta-card">
-					<div class="card-header d-flex align-items-center justify-content-between">
+					<div
+						class="card-header d-flex align-items-center justify-content-between">
 						<div>
 							<i class="fas fa-list me-1"></i> 상태별 일감목록
 						</div>
-						<div class="text-muted small" id="pickedFilterLabel">일감현황 상태를 선택해 주세요</div>
+						<div class="text-muted small" id="pickedFilterLabel">일감현황
+							상태를 선택해 주세요</div>
 					</div>
 
 					<div class="card-body isssta-scroll">
 						<div class="table-responsive">
-							<table class="table table-hover align-middle text-center mb-0" id="pickedIssueTable">
+							<table class="table table-hover align-middle text-center mb-0"
+								id="pickedIssueTable">
 								<!-- ✅ 번호 컬럼 고정용 -->
 								<colgroup>
-									<col style="width:70px;">
+									<col style="width: 70px;">
 									<col>
-									<col style="width:20%;">
-									<col style="width:20%;">
-									<col style="width:20%;">
+									<col style="width: 20%;">
+									<col style="width: 20%;">
+									<col style="width: 20%;">
 								</colgroup>
 
 								<thead>
 									<tr>
 										<th style="width: 70px;">번호</th>
 										<th>일감명</th>
-										<th style="width:20%;">상태</th>
-										<th style="width:20%;">우선순위</th>
-										<th style="width:20%;">마감기한</th>
+										<th style="width: 20%;">상태</th>
+										<th style="width: 20%;">우선순위</th>
+										<th style="width: 20%;">마감기한</th>
 									</tr>
 								</thead>
 								<tbody id="pickedIssueTbody">
@@ -192,32 +196,35 @@
 			<!-- ✅ 비관리자일 때: 상태별 일감목록 -->
 			<div class="isssta-card-slot third" th:if="${!isAdmin}">
 				<div class="card mb-4 isssta-card">
-					<div class="card-header d-flex align-items-center justify-content-between">
+					<div
+						class="card-header d-flex align-items-center justify-content-between">
 						<div>
 							<i class="fas fa-list me-1"></i> 상태별 일감목록
 						</div>
-						<div class="text-muted small" id="pickedFilterLabelUser">일감현황 상태를 선택해 주세요</div>
+						<div class="text-muted small" id="pickedFilterLabelUser">일감현황
+							상태를 선택해 주세요</div>
 					</div>
 
 					<div class="card-body isssta-scroll">
 						<div class="table-responsive">
-							<table class="table table-hover align-middle text-center mb-0" id="pickedIssueTableUser">
+							<table class="table table-hover align-middle text-center mb-0"
+								id="pickedIssueTableUser">
 								<!-- ✅ 번호 컬럼 고정용 -->
 								<colgroup>
-									<col style="width:70px;">
+									<col style="width: 70px;">
 									<col>
-									<col style="width:20%;">
-									<col style="width:20%;">
-									<col style="width:20%;">
+									<col style="width: 20%;">
+									<col style="width: 20%;">
+									<col style="width: 20%;">
 								</colgroup>
 
 								<thead>
 									<tr>
 										<th style="width: 70px;">번호</th>
 										<th>일감명</th>
-										<th style="width:20%;">상태</th>
-										<th style="width:20%;">우선순위</th>
-										<th style="width:20%;">마감기한</th>
+										<th style="width: 20%;">상태</th>
+										<th style="width: 20%;">우선순위</th>
+										<th style="width: 20%;">마감기한</th>
 									</tr>
 								</thead>
 								<tbody id="pickedIssueTbodyUser">
@@ -233,7 +240,8 @@
 
 			<!-- ✅ 비관리자일 때: 내 이슈 Top 5 -->
 			<div class="card mb-4" th:if="${!isAdmin}">
-				<div class="card-header d-flex align-items-center justify-content-between">
+				<div
+					class="card-header d-flex align-items-center justify-content-between">
 					<div>
 						<i class="fas fa-list me-1"></i>내 이슈 Top 5
 					</div>
@@ -242,15 +250,16 @@
 
 				<div class="card-body">
 					<div class="table-responsive">
-						<table class="table table-hover align-middle text-center mb-0" id="top5Table">
+						<table class="table table-hover align-middle text-center mb-0"
+							id="top5Table">
 							<!-- ✅ 번호 컬럼 고정용 -->
 							<colgroup>
-								<col style="width:70px;">
-								<col style="width:30%;">
+								<col style="width: 70px;">
+								<col style="width: 30%;">
 								<col>
 								<col>
 								<col>
-								<col style="width:20%;">
+								<col style="width: 20%;">
 							</colgroup>
 
 							<thead>
@@ -264,22 +273,25 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr th:each="t, stat : ${topIssueList}"
-									class="issue-row"
+								<tr th:each="t, stat : ${topIssueList}" class="issue-row"
 									th:attr="data-issue-code=${t.issueCode}">
 									<td th:text="${stat.index + 1}">1</td>
 									<td th:text="${t.title}">이슈 제목</td>
-									<td th:text="${t.priorityName != null ? t.priorityName : t.priorityCode}">긴급</td>
-									<td th:text="${t.statusName != null ? t.statusName : t.statusCodeId}">진행</td>
-									<td th:text="${t.dueAt != null ? #dates.format(t.dueAt, 'yyyy-MM-dd') : '-'}">-</td>
+									<td
+										th:text="${t.priorityName != null ? t.priorityName : t.priorityCode}">긴급</td>
+									<td
+										th:text="${t.statusName != null ? t.statusName : t.statusCodeId}">진행</td>
+									<td
+										th:text="${t.dueAt != null ? #dates.format(t.dueAt, 'yyyy-MM-dd') : '-'}">-</td>
 
 									<td>
-										<div class="d-flex align-items-center gap-2 justify-content-center">
+										<div
+											class="d-flex align-items-center gap-2 justify-content-center">
 											<div class="progress" style="width: 90px; height: 8px;">
 												<div class="progress-bar" role="progressbar"
 													th:style="|width:${t.progress}%;|"
-													th:attr="aria-valuenow=${t.progress}"
-													aria-valuemin="0" aria-valuemax="100"></div>
+													th:attr="aria-valuenow=${t.progress}" aria-valuemin="0"
+													aria-valuemax="100"></div>
 											</div>
 											<span class="small text-muted" th:text="|${t.progress}%|">0%</span>
 										</div>
