@@ -34,7 +34,8 @@ document.addEventListener(
 
 		// form action 그대로 사용 ( /users/{userCode} )
 		const action = form.getAttribute("action") || window.location.pathname;
-		const url = new URL(action, window.location.origin);
+		const url = new URL(window.location.href);
+		url.pathname = action; // /users/{userCode}
 		url.searchParams.set("days", days);
 
 		const body = card.querySelector(".card-body");

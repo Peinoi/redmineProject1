@@ -39,12 +39,13 @@ public class UserPageServiceImpl implements UserPageService {
 
 	// 일감현황: 내가 등록한 일감, 내가 담당자인 일감
 	@Override
-	public UserDualIssueStaVO getIssueSummaryDual(Integer userCode, List<Integer> readableProjectCodes) {
-		UserDualIssueStaVO vo = userPageMapper.selectUserIssueSummaryDual(userCode, readableProjectCodes);
+	public UserDualIssueStaVO getIssueSummaryDual(Integer userCode, List<Integer> readableProjectCodes,
+			Integer fixedProjectCode) {
+		UserDualIssueStaVO vo = userPageMapper.selectUserIssueSummaryDual(userCode, readableProjectCodes,
+				fixedProjectCode);
 		if (vo == null)
 			vo = new UserDualIssueStaVO();
 
-		// null 방어
 		if (vo.getRegNewIss() == null)
 			vo.setRegNewIss(0);
 		if (vo.getRegProgress() == null)
@@ -73,7 +74,7 @@ public class UserPageServiceImpl implements UserPageService {
 	// 작업현황(활동 로그)
 	@Override
 	public Map<String, List<WorkLogViewDTO>> getWorkLogsForView(Integer userCode, String actorName, int days,
-			List<Integer> readableProjectCodes) {
+			List<Integer> readableProjectCodes, Integer fixedProjectCode) {
 
 		// 한국 시간 기준
 		ZoneId zone = ZoneId.of("Asia/Seoul");
@@ -89,7 +90,8 @@ public class UserPageServiceImpl implements UserPageService {
 		Date from = Date.from(fromZdt.toInstant());
 		Date to = Date.from(now.toInstant());
 
-		List<UserWorkLogVO> logs = userPageMapper.selectWorkLogs(userCode, from, to, readableProjectCodes);
+		List<UserWorkLogVO> logs = userPageMapper.selectWorkLogs(userCode, from, to, readableProjectCodes,
+				fixedProjectCode);
 
 		SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
 		SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");
@@ -103,7 +105,7 @@ public class UserPageServiceImpl implements UserPageService {
 
 			// ✅ meta가 {"changes":[]} 인 로그는 스킵 (내 페이지와 동일) CREATE는 예외
 			if (isEmptyChangesMeta(log.getMeta(), om) && !"CREATE".equalsIgnoreCase(log.getActionType())) {
-			    continue;
+				continue;
 			}
 
 			WorkLogViewDTO dto = new WorkLogViewDTO();

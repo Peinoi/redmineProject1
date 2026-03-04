@@ -26,6 +26,17 @@ public class UserPageController {
 	@GetMapping("/users/{userCode}")
 	public String userPage(@PathVariable Integer userCode, @RequestParam(defaultValue = "7") int days,
 			HttpSession session, Model model) {
+		
+		// ✅ 고정 프로젝트(currentProject) 컨텍스트 읽기
+		Integer fixedProjectCode = null;
+		
+		Object cp = session.getAttribute("currentProject");
+		if (cp != null) {
+			if (cp instanceof java.util.Map<?, ?> m) {
+				Object pc = m.get("projectCode");
+				if (pc != null) fixedProjectCode = Integer.valueOf(String.valueOf(pc));
+			}
+		}
 
 		if (session.getAttribute("user") == null)
 			return "redirect:/login";
@@ -51,9 +62,9 @@ public class UserPageController {
 		}
 
 		model.addAttribute("profile", profile);
-		model.addAttribute("issueStaDual", userPageService.getIssueSummaryDual(userCode, issueReadableProjectCodes));
+		model.addAttribute("issueStaDual", userPageService.getIssueSummaryDual(userCode, issueReadableProjectCodes, fixedProjectCode));
 		model.addAttribute("workLogsByDay",
-				userPageService.getWorkLogsForView(userCode, profile.getName(), days, issueReadableProjectCodes));
+				userPageService.getWorkLogsForView(userCode, profile.getName(), days, issueReadableProjectCodes, fixedProjectCode));
 		model.addAttribute("days", days);
 
 		return "user/userPage";

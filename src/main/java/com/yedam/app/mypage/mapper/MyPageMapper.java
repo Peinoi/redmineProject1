@@ -37,26 +37,26 @@ public interface MyPageMapper {
 	// =========================
 	List<MyIssueRowDTO> selectAssignedIssues(@Param("userCode") Integer userCode, @Param("limit") int limit,
 			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes,
-			@Param("editableProjectCodes") List<Integer> editableProjectCodes);
+			@Param("editableProjectCodes") List<Integer> editableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	List<MyIssueRowDTO> selectRegisteredIssues(@Param("userCode") Integer userCode, @Param("limit") int limit,
 			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes,
-			@Param("editableProjectCodes") List<Integer> editableProjectCodes);
+			@Param("editableProjectCodes") List<Integer> editableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	List<MyNoticeDTO> selectRecentNotices(@Param("userCode") Integer userCode, @Param("limit") int limit,
-			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes);
+			@Param("isSys") boolean isSys, @Param("readableProjectCodes") List<Integer> readableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	List<WeekIssueDTO> selectWeekCalendarIssues(@Param("userCode") Integer userCode, @Param("from") Date from,
 			@Param("to") Date to, @Param("isSys") boolean isSys,
-			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	List<UserWorkLogVO> selectWorkLogs(@Param("userCode") Integer userCode, @Param("from") Date from,
 			@Param("to") Date to, @Param("isSys") boolean isSys,
-			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	List<WeekGanttIssueDTO> selectWeekGanttIssues(@Param("userCode") Integer userCode, @Param("from") Date from,
 			@Param("to") Date to, @Param("isSys") boolean isSys,
-			@Param("readableProjectCodes") List<Integer> readableProjectCodes);
+			@Param("readableProjectCodes") List<Integer> readableProjectCodes, @Param("fixedProjectCode") Integer fixedProjectCode);
 
 	// =========================
 	// ADMIN 모드 (프로젝트 1개 대상으로)

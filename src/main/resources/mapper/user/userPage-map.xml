@@ -4,109 +4,151 @@
 
 	<!-- 기본 정보 -->
 	<select id="selectUserProfile" resultType="UserVO">
-    	SELECT
-      		user_code     AS userCode,
-      		employee_no   AS employeeNo,
-      		name          AS name,
-      		created_at    AS createdAt,
-      		last_login_at AS lastLoginAt
-    	FROM users
-    	WHERE user_code = #{userCode}
-  	</select>
-  	
-  	<!-- 사용자 일감현황 -->
-  	<select id="selectUserIssueSummaryDual" resultType="UserDualIssueStaVO">
-  		SELECT
-    		/* ✅ 내가 등록한 일감(created_by_code = userCode) */
-    		NVL(SUM(CASE WHEN s.code_id = 'OB1' AND i.created_by_code = #{userCode} THEN 1 ELSE 0 END), 0) AS regNewIss,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB2' AND i.created_by_code = #{userCode} THEN 1 ELSE 0 END), 0) AS regProgress,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB3' AND i.created_by_code = #{userCode} THEN 1 ELSE 0 END), 0) AS regSolution,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB4' AND i.created_by_code = #{userCode} THEN 1 ELSE 0 END), 0) AS regReturnIss,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB5' AND i.created_by_code = #{userCode} THEN 1 ELSE 0 END), 0) AS regCompletion,
-
-    		/* ✅ 내가 담당자인 일감(assignee_code = userCode) */
-    		NVL(SUM(CASE WHEN s.code_id = 'OB1' AND i.assignee_code = #{userCode} THEN 1 ELSE 0 END), 0) AS assNewIss,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB2' AND i.assignee_code = #{userCode} THEN 1 ELSE 0 END), 0) AS assProgress,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB3' AND i.assignee_code = #{userCode} THEN 1 ELSE 0 END), 0) AS assSolution,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB4' AND i.assignee_code = #{userCode} THEN 1 ELSE 0 END), 0) AS assReturnIss,
-    		NVL(SUM(CASE WHEN s.code_id = 'OB5' AND i.assignee_code = #{userCode} THEN 1 ELSE 0 END), 0) AS assCompletion
-
-  		FROM projects p
-
-  		JOIN (
-    		SELECT pru.project_code
-    		FROM project_role_user pru
-    		WHERE pru.user_code = #{userCode}
-
-    		UNION
-
-    		SELECT gpr.project_code
-    		FROM "GROUP_MEMBER" gm
-    		JOIN "GR_PRO_ROLE" gpr
-      		ON gpr.gr_code = gm.gr_code
-    		WHERE gm.user_code = #{userCode}
-  		) up
-    	ON up.project_code = p.project_code
-    	
-  		<if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
-    		AND p.project_code IN
-    		<foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
-      			#{pc}
-    		</foreach>
-  		</if>
-
-  		LEFT JOIN issues i
-    	ON i.project_code = p.project_code
-
-  		LEFT JOIN status s
-    	ON s.status_code = i.status_code
-
-  		WHERE p.status = 'OD1'
+		SELECT
+		user_code AS
+		userCode,
+		employee_no AS employeeNo,
+		name AS name,
+		created_at AS
+		createdAt,
+		last_login_at AS lastLoginAt
+		FROM users
+		WHERE user_code =
+		#{userCode}
 	</select>
-  
-  	<!-- 작업현황(활동 로그) : ✅ ISSUE(일감)만 -->
+
+	<!-- 사용자 일감현황 -->
+	<select id="selectUserIssueSummaryDual"
+		resultType="UserDualIssueStaVO">
+		SELECT
+		NVL(SUM(CASE WHEN s.code_id = 'OB1' AND i.created_by_code =
+		#{userCode} THEN 1
+		ELSE 0 END), 0) AS regNewIss,
+		NVL(SUM(CASE WHEN
+		s.code_id = 'OB2' AND i.created_by_code = #{userCode} THEN 1
+		ELSE 0
+		END), 0) AS regProgress,
+		NVL(SUM(CASE WHEN s.code_id = 'OB3' AND
+		i.created_by_code = #{userCode} THEN 1
+		ELSE 0 END), 0) AS regSolution,
+		NVL(SUM(CASE WHEN s.code_id = 'OB4' AND i.created_by_code =
+		#{userCode} THEN 1
+		ELSE 0 END), 0) AS regReturnIss,
+		NVL(SUM(CASE WHEN
+		s.code_id = 'OB5' AND i.created_by_code = #{userCode} THEN 1
+		ELSE 0
+		END), 0) AS regCompletion,
+
+		NVL(SUM(CASE WHEN s.code_id = 'OB1' AND
+		i.assignee_code = #{userCode} THEN 1 ELSE
+		0 END), 0) AS assNewIss,
+		NVL(SUM(CASE WHEN s.code_id = 'OB2' AND i.assignee_code = #{userCode}
+		THEN 1 ELSE
+		0 END), 0) AS assProgress,
+		NVL(SUM(CASE WHEN s.code_id =
+		'OB3' AND i.assignee_code = #{userCode} THEN 1 ELSE
+		0 END), 0) AS
+		assSolution,
+		NVL(SUM(CASE WHEN s.code_id = 'OB4' AND i.assignee_code =
+		#{userCode} THEN 1 ELSE
+		0 END), 0) AS assReturnIss,
+		NVL(SUM(CASE WHEN
+		s.code_id = 'OB5' AND i.assignee_code = #{userCode} THEN 1 ELSE
+		0 END),
+		0) AS assCompletion
+		FROM projects p
+		JOIN (
+		SELECT pru.project_code
+		FROM
+		project_role_user pru
+		WHERE pru.user_code = #{userCode}
+		UNION
+		SELECT
+		gpr.project_code
+		FROM "GROUP_MEMBER" gm
+		JOIN "GR_PRO_ROLE" gpr ON
+		gpr.gr_code = gm.gr_code
+		WHERE gm.user_code = #{userCode}
+		) up
+		ON
+		up.project_code = p.project_code
+		LEFT JOIN issues i
+		ON i.project_code =
+		p.project_code
+		LEFT JOIN status s
+		ON s.status_code = i.status_code
+		WHERE
+		p.status = 'OD1'
+
+		<!-- ✅ 고정 프로젝트면 그 프로젝트만 -->
+		<include refid="FIXED_PROJECT_FILTER" />
+
+		<!-- ✅ 권한 필터(있을 때만) -->
+		<if
+			test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+			AND p.project_code IN
+			<foreach collection="readableProjectCodes" item="pc" open="("
+				separator="," close=")">
+				#{pc}
+			</foreach>
+		</if>
+	</select>
+
+	<!-- 작업현황(활동 로그) : ✅ ISSUE(일감)만 -->
 	<select id="selectWorkLogs" resultType="UserWorkLogVO">
-  		SELECT
-    		l.log_code     AS logCode,
-    		l.project_code AS projectCode,
-    		p.project_name AS projectName,
+		SELECT
+		l.log_code AS logCode,
+		l.project_code AS projectCode,
+		p.project_name AS projectName,
 
-    		l.action_type  AS actionType,
-    		l.target_type  AS targetType,
-    		l.target_code  AS targetCode,
+		l.action_type AS actionType,
+		l.target_type AS targetType,
+		l.target_code AS targetCode,
 
-    		/* ✅ ISSUE만 제목 */
-    		i.title        AS issueTitle,
+		i.title AS issueTitle,
+		l.created_at AS createdAt,
+		l.meta AS meta
+		FROM logs l
+		JOIN projects p
+		ON p.project_code = l.project_code
+		LEFT JOIN issues i
+		ON i.issue_code = l.target_code
+		WHERE l.user_code = #{userCode}
+		AND l.target_type = 'ISSUE'
+		AND i.issue_code IS NOT NULL
+		AND p.status = 'OD1'
 
-    		l.created_at   AS createdAt,
-    		l.meta         AS meta
-  		FROM logs l
+		<!-- ✅ 고정 프로젝트면 그 프로젝트만 -->
+		<include refid="FIXED_PROJECT_FILTER_LOGS" />
 
-  		JOIN projects p
-    	ON p.project_code = l.project_code
+		<!-- ✅ 권한 필터 -->
+		<if
+			test="readableProjectCodes != null and readableProjectCodes.size() > 0">
+			AND l.project_code IN
+			<foreach collection="readableProjectCodes" item="pc" open="("
+				separator="," close=")">
+				#{pc}
+			</foreach>
+		</if>
 
-  		/* ✅ ISSUE만 남길 거라 단순 조인 */
-  		LEFT JOIN issues i
-    	ON i.issue_code = l.target_code
-
-  		WHERE l.user_code = #{userCode}
-    	AND l.target_type = 'ISSUE'
-    	AND i.issue_code IS NOT NULL
-    	
-    	<if test="readableProjectCodes != null and readableProjectCodes.size() > 0">
-    		AND l.project_code IN
-    		<foreach collection="readableProjectCodes" item="pc" open="(" separator="," close=")">
-      			#{pc}
-    		</foreach>
-  		</if>
-
-    	<if test="from != null">
-      		AND l.created_at &gt;= #{from}
-    	</if>
-    	<if test="to != null">
-      		AND l.created_at &lt;= #{to}
-    	</if>
-
-  		ORDER BY l.created_at DESC
+		<if test="from != null">
+			AND l.created_at &gt;= #{from}
+		</if>
+		<if test="to != null">
+			AND l.created_at &lt;= #{to}
+		</if>
+		ORDER BY l.created_at DESC
 	</select>
+
+	<sql id="FIXED_PROJECT_FILTER">
+		<if test="fixedProjectCode != null">
+			AND p.project_code = #{fixedProjectCode}
+		</if>
+	</sql>
+
+	<sql id="FIXED_PROJECT_FILTER_LOGS">
+		<if test="fixedProjectCode != null">
+			AND l.project_code = #{fixedProjectCode}
+		</if>
+	</sql>
 </mapper>

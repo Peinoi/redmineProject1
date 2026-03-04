@@ -10,7 +10,15 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +27,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.yedam.app.main.util.Authz;
 import com.yedam.app.mypage.mapper.MyPageMapper;
-import com.yedam.app.mypage.service.*;
+import com.yedam.app.mypage.service.AdminProjectOptionDTO;
+import com.yedam.app.mypage.service.BlockVO;
+import com.yedam.app.mypage.service.MyIssueRowDTO;
+import com.yedam.app.mypage.service.MyPageService;
+import com.yedam.app.mypage.service.WeekGanttIssueDTO;
 import com.yedam.app.user.service.UserWorkLogVO;
 import com.yedam.app.user.service.WorkLogViewDTO;
 
@@ -115,6 +127,28 @@ public class MyPageServiceImpl implements MyPageService {
 	@Override
 	public Map<String, Object> buildMyPage(HttpSession session, Integer userCode, String userName, int days,
 			String mode, Integer projectCode) {
+
+		// ✅ 고정 프로젝트(currentProject) 컨텍스트 읽기
+		Integer fixedProjectCode = null;
+		String fixedProjectName = null;
+
+		Object cp = session.getAttribute("currentProject");
+		if (cp != null) {
+			if (cp instanceof Map<?, ?> m) {
+				Object pc = m.get("projectCode");
+				Object pn = m.get("projectName");
+				if (pc != null)
+					fixedProjectCode = Integer.valueOf(String.valueOf(pc));
+				if (pn != null)
+					fixedProjectName = String.valueOf(pn);
+			}
+			// ✅ VO 타입이면 여기로 교체 추천
+			// else if (cp instanceof CurrentProjectVO vo) {
+			// fixedProjectCode = vo.getProjectCode();
+			// fixedProjectName = vo.getProjectName();
+			// }
+		}
+
 		// 1) 블록 목록
 		List<BlockVO> blocks = getBlocksEnsured(userCode);
 		int limit = 8;
@@ -134,26 +168,53 @@ public class MyPageServiceImpl implements MyPageService {
 
 		// 3) ADMIN 모드 판정
 		boolean requestedAdmin = "ADMIN".equalsIgnoreCase(mode) && projectCode != null;
-		boolean isAdminMode = requestedAdmin && Authz.isAdmin(session, projectCode);
 
-		// 4) ADMIN 드롭다운 목록
-		List<AdminProjectOptionDTO> adminProjectOptions;
-
-		if (isSys) {
-		    // sysCk=Y: 진행중 전체 프로젝트
-		    adminProjectOptions = myPageMapper.selectAllProjectOptions(); // 여기 쿼리가 OD1만
-		} else {
-		    // sysCk=N: admin=1 프로젝트만 (진행중만)
-		    Set<Integer> adminCodes = Authz.adminProjects(session);
-
-		    if (adminCodes == null || adminCodes.isEmpty()) {
-		        adminProjectOptions = List.of();
-		    } else {
-		        adminProjectOptions =
-		            myPageMapper.selectProjectOptionsByCodes(new ArrayList<>(adminCodes)); // 여기 쿼리가 OD1만
-		    }
+		// ✅ 고정 프로젝트가 있으면: ADMIN은 고정 프로젝트로만 허용
+		if (fixedProjectCode != null) {
+			if (!fixedProjectCode.equals(projectCode)) {
+				requestedAdmin = false;
+			}
 		}
 
+		boolean isAdminMode = requestedAdmin && Authz.isAdmin(session, projectCode);
+
+		List<AdminProjectOptionDTO> adminProjectOptions;
+
+		if (fixedProjectCode != null) {
+			// ✅ 고정 프로젝트가 있을 때: 고정 프로젝트의 관리자(sys 포함)만 모드 선택 노출
+			boolean canPickMode = isSys || Authz.isAdmin(session, fixedProjectCode);
+
+			if (canPickMode) {
+				AdminProjectOptionDTO one = new AdminProjectOptionDTO();
+				one.setProjectCode(fixedProjectCode);
+
+				String name = fixedProjectName;
+				if (name == null || name.isBlank()) {
+					name = myPageMapper.selectProjectName(fixedProjectCode);
+				}
+				one.setProjectName(name);
+
+				adminProjectOptions = List.of(one);
+			} else {
+				adminProjectOptions = List.of();
+				// ✅ 고정 프로젝트 관리자가 아니면 ADMIN 모드 자체를 무효화
+				isAdminMode = false;
+			}
+
+		} else {
+			// ✅ 고정 프로젝트가 없으면: 기존 동작 그대로
+			if (isSys) {
+				adminProjectOptions = myPageMapper.selectAllProjectOptions(); // OD1
+			} else {
+				Set<Integer> adminCodes = Authz.adminProjects(session);
+				if (adminCodes == null || adminCodes.isEmpty()) {
+					adminProjectOptions = List.of();
+				} else {
+					adminProjectOptions = myPageMapper.selectProjectOptionsByCodes(new ArrayList<>(adminCodes));
+				}
+			}
+		}
+		
 		// 5) 블록별 데이터
 		Map<String, Object> blockData = new HashMap<>();
 
@@ -165,37 +226,39 @@ public class MyPageServiceImpl implements MyPageService {
 				if (isAdminMode) {
 					blockData.put(BT_ASSIGNED, myPageMapper.selectAdminAssigneeIssSta(projectCode));
 				} else {
-					blockData.put(BT_ASSIGNED,
-							myPageMapper.selectAssignedIssues(userCode, limit, isSys, issueReadable, issueEditable));
+					blockData.put(BT_ASSIGNED, myPageMapper.selectAssignedIssues(userCode, limit, isSys, issueReadable,
+							issueEditable, fixedProjectCode));
 				}
 			}
 			case BT_REGISTERED -> {
 				if (isAdminMode) {
 					blockData.put(BT_REGISTERED, myPageMapper.selectAdminCreatorIssSta(projectCode));
 				} else {
-					blockData.put(BT_REGISTERED,
-							myPageMapper.selectRegisteredIssues(userCode, limit, isSys, issueReadable, issueEditable));
+					blockData.put(BT_REGISTERED, myPageMapper.selectRegisteredIssues(userCode, limit, isSys,
+							issueReadable, issueEditable, fixedProjectCode));
 				}
 			}
 			case "NOTICE" -> {
 				if (isAdminMode) {
 					blockData.put("NOTICE", myPageMapper.selectRecentNoticesByProject(projectCode, limit));
 				} else {
-					blockData.put("NOTICE", myPageMapper.selectRecentNotices(userCode, limit, isSys, noticeReadable));
+					blockData.put("NOTICE",
+							myPageMapper.selectRecentNotices(userCode, limit, isSys, noticeReadable, fixedProjectCode));
 				}
 			}
 			case "CALENDAR" -> {
 				if (isAdminMode) {
 					blockData.put("CALENDAR", buildWeekGanttByProject(userCode, projectCode));
 				} else {
-					blockData.put("CALENDAR", buildWeekGantt(userCode, isSys, issueReadable));
+					blockData.put("CALENDAR", buildWeekGantt(userCode, isSys, issueReadable, fixedProjectCode));
 				}
 			}
 			case "WORKLOG" -> {
 				if (isAdminMode) {
 					blockData.put("WORKLOG", buildProjectWorkLogsForView(projectCode, days));
 				} else {
-					blockData.put("WORKLOG", buildWorkLogsForView(userCode, userName, days, isSys, issueReadable));
+					blockData.put("WORKLOG",
+							buildWorkLogsForView(userCode, userName, days, isSys, issueReadable, fixedProjectCode));
 				}
 			}
 			default -> {
@@ -233,6 +296,8 @@ public class MyPageServiceImpl implements MyPageService {
 				selectedName = myPageMapper.selectProjectName(projectCode);
 		}
 
+		boolean showModePicker = adminProjectOptions != null && !adminProjectOptions.isEmpty();
+
 		Map<String, Object> result = new HashMap<>();
 		result.put("blocks", blocks);
 		result.put("blockData", blockData);
@@ -246,6 +311,10 @@ public class MyPageServiceImpl implements MyPageService {
 		result.put("mode", isAdminMode ? "ADMIN" : "ME");
 		result.put("adminProjectCode", isAdminMode ? projectCode : null);
 		result.put("adminProjectName", isAdminMode ? selectedName : null);
+
+		result.put("fixedProjectCode", fixedProjectCode);
+		result.put("fixedProjectName", fixedProjectName);
+		result.put("showModePicker", showModePicker);
 
 		return result;
 	}
@@ -301,7 +370,8 @@ public class MyPageServiceImpl implements MyPageService {
 	// ================================
 	// 주간 간트 (ME) - 권한필터 적용
 	// ================================
-	private Map<String, Object> buildWeekGantt(Integer userCode, boolean isSys, List<Integer> readableProjectCodes) {
+	private Map<String, Object> buildWeekGantt(Integer userCode, boolean isSys, List<Integer> readableProjectCodes,
+			Integer fixedProjectCode) {
 		LocalDate today = LocalDate.now(ZONE);
 		LocalDate monday = today.with(DayOfWeek.MONDAY);
 		LocalDate nextMonday = monday.plusDays(7);
@@ -310,7 +380,7 @@ public class MyPageServiceImpl implements MyPageService {
 		Date to = Date.from(nextMonday.atStartOfDay(ZONE).toInstant());
 
 		List<WeekGanttIssueDTO> rows = myPageMapper.selectWeekGanttIssues(userCode, from, to, isSys,
-				readableProjectCodes);
+				readableProjectCodes, fixedProjectCode);
 
 		Map<Integer, Map<String, Object>> byProject = new LinkedHashMap<>();
 		for (WeekGanttIssueDTO r : rows) {
@@ -345,7 +415,7 @@ public class MyPageServiceImpl implements MyPageService {
 	// 작업내역 (ME) - 권한필터 적용
 	// ================================
 	private Map<String, List<WorkLogViewDTO>> buildWorkLogsForView(Integer userCode, String actorName, int days,
-			boolean isSys, List<Integer> readableProjectCodes) {
+			boolean isSys, List<Integer> readableProjectCodes, Integer fixedProjectCode) {
 		ZonedDateTime now = ZonedDateTime.now(ZONE);
 
 		int d = Math.max(days, 1);
@@ -355,7 +425,8 @@ public class MyPageServiceImpl implements MyPageService {
 		Date from = Date.from(fromZdt.toInstant());
 		Date to = Date.from(now.toInstant());
 
-		List<UserWorkLogVO> logs = myPageMapper.selectWorkLogs(userCode, from, to, isSys, readableProjectCodes);
+		List<UserWorkLogVO> logs = myPageMapper.selectWorkLogs(userCode, from, to, isSys, readableProjectCodes,
+				fixedProjectCode);
 
 		SimpleDateFormat dayFmt = new SimpleDateFormat("yyyy-MM-dd");
 		SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm");

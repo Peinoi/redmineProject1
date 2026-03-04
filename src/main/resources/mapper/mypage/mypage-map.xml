@@ -55,6 +55,12 @@
       </if>
     </if>
   </sql>
+  
+<sql id="ME_FIXED_PROJECT_FILTER">
+  <if test="fixedProjectCode != null">
+    AND p.project_code = #{fixedProjectCode}
+  </if>
+</sql>
 
   <!-- =============== 할당된 일감 (ME) =============== -->
   <select id="selectAssignedIssues" resultType="MyIssueRowDTO">
@@ -91,6 +97,8 @@
        AND cc.group_code = 'OB'
       WHERE p.status = 'OD1'
         AND i.assignee_code = #{userCode}
+        
+        <include refid="ME_FIXED_PROJECT_FILTER"/>
 
         <include refid="ME_READABLE_FILTER"/>
 
@@ -134,6 +142,8 @@
        AND cc.group_code = 'OB'
       WHERE p.status = 'OD1'
         AND i.created_by_code = #{userCode}
+        
+        <include refid="ME_FIXED_PROJECT_FILTER"/>
 
         <include refid="ME_READABLE_FILTER"/>
 
@@ -168,6 +178,8 @@
       JOIN notices n
         ON n.project_code = p.project_code
       WHERE p.status = 'OD1'
+      
+      <include refid="ME_FIXED_PROJECT_FILTER"/>
 
         <!-- ✅ ME 권한 필터: 프로젝트(CAT_PROJECT gate + CAT_NOTICE rdRol) -->
         <include refid="ME_READABLE_FILTER"/>
@@ -205,6 +217,8 @@
       AND i.due_at IS NOT NULL
       AND i.due_at <![CDATA[ >= ]]> #{from}
       AND i.due_at <![CDATA[ <  ]]> #{to}
+      
+      <include refid="ME_FIXED_PROJECT_FILTER"/>
 
       <include refid="ME_READABLE_FILTER"/>
 
@@ -246,6 +260,10 @@
     WHERE l.user_code = #{userCode}
       AND l.created_at <![CDATA[ >= ]]> #{from}
       AND l.created_at <![CDATA[ <= ]]> #{to}
+      
+      	<if test="fixedProjectCode != null">
+  		AND l.project_code = #{fixedProjectCode}
+		</if>
 
       <!-- (WORKLOG를 '일감' 권한과 묶어서 처리하는 네 서비스 기준) -->
       <if test="isSys == false">
@@ -299,6 +317,8 @@
       ON i.project_code = p.project_code
     WHERE p.status = 'OD1'
       AND (i.assignee_code = #{userCode} OR i.created_by_code = #{userCode})
+      
+      <include refid="ME_FIXED_PROJECT_FILTER"/>
 
       <include refid="ME_READABLE_FILTER"/>
 
