@@ -500,31 +500,32 @@
   </select>
 
   <!-- ✅ codes 목록으로 프로젝트 옵션(코드+이름) 조회 -->
-  <select id="selectProjectOptionsByCodes" resultType="com.yedam.app.mypage.service.AdminProjectOptionDTO">
-    SELECT
-      p.project_code AS projectCode,
-      p.project_name AS projectName
-    FROM projects p
-    WHERE 1=1
-      <if test="codes != null and codes.size() > 0">
-        AND p.project_code IN
-        <foreach collection="codes" item="pc" open="(" separator="," close=")">
-          #{pc}
-        </foreach>
-      </if>
-      <if test="codes == null or codes.size() == 0">
-        AND 1=0
-      </if>
-    ORDER BY p.project_name
-  </select>
-  
-  	<select id="selectAllProjectOptions" resultType="com.yedam.app.mypage.service.AdminProjectOptionDTO">
+  <select id="selectProjectOptionsByCodes" resultType="AdminProjectOptionDTO">
   SELECT
-      p.project_code AS projectCode,
-      p.project_name AS projectName
+    p.project_code AS projectCode,
+    p.project_name AS projectName
   FROM projects p
+  WHERE p.status = 'OD1'
+    <if test="codes != null and codes.size() > 0">
+      AND p.project_code IN
+      <foreach collection="codes" item="pc" open="(" separator="," close=")">
+        #{pc}
+      </foreach>
+    </if>
+    <if test="codes == null or codes.size() == 0">
+      AND 1=0
+    </if>
   ORDER BY p.project_name
-	</select>
+</select>
+  
+  	<select id="selectAllProjectOptions" resultType="AdminProjectOptionDTO">
+  SELECT
+    p.project_code AS projectCode,
+    p.project_name AS projectName
+  FROM projects p
+  WHERE p.status = 'OD1'
+  ORDER BY p.project_name
+</select>
   
   <!-- =========================================================
      공통: ME 수정 가능 플래그

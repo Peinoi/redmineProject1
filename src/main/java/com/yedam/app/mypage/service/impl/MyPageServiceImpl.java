@@ -136,8 +136,23 @@ public class MyPageServiceImpl implements MyPageService {
 		boolean requestedAdmin = "ADMIN".equalsIgnoreCase(mode) && projectCode != null;
 		boolean isAdminMode = requestedAdmin && Authz.isAdmin(session, projectCode);
 
-		// 4) ADMIN 드롭다운 목록(Authz.adminProjects 기반)
-		List<AdminProjectOptionDTO> adminProjectOptions = myPageMapper.selectAllProjectOptions();
+		// 4) ADMIN 드롭다운 목록
+		List<AdminProjectOptionDTO> adminProjectOptions;
+
+		if (isSys) {
+		    // sysCk=Y: 진행중 전체 프로젝트
+		    adminProjectOptions = myPageMapper.selectAllProjectOptions(); // 여기 쿼리가 OD1만
+		} else {
+		    // sysCk=N: admin=1 프로젝트만 (진행중만)
+		    Set<Integer> adminCodes = Authz.adminProjects(session);
+
+		    if (adminCodes == null || adminCodes.isEmpty()) {
+		        adminProjectOptions = List.of();
+		    } else {
+		        adminProjectOptions =
+		            myPageMapper.selectProjectOptionsByCodes(new ArrayList<>(adminCodes)); // 여기 쿼리가 OD1만
+		    }
+		}
 
 		// 5) 블록별 데이터
 		Map<String, Object> blockData = new HashMap<>();
