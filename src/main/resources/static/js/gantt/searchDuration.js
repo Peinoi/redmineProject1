@@ -124,10 +124,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			const range = calcDateRange();
 			applyDateRange(range.start, range.end);
 
-			// 조회 버튼 강제 실행
-			const searchApplyBtn = document.getElementById("btnApplySearch");
-			if (searchApplyBtn) {
-				searchApplyBtn.click();
+			// 현재 검색조건 필터 가져와서 같이 넘기기
+			if (window.ganttReload) {
+				const currentFilters = window.getGanttFilters
+					? window.getGanttFilters()
+					: {};
+				window.ganttReload(currentFilters);
 			}
 		});
 	}
@@ -154,17 +156,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			document.getElementById("rangeMonths").value = 6;
 			updateDateSelectors(today);
 
-			const saved = JSON.parse(localStorage.getItem("ganttFilters") || "{}");
-			delete saved.durationStart;
-			delete saved.durationEnd;
-			localStorage.setItem("ganttFilters", JSON.stringify(saved));
-
 			gantt.render();
 
 			// 현재 날짜 범위로 데이터 재조회
 			if (window.ganttReload) {
-				const currentFilters = JSON.parse(localStorage.getItem("ganttFilters") || "{}");
-				window.ganttReload(currentFilters);
+				window.ganttReload({});
 			}
 		});
 	}

@@ -25,7 +25,6 @@
 
 .folder-tree li {
 	cursor: pointer;
-	padding: 4px 0;
 }
 
 .folder-tree li span {
@@ -42,35 +41,52 @@
 
 /* ================== 문서 목록 테이블 ================== */
 #docsTable {
-	width: 100%;
-	margin: 0;
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
 }
 
+#docsTable th, #docsTable td {
+    box-sizing: border-box;
+    padding: 12px 10px;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 헤더 설정: 구분만 왼쪽, 나머지는 중앙 */
 #docsTable thead th {
-	font-size: 14px;
-	font-weight: 800;
-	vertical-align: middle;
-	background-color: rgb(224, 229, 243);
-	color: #111827 !important;
-	border-bottom: 1px solid #e5e7eb;
-	padding: 12px 14px;
+    font-size: 14px;
+    font-weight: 800;
+    background-color: rgb(224, 229, 243);
+    color: #111827;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: center; /* 전체 중앙 */
+}
+#docsTable thead th:first-child {
+    text-align: left; /* 첫 컬럼만 왼쪽 */
 }
 
+/* 바디 데이터 정렬: 2번째~6번째 컬럼 중앙 정렬 */
 #docsTable tbody td {
-	font-size: 14px;
-	vertical-align: middle;
-	color: #111827;
-	border-color: #eeeeee;
-	padding: 8px 10px;
+    font-size: 14px;
+    color: #111827;
+    border-bottom: 1px solid #eeeeee;
+    text-align: center; /* 기본 중앙 */
 }
 
-/* 프로젝트 행 */
+/* 첫 번째 컬럼(구분) 및 프로젝트 행 예외 정렬 */
+#docsTable tbody td:first-child,
+#docsTable tbody tr.row-project td {
+    text-align: left !important;
+}
+
+/* ================== 프로젝트 행 ================== */
 #docsTable .row-project td {
 	background-color: #ffffff !important;
 	font-weight: 800 !important;
-	font-size: 14px;
 	color: #111827 !important;
-	padding: 17px 15px !important;
 	border-bottom: 1px solid #e5e7eb !important;
 	cursor: pointer;
 	user-select: none;
@@ -80,7 +96,7 @@
 	background-color: #f9fafb !important;
 }
 
-.project-toggle {
+.project-toggle, .folder-toggle {
 	display: inline-block;
 	width: 16px;
 	font-size: 0.7rem;
@@ -93,17 +109,13 @@
 	margin-right: 6px;
 }
 
-/* 폴더 행 */
+/* ================== 폴더 행 ================== */
 #docsTable .row-folder td {
 	background-color: #f8f9fa !important;
 	color: #111827 !important;
 	font-weight: 600 !important;
-	font-size: 14px;
-	padding: 8px 10px;
 	border-bottom: 1px solid #eeeeee !important;
 	cursor: pointer;
-	line-height: 1.4;
-	height: 48px;
 }
 
 #docsTable .row-folder:hover td {
@@ -115,15 +127,11 @@
 	margin-right: 6px;
 }
 
-/* 파일 행 */
+/* ================== 파일 행 ================== */
 #docsTable .row-file td {
-	vertical-align: middle;
 	font-size: 14px;
 	color: #374151 !important;
-	padding: 8px 10px;
 	border-bottom: 1px solid #f3f4f6 !important;
-	line-height: 1.4;
-	height: 48px;
 }
 
 #docsTable .row-file:hover td {
@@ -207,7 +215,7 @@ body.modal-open .modal-backdrop+.modal-backdrop {
 	cursor: pointer;
 	padding: 0 2px;
 	font-size: 16px;
-	line-height: 1;
+	line-height: 1.5;
 	flex-shrink: 0;
 }
 

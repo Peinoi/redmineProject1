@@ -27,7 +27,7 @@
 					</div>
 
 					<!-- 프로젝트 상태 -->
-					<div class="col-12 col-md-1 filter-select-wide">
+					<div class="col-12 col-md-3 filter-select-wide">
 						<label class="form-label">프로젝트 상태</label> <select
 							id="filterProjectStatus" name="projectStatusName"
 							class="form-select">
@@ -68,9 +68,11 @@
 							id="filterTitle" name="title" class="form-control"
 							placeholder="일감명 입력" th:value="${param.title}" />
 					</div>
+				</div>
 
+				<div class="row g-2 align-items-end mt-1">
 					<!-- 일감 상태 -->
-					<div class="col-12 col-md-1 filter-select-wide">
+					<div class="col-12 col-md-2">
 						<label class="form-label">일감 상태</label> <select id="filterStatus"
 							name="statusId" class="form-select">
 							<option value=""
@@ -84,7 +86,7 @@
 					</div>
 
 					<!-- 우선순위 -->
-					<div class="col-12 col-md-1 filter-select-wide">
+					<div class="col-12 col-md-2">
 						<label class="form-label">우선순위</label> <select id="filterPriority"
 							name="priority" class="form-select">
 							<option value=""
@@ -95,9 +97,7 @@
 							<option value="OA4" th:selected="${param.priority == 'OA4'}">낮음</option>
 						</select>
 					</div>
-				</div>
 
-				<div class="row g-2 align-items-end mt-1">
 					<!-- 담당자 -->
 					<div class="col-12 col-md-3">
 						<label class="form-label">담당자</label>
@@ -125,14 +125,14 @@
 					</div>
 
 					<!-- 등록일 -->
-					<div class="col-12 col-md-3">
+					<!-- <div class="col-12 col-md-3">
 						<label class="form-label">등록일</label> <input type="date"
 							id="filterCreatedAt" name="createdAt" class="form-control"
 							th:value="${param.createdAt}" />
-					</div>
+					</div> -->
 
 					<!-- 마감기한 -->
-					<div class="col-12 col-md-3">
+					<div class="col-12 col-md-2">
 						<label class="form-label">마감기한</label> <input type="date"
 							id="filterDueAt" name="dueAt" class="form-control"
 							th:value="${param.dueAt}" />

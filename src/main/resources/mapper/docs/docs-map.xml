@@ -144,14 +144,37 @@
 	    FROM AUTH_PROJECT ap
 	    WHERE 1=1
 	    <if test="(fileName != null and fileName != '') or (uploaderName != null and uploaderName != '') or (createdFrom != null and createdFrom != '') or (fileType != null and fileType != '') or (createdCode != null and createdCode != '')">
-	        AND ap.project_code IN (
-	            SELECT project_code FROM documents_attachments da
-	            WHERE 1=1
-	            <if test="fileName != null and fileName != ''">AND da.original_name LIKE '%' || #{fileName} || '%'</if>
-	            <if test="fileType != null and fileType != ''">AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))</if>
-	            <if test="createdCode != null and createdCode != ''">AND da.user_code = #{createdCode}</if>
-	        )
-	    </if>
+		    AND ap.project_code IN (
+		        SELECT project_code FROM documents_attachments da
+		        WHERE 1=1
+		        <if test="fileName != null and fileName != ''">
+		            AND da.original_name LIKE '%' || #{fileName} || '%'
+		        </if>
+		        <if test="fileType != null and fileType != ''">
+		            <choose>
+		                <when test="fileType == 'excel'">
+		                    AND (LOWER(da.mime_type) LIKE '%spreadsheet%' OR LOWER(da.original_name) LIKE '%.xls%')
+		                </when>
+		                <when test="fileType == 'word'">
+		                    AND (LOWER(da.mime_type) LIKE '%word%' OR LOWER(da.original_name) LIKE '%.doc%')
+		                </when>
+		                <when test="fileType == 'ppt'">
+		                    AND (LOWER(da.mime_type) LIKE '%presentation%' OR LOWER(da.original_name) LIKE '%.ppt%')
+		                </when>
+		                <when test="fileType == 'image'">
+		                    AND LOWER(da.mime_type) LIKE 'image/%'
+		                </when>
+		                <otherwise>
+		                    AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%'
+		                      OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))
+		                </otherwise>
+		            </choose>
+		        </if>
+		        <if test="createdCode != null and createdCode != ''">
+		            AND da.user_code = #{createdCode}
+		        </if>
+		    )
+		</if>
 	
 	    UNION ALL
 	
@@ -189,10 +212,23 @@
 		            
 		            <if test="fileType != null and fileType != ''">
 		                <choose>
-		                    <when test="fileType == 'excel'">AND (LOWER(da.mime_type) LIKE '%spreadsheet%' OR LOWER(da.original_name) LIKE '%.xls%')</when>
-		                    <when test="fileType == 'image'">AND LOWER(da.mime_type) LIKE 'image/%'</when>
-		                    <otherwise>AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))</otherwise>
-		                </choose>
+						    <when test="fileType == 'excel'">
+						        AND (LOWER(da.mime_type) LIKE '%spreadsheet%' OR LOWER(da.original_name) LIKE '%.xls%')
+						    </when>
+						    <when test="fileType == 'word'">
+						        AND (LOWER(da.mime_type) LIKE '%word%' OR LOWER(da.original_name) LIKE '%.doc%')
+						    </when>
+						    <when test="fileType == 'ppt'">
+						        AND (LOWER(da.mime_type) LIKE '%presentation%' OR LOWER(da.original_name) LIKE '%.ppt%')
+						    </when>
+						    <when test="fileType == 'image'">
+						        AND LOWER(da.mime_type) LIKE 'image/%'
+						    </when>
+						    <otherwise>
+						        AND (LOWER(da.mime_type) LIKE '%' || LOWER(#{fileType}) || '%' 
+						          OR LOWER(da.original_name) LIKE '%.' || LOWER(#{fileType}))
+						    </otherwise>
+						</choose>
 		            </if>
 		            
 		            <if test="createdCode != null and createdCode != ''">AND da.user_code = #{createdCode}</if>

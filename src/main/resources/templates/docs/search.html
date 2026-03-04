@@ -181,8 +181,11 @@
 
 							<!-- 오른쪽: 파일 업로드 -->
 							<div class="col-12 col-md-7 ps-md-4 d-flex flex-column">
-								<p class="text-muted small mb-3">파일을 선택하세요 (최대 50MB, 복수 선택
-									가능)</p>
+								<label class="form-label fw-semibold"> 파일 선택<span
+									class="req">*</span>
+								</label>
+
+								<p class="text-muted small mb-2">최대 50MB, 복수 선택 가능</p>
 
 								<input type="file" name="files" id="uploadFiles"
 									class="form-control mb-2" multiple />
@@ -254,10 +257,10 @@
 					<div id="folderCreateForm"
 						class="w-100 border-top bg-light px-3 py-3" style="display: none;">
 						<div class="mb-2">
-							<label class="form-label form-label-sm mb-1">상위 폴더 <span
-								class="text-muted fw-normal">(없으면 루트)</span></label> <input type="text"
-								id="newFolderParentText" class="form-control form-control-sm"
-								readonly placeholder="트리에서 상위 폴더 클릭 (선택 안 하면 최상위)" /> <input
+							<label class="form-label form-label-sm mb-1">상위 폴더<span
+								class="req">*</span></label> <input type="text" id="newFolderParentText"
+								class="form-control form-control-sm" readonly
+								placeholder="폴더 목록에서 상위 폴더 선택" /> <input
 								type="hidden" id="newFolderParentCode" /> <input type="hidden"
 								id="newFolderProjectCode" />
 						</div>

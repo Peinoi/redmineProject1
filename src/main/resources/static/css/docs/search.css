@@ -63,7 +63,6 @@
 	padding: 10px 14px;
 	font-weight: 600;
 	font-size: 16px;
-	border-bottom: 1px solid #dee2e6;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
@@ -100,9 +99,7 @@
 	align-items: stretch; /* height: 100% 대신 stretch */
 	gap: 0;
 	padding: 0;
-	border-bottom: 1px solid #dee2e6;
 	background-color: #fff;
-	/* hover 제거 - folder-name에서만 처리 */
 }
 
 .folder-item:hover {
@@ -153,7 +150,7 @@
 
 .folder-name {
 	flex: 1;
-	padding: 10px 14px 10px 4px;
+	padding: 10px 14px;
 	font-size: 15px;
 	color: #495057;
 	cursor: pointer;
@@ -330,4 +327,13 @@
 
 .type-tree ul ul ul .type-item {
 	padding-left: 50px;
+}
+
+.folder-tree .list-group-item, .type-tree .list-group-item {
+	margin: 0;
+	border-radius: 0;
+}
+
+.folder-tree .list-group-item:hover, .type-tree .list-group-item:hover {
+	background-color: #e9ecef;
 }

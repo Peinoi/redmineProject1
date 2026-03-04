@@ -174,7 +174,7 @@
 
 					const isOverdue = isOverdueTask(t);
 
-					const color = isOverdue ? '#dc2626' : '#374151';
+					const color = isOverdue ? '#dc2626' : '#0d6efd';
 
 					return `
 					   <span class="assignee-cell">
@@ -388,9 +388,18 @@
 			if (filters.createdByCode && String(item.createdByCode) !== String(filters.createdByCode)) ok = false;
 
 			if (filters.createdAt) {
-				const created = toValidDate(item.createdOn);
 				const filterDate = toValidDate(filters.createdAt);
-				if (!created || !filterDate || created.toDateString() !== filterDate.toDateString()) ok = false;
+
+				// 일감 등록일(createdAt) 또는 프로젝트 등록일(createdOn) 둘 중 하나라도 일치하면 통과
+				const issueCreated = toValidDate(item.createdAt);    // 일감 등록일
+				const projectCreated = toValidDate(item.createdOn);  // 프로젝트 등록일
+
+				const issueMatch = issueCreated && filterDate &&
+					issueCreated.toDateString() === filterDate.toDateString();
+				const projectMatch = projectCreated && filterDate &&
+					projectCreated.toDateString() === filterDate.toDateString();
+
+				if (!issueMatch && !projectMatch) ok = false;
 			}
 
 			if (filters.dueAt) {

@@ -19,7 +19,7 @@
 		assigneeValue: $("#filterAssigneeValue"),
 		creatorText: $("#filterCreatorText"),
 		creatorValue: $("#filterCreatorValue"),
-		createdAt: $("#filterCreatedAt"),
+		//createdAt: $("#filterCreatedAt"),
 		dueAt: $("#filterDueAt"),
 
 		typeText: $("#filterTypeText"),
@@ -253,12 +253,14 @@
 			assigneeName: ui.assigneeText?.value || "",
 			createdByCode: ui.creatorValue?.value || "",
 			creatorName: ui.creatorText?.value || "",
-			createdAt: ui.createdAt?.value || "",
+			//createdAt: ui.createdAt?.value || "",
 			dueAt: ui.dueAt?.value || "",
 			durationStart: duration?.start || null,
 			durationEnd: duration?.end || null
 		};
 	};
+
+	window.getGanttFilters = getGanttFilters;
 
 	// -------------------------
 	// 모달
@@ -617,7 +619,7 @@
 		ui.assigneeValue.value = "";
 		ui.creatorText.value = "";
 		ui.creatorValue.value = "";
-		ui.createdAt.value = "";
+		//ui.createdAt.value = "";
 		ui.dueAt.value = "";
 
 		// Gantt 차트 초기화 (필터 없이 전체 데이터)
@@ -625,7 +627,7 @@
 			window.ganttReload({  // {} 대신 명시적으로
 				projectCode: "", projectStatus: "", title: "",
 				type: "", status: "", priority: "",
-				assigneeCode: "", createdByCode: "", createdAt: "", dueAt: ""
+				assigneeCode: "", createdByCode: "", /*createdAt: "",*/ dueAt: ""
 			});
 		}
 
@@ -633,6 +635,9 @@
 		// 빈 객체({})를 보내 필터를 풀고, true를 보내 캐시를 비워 서버 데이터를 새로 받아옵니다.
 		if (window.calendarReload) {
 			window.calendarReload({}, true);
+		}
+		if (window.calendarInstance) {
+			window.calendarInstance.today(); // 오늘 날짜로 이동
 		}
 
 		showToast("검색 조건과 데이터가 초기화되었습니다.");

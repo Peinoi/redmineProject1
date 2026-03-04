@@ -275,6 +275,8 @@
 				window.location.href = `/issueInfo?issueCode=${issueCode}`;
 			}
 		});
+		
+		window.calendarInstance = calendar;
 
 		// 세션 프로젝트 자동 세팅
 		if (window.currentProject?.projectCode) {

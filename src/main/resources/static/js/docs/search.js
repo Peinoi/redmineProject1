@@ -53,6 +53,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	// ================= 등록자(사원) 선택 모달 로직 =================
 
+	const fromInput = document.getElementById("filterCreatedFrom");
+	const toInput = document.getElementById("filterCreatedTo");
+
+	if (fromInput && toInput) {
+		// 1. 시작일이 변경될 때마다 종료일의 min 속성을 업데이트
+		fromInput.addEventListener("change", function() {
+			const selectedDate = this.value; // yyyy-mm-dd 형식
+
+			if (selectedDate) {
+				// 종료일의 최소 선택 가능 날짜를 시작일로 고정
+				toInput.min = selectedDate;
+
+				// 만약 기존에 입력된 종료일이 새로운 시작일보다 이전이라면 종료일 초기화
+				if (toInput.value && toInput.value < selectedDate) {
+					toInput.value = selectedDate;
+					// 선택적으로 경고창이나 토스트를 띄울 수 있습니다.
+					// showToast("종료일은 시작일보다 빠를 수 없습니다.");
+				}
+			} else {
+				// 시작일이 지워지면 종료일의 min 제한도 해제
+				toInput.removeAttribute("min");
+			}
+		});
+
+		// 2. 반대로 종료일을 먼저 선택했을 때 시작일의 max를 제한하고 싶다면 (선택사항)
+		toInput.addEventListener("change", function() {
+			if (this.value) {
+				fromInput.max = this.value;
+			} else {
+				fromInput.removeAttribute("max");
+			}
+		});
+	}
+
 	// 1. 모달 열기 및 데이터 패치
 	ui.btnCreatorModal?.addEventListener("click", async () => {
 		try {
@@ -855,10 +889,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 				if (!isConfirmed) return;
 				try {
-					const res = await fetch(`/api/folders/delete/${folder.code}`, { method: "DELETE" });
+					const res = await fetch(`/api/folders/delete/${folder.code}?projectCode=${folder.projectCode}`, { method: "DELETE" });
 					const data = await res.json();
 					if (res.status === 403) {
 						showToast('권한이 없습니다.');
+						return;
+					}
+					if (res.status === 400) {
+						showToast('.');
 						return;
 					}
 					if (!res.ok) {
@@ -934,7 +972,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				if (folderCreateForm && folderCreateForm.style.display !== "none") {
 					if (newFolderProjectCode) newFolderProjectCode.value = p.code;
 					if (newFolderParentCode) newFolderParentCode.value = "";  // 상위폴더 없음 = 루트
-					if (newFolderParentText) newFolderParentText.value = `${p.name} (루트)`;
+					if (newFolderParentText) newFolderParentText.value = `${p.name} (프로젝트)`;
 					projHeader.style.outline = "2px solid #4a90d9";
 					setTimeout(() => projHeader.style.outline = "", 1000);
 				}
