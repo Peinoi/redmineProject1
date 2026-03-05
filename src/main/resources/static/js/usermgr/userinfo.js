@@ -1,4 +1,4 @@
-const sys = document.querySelector("#sysBtn").addEventListener('change', (event) => {
+const sys = document.querySelector("#sysBtn").addEventListener('change', async (event) => {
 
 	const isChecked = event.target.checked;
 	const userCode = event.target.dataset.usercode;
@@ -6,20 +6,21 @@ const sys = document.querySelector("#sysBtn").addEventListener('change', (event)
 	const sysCk = isChecked ? 'Y' : 'N';
 
 	if (userCode == 1) {
-		alert("최초 admin 계정은 관리자권한을 변경 불가능합니다.");
+		showToast("최초 admin 계정은 관리자권한을 변경 불가능합니다.");
 		event.target.checked = !isChecked; // 상태 복구
 		return;
 	}
 
 	if (sys == "N") {
-		alert("관리자 권한은 관리자만 변경 가능합니다.");
+		showToast("관리자 권한은 관리자만 변경 가능합니다.");
 		event.target.checked = !isChecked; // 상태 복구
 		return;
 	}
 
 
 
-	if (!confirm("관리자 권한을 변경하시겠습니까?")) {
+	const isConfirmed = await showConfirm("관리자 권한을 변경하시겠습니까?");
+	if (!isConfirmed) {
 		event.target.checked = !isChecked; // 상태 복구
 		return;
 	}
