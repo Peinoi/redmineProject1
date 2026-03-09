@@ -118,12 +118,12 @@
 ---
 
 # 개발 환경
-[FRONTEND] HTML5, CSS, JavaScript, jQuery, Bootstrap 5, Thymeleaf
-[BACKEND] Java, Spring Framework, MyBatis
-[DATABASE] Oracle Database
-[SERVER] AWS EC2
-[DEVOPS] Maven, Jenkins, Docker
-[TOOL] Eclipse 2025-06, Oracle Developer
+[FRONTEND] HTML5, CSS, JavaScript, jQuery, Bootstrap 5, Thymeleaf<br>
+[BACKEND] Java, Spring Framework, MyBatis<br>
+[DATABASE] Oracle Database<br>
+[SERVER] AWS EC2<br>
+[DEVOPS] Maven, Jenkins, Docker<br>
+[TOOL] Eclipse 2025-06, Oracle Developer<br>
 [OS] Windows 10 Pro, Ubuntu 11
 
 
@@ -204,7 +204,7 @@
 
 **Server**
 
-<img src="https://github.com/user-attachments/assets/3b806e2e-e66e-4020-a21f-8d8ba6591d1f" width="420"/>
+<img src="https://github.com/user-attachments/assets/ac2ea27a-4952-406e-8fbd-e69a5155b04f" width="420"/>
 
 </td>
 </tr>
