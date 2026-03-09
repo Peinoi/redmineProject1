@@ -196,7 +196,7 @@
 
 **Client**
 
-<img src="https://github.com/user-attachments/assets/c612559b-fe89-497b-a3d1-659f40ba0ff4" width="420"/>
+<img src="https://github.com/user-attachments/assets/9450db16-9e80-4f99-ba96-be58a6c64d10" width="420"/>
 
 </td>
 
@@ -204,7 +204,7 @@
 
 **Server**
 
-<img src="https://github.com/user-attachments/assets/69b9f5c4-bed8-4193-9b16-2818175a7161" width="420"/>
+<img src="https://github.com/user-attachments/assets/3b806e2e-e66e-4020-a21f-8d8ba6591d1f" width="420"/>
 
 </td>
 </tr>
