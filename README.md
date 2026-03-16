@@ -16,22 +16,14 @@
   <a href="#데이터-베이스"><kbd>🗄️ 데이터 베이스</kbd></a>
   &nbsp;&nbsp;
   <a href="#메뉴-구성도"><kbd>📑 메뉴 구성도</kbd></a>
+</p>
+
+<p align="center">
+  <a href="#시스템관리-파트"><kbd>🧩 시스템 관리</kbd></a>
   &nbsp;&nbsp;
   <a href="#Project-Structure"><kbd>📁 Project Structure</kbd></a>
   &nbsp;&nbsp;
   <a href="#프로젝트-소감"><kbd>📝 프로젝트 소감</kbd></a>
-</p>
-
-<p align="center">
-  <a href="#계정관리-파트"><kbd>🧩 계정 관리</kbd></a>
-  &nbsp;&nbsp;
-  <a href="#업무관리-파트"><kbd>🧩 업무 관리</kbd></a>
-  &nbsp;&nbsp;
-  <a href="#일정관리-파트"><kbd>🧩 일정 관리</kbd></a>
-  &nbsp;&nbsp;
-  <a href="#협업관리-파트"><kbd>🧩 협업 관리</kbd></a>
-  &nbsp;&nbsp;
-  <a href="#시스템관리-파트"><kbd>🧩 시스템 관리</kbd></a>
 </p>
 
 ---
@@ -43,7 +35,7 @@
 이에 본 프로젝트는 **프로젝트 관리·일정 조율·팀원 간 협업 기능**을 하나의 시스템에서 **통합적으로 처리할 수 있는 웹 기반 협업 플랫폼**을 구현하는 것을 목표로 했습니다. 기존 도구의 핵심 기능은 유지하면서 사용 흐름을 단순화하고, 로그인 사용자의 권한에 따라 접근 가능한 메뉴와 기능을 구분하는 구조를 설계하여 팀원 누구나 쉽게 사용할 수 있는 협업 환경을 구축하고자 했습니다.
 
 ### 개발 일정
-- **2026.01.29 ~ 2026.03.05**
+- **2026.01.29 ~ 2026.03.12**
 
 ---
 
@@ -134,7 +126,10 @@
 <p align="center">
 <img width="808" src="https://github.com/user-attachments/assets/b86cd035-8393-4156-b865-1524f135b7b1"/>
 </p>
-
+<p align="center">
+  
+<img width="808" src="https://github.com/user-attachments/assets/b86cd035-8393-4156-b865-1524f135b7b1"/>
+</p>
 ---
 
 # 메뉴 구성도
