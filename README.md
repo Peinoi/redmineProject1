@@ -126,7 +126,7 @@
 <p align="center">
 <img width="808" src="https://github.com/user-attachments/assets/b86cd035-8393-4156-b865-1524f135b7b1"/>
 </p>
----
+
 
 # 메뉴 구성도
 
@@ -221,7 +221,13 @@
 - 계층 구조를 통해 상위/하위 일감 유형을 구성할 수 있습니다.
 - 일감 유형은 계층형 구조로 날짜 제한이 이루어져 있으며 하위 일감은 상위 일감의 날짜 안에서만 설정 가능합니다.  
 ---
-
+## 접근 제어
+<table>
+<tr>
+<td><img src="https://github.com/user-attachments/assets/c3f38673-75ce-455e-9452-3d5f94b314b7" width="100%"></td>
+<td><img src="https://github.com/user-attachments/assets/efe28ba5-6140-4684-b76c-fb2050fd69a6" width="100%"></td>
+</tr>
+</table>
 ---
 
 # 프로젝트 소감
