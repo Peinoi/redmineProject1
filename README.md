@@ -87,7 +87,7 @@
 </td>
 
 <td align="center">
-<img width="120" src="https://github.com/user-attachments/assets/fd2ed4de-b16c-4339-a6f7-bc8f4d846d29"/>
+<img width="120" src="https://github.com/Peinoi.png"/>
 </td>
 
 <td align="center">
